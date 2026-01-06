@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "es2024",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "outDir": "./dist", // 컴파일 결과물 경로
+    "rootDir": "./src", // 타입스크립트 소스코드 루트
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true, // 디버깅용 소스맵 생성
+    "allowJs": true
+  },
+  "include": ["src/**/*"], // 컴파일 대상 폴더
+  "exclude": [
+    "src/**/*.test.ts", // 테스트 파일 제외
+    "src/**/*.spec.ts", // 스펙 파일 제외
+    "src/temp/**/*", // 임시 폴더 제외
+    "src/generated/**/*"
+  ]
+}

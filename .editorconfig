@@ -1,0 +1,31 @@
+
+# 최상위 EditorConfig 파일임을 지정합니다.
+root = true
+
+# 모든 파일에 대해 유닉스 스타일 줄바꿈과 파일 끝에 새 줄을 추가합니다.
+[*]
+# 문자 인코딩을 UTF-8로 설정합니다.
+charset = utf-8
+# 줄 끝을 LF(유닉스 스타일)로 설정합니다.
+end_of_line = lf
+# 모든 파일 끝에 자동으로 새 줄을 추가합니다.
+insert_final_newline = true
+# 줄 끝의 불필요한 공백을 제거합니다.
+trim_trailing_whitespace = true
+
+# TypeScript, JavaScript, JSON 파일에 대한 설정입니다.
+[*.{ts,tsx,js,jsx,json}]
+# 들여쓰기를 스페이스 2칸으로 설정합니다.
+indent_style = space
+indent_size = 2
+
+# 마크다운 파일에 대한 설정입니다.
+[*.md]
+# 마크다운 파일에서는 줄 끝 공백을 제거하지 않습니다.
+trim_trailing_whitespace = false
+
+# CSS, SCSS 파일에 대한 설정입니다.
+[*.{css,scss}]
+# 들여쓰기를 스페이스 2칸으로 설정합니다.
+indent_style = space
+indent_size = 2
