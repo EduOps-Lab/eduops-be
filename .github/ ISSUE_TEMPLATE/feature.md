@@ -2,7 +2,7 @@
 name: Feature / Task
 about: 새로운 기능 또는 작업 단위
 title: '[Feature] '
-labels: ['feature']
+labels: ['feature', 'area:be']
 assignees: ''
 ---
 
