@@ -1,7 +1,7 @@
 ---
 name: Feature
 about: 백엔드 기능 개발 및 작업 단위 이슈 템플릿
-title: ''
+title: "[Feature] "
 labels: area:be, feature
 assignees: ''
 
