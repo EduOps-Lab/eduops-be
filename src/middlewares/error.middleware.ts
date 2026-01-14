@@ -1,5 +1,5 @@
 import { ErrorRequestHandler } from 'express';
-import { HttpException } from '../err/httpException.js';
+import { HttpException } from '../err/http.exception.js';
 
 export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   console.error('error message', error);

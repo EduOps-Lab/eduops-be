@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BadRequestException } from '../err/httpException.js';
+import { BadRequestException } from '../err/http.exception.js';
 import { RequestHandler } from 'express';
 
 /**

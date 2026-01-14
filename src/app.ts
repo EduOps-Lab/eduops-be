@@ -1,10 +1,10 @@
 import express from 'express';
 import cors, { CorsOptions } from 'cors';
 import { router } from './routes/index.js';
-import { logger } from './middlewares/logger.js';
-import { requestTimer } from './middlewares/requestTimer.js';
+import { logger } from './middlewares/logger.middleware.js';
+import { requestTimer } from './middlewares/reqtimer.middleware.js';
 import { config, isDevelopment, isProduction } from './config/env.config.js';
-import { errorHandler } from './middlewares/errorHandler.js';
+import { errorHandler } from './middlewares/error.middleware.js';
 import { disconnectDB } from './config/db.config.js';
 
 const app = express();
