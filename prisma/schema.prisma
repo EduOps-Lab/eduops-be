@@ -115,7 +115,7 @@ model Assistant {
   phoneNumber  String   @map("phone_number")
   
   signupCode   String?  @map("signup_code")
-  contractSentedAt DateTime? @map("contract_sented_at")
+  contract     String?
 
   createdAt    DateTime @default(now()) @map("created_at")
   
