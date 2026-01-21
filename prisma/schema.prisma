@@ -19,7 +19,7 @@ datasource db {
 
 // 사용자 권한 레이어 (아이덴티티)
 model AppStudent {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(uuid(7))
   email       String   @unique
   password    String
   phoneNumber String   @unique @map("phone_number")
@@ -34,7 +34,7 @@ model AppStudent {
 }
 
 model AppParent {
-  id            Int      @id @default(autoincrement())
+  id            String   @id @default(uuid(7))
   email         String   @unique
   password      String
   phoneNumber   String   @unique @map("phone_number")
@@ -47,30 +47,31 @@ model AppParent {
 }
 
 model ParentChildLink {
-  id           Int      @id @default(autoincrement())
-  appParentId  Int
+  id           String   @id @default(uuid(7))
+  appParentId  String   @map("app_parent_id")
   name         String
-  phoneNumber  String   
+  phoneNumber  String   @map("phone_number")
   
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @map("created_at")
 
   parent       AppParent @relation(fields: [appParentId], references: [id], onDelete: Cascade)
   enrollment   Enrollment[]
 
   @@unique([appParentId, phoneNumber])
+  @@map("parent_child_links")
 }
 
 model VerificationCode {
-  id          Int      @id @default(autoincrement())
-  targetPhone String
+  id          String   @id @default(uuid(7))
+  targetPhone String   @map("target_phone")
   code        String
   
   // Values: "SIGNUP", "PARENT_CHILD_CONNECT"
   type        String 
   
-  isVerified  Boolean  @default(false)
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
+  isVerified  Boolean  @default(false) @map("is_verified")
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 }
 
 // --------------------------------------------------------
@@ -78,7 +79,7 @@ model VerificationCode {
 // --------------------------------------------------------
 
 model Instructor {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(uuid(7))
   email       String   @unique
   password    String
   name        String
@@ -107,8 +108,8 @@ model Instructor {
 }
 
 model Assistant {
-  id           Int      @id @default(autoincrement())
-  instructorId Int      @map("instructor_id")
+  id           String   @id @default(uuid(7))
+  instructorId String   @map("instructor_id")
   email        String   @unique
   password     String
   name         String
@@ -133,8 +134,9 @@ model Assistant {
 }
 
 model AssistantCode {
-  code         String   @id
-  instructorId Int      @map("instructor_id")
+  id           String   @id @default(uuid(7))
+  code         String   
+  instructorId String   @map("instructor_id")
   isUsed       Boolean  @default(false) @map("is_used")
   expireAt     DateTime @map("expire_at")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -150,8 +152,8 @@ model AssistantCode {
 // --------------------------------------------------------
 
 model Lecture {
-  id           Int      @id @default(autoincrement())
-  instructorId Int      @map("instructor_id")
+  id           String   @id @default(cuid(2))
+  instructorId String   @map("instructor_id")
   
   subject      String?
   title        String
@@ -182,8 +184,8 @@ model Lecture {
 // 수강  및 출석 레이어
 // Enrollment & Attendance
 model Enrollment {
-  id           Int      @id @default(autoincrement())
-  lectureId    Int      @map("lecture_id")
+  id           String   @id @default(cuid(2))
+  lectureId    String   @map("lecture_id")
   
   // [Snapshot] 수강 등록 시점의 학생 정보 (검색용)
   studentName  String   @map("student_name")
@@ -191,8 +193,8 @@ model Enrollment {
   parentPhone  String   @map("parent_phone")
   
   // [Link] 실제 앱 사용자와의 연결
-  appStudentId Int?     @map("app_student_id")
-  appParentLinkId Int?     @map("app_parent_link_id")
+  appStudentId String?     @map("app_student_id")
+  appParentLinkId String?  @map("app_parent_link_id")
 
   registeredAt DateTime @default(now()) @map("registered_at")
   
@@ -221,8 +223,8 @@ model Enrollment {
 }
 
 model Attendance {
-  id           Int      @id @default(autoincrement())
-  enrollmentId Int      @map("enrollment_id")
+  id           String   @id @default(cuid(2))
+  enrollmentId String   @map("enrollment_id")
   
   date         DateTime @db.Date // 시간 제외한 날짜
   status       String   @default("ABSENT") // PRESENT, LATE, ABSENT, EARLY_LEAVE 등
@@ -249,8 +251,8 @@ model Attendance {
 // --------------------------------------------------------
 
 model Exam {
-  id          Int      @id @default(autoincrement())
-  lectureId   Int      @map("lecture_id")
+  id          String   @id @default(cuid(2))
+  lectureId   String   @map("lecture_id")
   title       String
   cutoffScore Int      @default(0) @map("cutoff_score")
   source      String?
@@ -269,9 +271,9 @@ model Exam {
 }
 
 model Question {
-  id             Int     @id @default(autoincrement())
-  examId         Int     @map("exam_id")
-  lectureId      Int     @map("lecture_id")
+  id             String     @id @default(cuid(2))
+  examId         String     @map("exam_id")
+  lectureId      String     @map("lecture_id")
   
   questionNumber Int     @map("question_number")
   content        String  @db.Text
@@ -294,10 +296,10 @@ model Question {
 }
 
 model StudentAnswer {
-  id              Int     @id @default(autoincrement())
-  lectureId       Int     @map("lecture_id")
-  enrollmentId    Int     @map("enrollment_id")
-  questionId      Int     @map("question_id")
+  id              String     @id @default(cuid(2))
+  lectureId       String     @map("lecture_id")
+  enrollmentId    String     @map("enrollment_id")
+  questionId      String     @map("question_id")
   
   submittedAnswer String  @map("submitted_answer")
   isCorrect       Boolean @default(false) @map("is_correct")
@@ -314,10 +316,10 @@ model StudentAnswer {
 }
 
 model Grade {
-  id           Int     @id @default(autoincrement())
-  lectureId    Int     @map("lecture_id")
-  examId       Int     @map("exam_id")
-  enrollmentId Int     @map("enrollment_id")
+  id           String     @id @default(cuid(2))
+  lectureId    String     @map("lecture_id")
+  examId       String     @map("exam_id")
+  enrollmentId String     @map("enrollment_id")
   
   score        Int     
   isPass       Boolean @default(true) @map("is_pass")
@@ -338,15 +340,15 @@ model Grade {
 
 // [Audit] 성적 수정 로그 (New)
 model GradeLog {
-  id           Int      @id @default(autoincrement())
-  gradeId      Int      @map("grade_id")
+  id           String      @id @default(cuid(2))
+  gradeId      String      @map("grade_id")
   
   previousScore Int     @map("previous_score")
   newScore      Int     @map("new_score")
   reason        String? 
   
-  updatedByInstructorId Int? @map("updated_by_instructor_id")
-  updatedByAssistantId  Int? @map("updated_by_assistant_id")
+  updatedByInstructorId String? @map("updated_by_instructor_id")
+  updatedByAssistantId  String? @map("updated_by_assistant_id")
   
   createdAt     DateTime @default(now()) @map("created_at")
 
@@ -363,9 +365,9 @@ model GradeLog {
 // --------------------------------------------------------
 
 model Clinic {
-  id        Int      @id @default(autoincrement())
-  lectureId Int      @map("lecture_id")
-  examId    Int      @map("exam_id")
+  id        String      @id @default(cuid(2))
+  lectureId String      @map("lecture_id")
+  examId    String      @map("exam_id")
 
   title     String
   deadline  DateTime?
@@ -382,9 +384,9 @@ model Clinic {
 }
 
 model ClinicTarget {
-  id           Int      @id @default(autoincrement())
-  clinicId     Int      @map("clinic_id")
-  enrollmentId Int      @map("enrollment_id")
+  id           String      @id @default(cuid(2))
+  clinicId     String      @map("clinic_id")
+  enrollmentId String      @map("enrollment_id")
   
   status             String   @default("PENDING") // PENDING, COMPLETED
   notificationStatus String   @default("READY") @map("notification_status")
@@ -406,14 +408,14 @@ model ClinicTarget {
 // --------------------------------------------------------
 
 model Schedule {
-  id             Int      @id @default(autoincrement())
-  instructorId   Int      @map("instructor_id") 
+  id             String      @id @default(cuid(2))
+  instructorId   String      @map("instructor_id") 
   title          String
   startTime      DateTime @map("start_time")
   endTime        DateTime @map("end_time")
 
-  linkedExamId   Int?     @unique @map("linked_exam_id")
-  linkedClinicId Int?     @unique @map("linked_clinic_id")
+  linkedExamId   String?     @unique @map("linked_exam_id")
+  linkedClinicId String?     @unique @map("linked_clinic_id")
 
   instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   linkedExam   Exam?      @relation(fields: [linkedExamId], references: [id])
@@ -425,10 +427,10 @@ model Schedule {
 }
 
 model Material {
-  id                   Int          @id @default(autoincrement())
-  lectureId            Int          @map("lecture_id")
-  uploaderInstructorId Int?         @map("uploader_instructor_id")
-  uploaderAssistantId  Int?         @map("uploader_assistant_id")
+  id                   String          @id @default(cuid(2))
+  lectureId            String          @map("lecture_id")
+  uploaderInstructorId String?         @map("uploader_instructor_id")
+  uploaderAssistantId  String?         @map("uploader_assistant_id")
   
   title                String
   fileUrl              String       @map("file_url")
@@ -451,7 +453,7 @@ model Material {
 // --------------------------------------------------------
 
 model InstructorPost {
-  id           Int         @id @default(autoincrement())
+  id           String         @id @default(cuid(2))
   
   scope        String      @default("LECTURE") // GLOBAL, LECTURE, SELECTED
   targetRole   String      @default("ALL")     @map("target_role")
@@ -461,9 +463,9 @@ model InstructorPost {
   content      String      @db.Text
   createdAt    DateTime    @default(now()) @map("created_at")
 
-  instructorId      Int         @map("instructor_id")
-  lectureId         Int?        @map("lecture_id")
-  authorAssistantId Int?        @map("author_assistant_id")
+  instructorId      String         @map("instructor_id")
+  lectureId         String?        @map("lecture_id")
+  authorAssistantId String?        @map("author_assistant_id")
 
   instructor      Instructor  @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   lecture         Lecture?    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
@@ -480,8 +482,8 @@ model InstructorPost {
 }
 
 model InstructorPostTarget {
-  instructorPostId Int @map("instructor_post_id")
-  enrollmentId     Int @map("enrollment_id")
+  instructorPostId String @map("instructor_post_id")
+  enrollmentId     String @map("enrollment_id")
 
   instructorPost InstructorPost @relation(fields: [instructorPostId], references: [id], onDelete: Cascade)
   enrollment     Enrollment     @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
@@ -493,8 +495,8 @@ model InstructorPostTarget {
 }
 
 model InstructorPostAttachment {
-  instructorPostId Int @map("instructor_post_id")
-  materialId       Int @map("material_id")
+  instructorPostId String @map("instructor_post_id")
+  materialId       String @map("material_id")
 
   instructorPost InstructorPost @relation(fields: [instructorPostId], references: [id], onDelete: Cascade)
   material       Material       @relation(fields: [materialId], references: [id], onDelete: Cascade)
@@ -504,17 +506,17 @@ model InstructorPostAttachment {
 }
 
 model StudentPost {
-  id           Int               @id @default(autoincrement())
+  id           String               @id @default(cuid(2))
   status       String            @default("PENDING") // PENDING, RESOLVED
   title        String
   content      String            @db.Text
   createdAt    DateTime          @default(now()) @map("created_at")
 
-  enrollmentId Int               @map("enrollment_id") 
+  enrollmentId String               @map("enrollment_id") 
   authorRole   String            @default("STUDENT") @map("author_role")
 
-  instructorId Int               @map("instructor_id") 
-  lectureId    Int?              @map("lecture_id")    
+  instructorId String               @map("instructor_id") 
+  lectureId    String?              @map("lecture_id")    
 
   enrollment   Enrollment    @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
   instructor   Instructor    @relation("StudentPostResolver", fields: [instructorId], references: [id], onDelete: Cascade)
@@ -529,16 +531,16 @@ model StudentPost {
 }
 
 model Comment {
-  id           Int      @id @default(autoincrement())
+  id           String      @id @default(cuid(2))
   content      String   @db.Text
   createdAt    DateTime @default(now()) @map("created_at")
 
-  instructorPostId Int? @map("instructor_post_id")
-  studentPostId    Int? @map("student_post_id")
+  instructorPostId String? @map("instructor_post_id")
+  studentPostId    String? @map("student_post_id")
 
-  instructorId Int?     @map("instructor_id")
-  assistantId  Int?     @map("assistant_id")
-  enrollmentId Int?     @map("enrollment_id")
+  instructorId String?     @map("instructor_id")
+  assistantId  String?     @map("assistant_id")
+  enrollmentId String?     @map("enrollment_id")
 
   instructorPost InstructorPost? @relation(fields: [instructorPostId], references: [id], onDelete: Cascade)
   studentPost    StudentPost?    @relation(fields: [studentPostId], references: [id], onDelete: Cascade)
