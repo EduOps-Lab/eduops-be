@@ -19,14 +19,15 @@ datasource db {
 
 // 사용자 권한 레이어 (아이덴티티)
 model AppStudent {
-  id          String   @id @default(uuid(7))
-  email       String   @unique
-  password    String
-  phoneNumber String   @unique @map("phone_number")
-  name        String
-  school      String?
+  id            String   @id @default(uuid(7))
+  email         String   @unique
+  password      String
+  phoneNumber   String   @unique @map("phone_number")
+  name          String
+  school        String?
+  emailVerified Boolean  @default(false) @map("email_verified")
   
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   enrollments Enrollment[]
 
@@ -38,7 +39,7 @@ model AppParent {
   email         String   @unique
   password      String
   phoneNumber   String   @unique @map("phone_number")
-  childNameHint String?  @map("child_name_hint")
+  emailVerified Boolean  @default(false) @map("email_verified")
   createdAt     DateTime @default(now()) @map("created_at")
 
   childLinks   ParentChildLink[] 
@@ -72,6 +73,7 @@ model VerificationCode {
   isVerified  Boolean  @default(false) @map("is_verified")
   expiresAt   DateTime @map("expires_at")
   createdAt   DateTime @default(now()) @map("created_at")
+  @@map("verification_codes")
 }
 
 // --------------------------------------------------------
@@ -79,18 +81,19 @@ model VerificationCode {
 // --------------------------------------------------------
 
 model Instructor {
-  id          String   @id @default(uuid(7))
-  email       String   @unique
-  password    String
-  name        String
-  phoneNumber String   @map("phone_number")
-  subject     String?
-  academy     String?
+  id            String   @id @default(uuid(7))
+  email         String   @unique
+  password      String
+  name          String
+  phoneNumber   String   @map("phone_number")
+  subject       String?
+  academy       String?
+  emailVerified Boolean  @default(false) @map("email_verified")
   
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
   
   // [Safety] 계정 삭제 시 실수 방지를 위한 Soft Delete
-  deletedAt   DateTime? @map("deleted_at")
+  deletedAt     DateTime? @map("deleted_at")
 
   lectures          Lecture[]
   assistants        Assistant[]
@@ -108,17 +111,18 @@ model Instructor {
 }
 
 model Assistant {
-  id           String   @id @default(uuid(7))
-  instructorId String   @map("instructor_id")
-  email        String   @unique
-  password     String
-  name         String
-  phoneNumber  String   @map("phone_number")
+  id            String   @id @default(uuid(7))
+  instructorId  String   @map("instructor_id")
+  email         String   @unique
+  password      String
+  name          String
+  phoneNumber   String   @map("phone_number")
+  emailVerified Boolean  @default(false) @map("email_verified")
   
-  signupCode   String?  @map("signup_code")
-  contract     String?
+  signupCode    String?  @map("signup_code")
+  contract      String?
 
-  createdAt    DateTime @default(now()) @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
   
   instructor        Instructor       @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   comments          Comment[]
@@ -552,4 +556,61 @@ model Comment {
   @@index([instructorPostId])
   @@index([studentPostId])
   @@map("comments")
+}
+
+// --------------------------------------------------------
+// 9. AUTHENTICATION (통합 인증 시스템)
+// --------------------------------------------------------
+
+// 통합 세션 테이블
+model Session {
+  id        String   @id @default(cuid(2))
+  userId    String   @map("user_id")
+  userType  String   @map("user_type") // INSTRUCTOR, ASSISTANT, STUDENT, PARENT
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  @@unique([userId, userType])
+  @@index([userId, userType])
+  @@index([token])
+  @@map("sessions")
+}
+
+// 통합 계정 테이블 (OAuth 확장용)
+model Account {
+  id                    String    @id @default(cuid(2))
+  userId                String    @map("user_id")
+  userType              String    @map("user_type") // INSTRUCTOR, ASSISTANT, STUDENT, PARENT
+  providerId            String    @map("provider_id") // credential, google, kakao
+  providerAccountId     String    @map("provider_account_id") // 이메일 또는 OAuth ID
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  idToken               String?   @map("id_token")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  
+  @@unique([userId, userType, providerId])
+  @@unique([providerId, providerAccountId, userType])
+  @@index([userId, userType])
+  @@map("accounts")
+}
+
+// 비밀번호 재설정 등 검증용
+model Verification {
+  id         String   @id @default(cuid(2))
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  
+  @@unique([identifier, value])
+  @@map("verifications")
 }
