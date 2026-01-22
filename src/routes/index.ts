@@ -1,4 +1,6 @@
 import express from 'express';
+import lecturesRouter from './api/mgmt/v1/lectures.route.js';
+
 export const router = express.Router();
 
 // 기본 라우트
@@ -9,5 +11,8 @@ router.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// API 라우트 등록
+router.use('/api/mgmt/v1/lectures', lecturesRouter);
 
 export default router;
