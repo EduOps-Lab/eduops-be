@@ -49,4 +49,45 @@ export class LecturesRepository {
       },
     });
   }
+
+  /** 강의 리스트 조회 (커서 기반 페이지네이션) */
+  async findMany(options: {
+    cursor?: string;
+    limit: number;
+  }): Promise<Lecture[]> {
+    const { cursor, limit } = options;
+    console.log(cursor, limit);
+    return await prisma.lecture.findMany({
+      where: {
+        deletedAt: null, // 삭제되지 않은 강의만 조회
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: limit + 1, // nextCursor 판단을 위해 +1
+      skip: cursor ? 1 : 0,
+      ...(cursor && {
+        // 커서 ID가 있을 때만 해당 항목을 건너뛰고 그 다음부터 가져옴
+        cursor: {
+          id: cursor,
+        },
+      }),
+    });
+  }
+
+  /** ID로 강의 조회  */
+  async findByIdWithRelations(id: string): Promise<Lecture | null> {
+    return await prisma.lecture.findUnique({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      // TODO: 추후 instructor, assistants 관계 데이터 포함 가능 (담당 조교)
+      // include: {
+      //   instructor: {
+      //     select: { id: true, name: true }
+      //   }
+      // }
+    });
+  }
 }
