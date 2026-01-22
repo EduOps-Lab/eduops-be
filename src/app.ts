@@ -1,5 +1,6 @@
 import express from 'express';
 import cors, { CorsOptions } from 'cors';
+import cookieParser from 'cookie-parser';
 import { router } from './routes/index.js';
 import { logger } from './middlewares/logger.middleware.js';
 import { requestTimer } from './middlewares/reqtimer.middleware.js';
@@ -12,6 +13,8 @@ const app = express();
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
+
+app.use(cookieParser());
 
 // CORS 옵션 설정
 const whiteList: string[] = config.FRONT_URL
