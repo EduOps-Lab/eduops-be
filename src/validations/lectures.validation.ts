@@ -5,7 +5,7 @@ import { z } from 'zod';
  *  변경 사항 발생 시 여기서 수정
  * @example
  * {
- *   "instructorId": "1234567890",
+ *   "instructorId": "abc1234",
  *   "title": "강의 제목",
  *   "subject": "강의 과목",
  *   "description": "강의 설명",

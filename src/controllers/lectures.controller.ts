@@ -9,10 +9,7 @@ export class LecturesController {
     this.lecturesService = new LecturesService();
   }
 
-  /**
-   * 강의 생성 핸들러
-   * POST /api/mgmt/v1/lectures
-   */
+  /** POST:강의 생성 핸들러 */
   create = async (
     req: Request<object, object, CreateLectureDto>,
     res: Response,

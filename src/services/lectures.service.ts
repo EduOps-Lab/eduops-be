@@ -10,12 +10,8 @@ export class LecturesService {
     this.lecturesRepository = new LecturesRepository();
   }
 
-  /**
-   * 강의 생성
-   * @throws {NotFoundException} 강사가 존재하지 않는 경우
-   */
+  /** 강의 생성 */
   async createLecture(data: CreateLectureDto): Promise<Lecture> {
-    // 1. 강사 존재 여부 확인
     const instructor = await this.lecturesRepository.findInstructorById(
       data.instructorId,
     );
@@ -26,7 +22,6 @@ export class LecturesService {
       );
     }
 
-    // 2. 강의 생성
     const lecture = await this.lecturesRepository.create(data);
 
     return lecture;

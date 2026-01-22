@@ -6,10 +6,9 @@ import { createLectureSchema } from '../../../../validations/lectures.validation
 const router = Router();
 const lecturesController = new LecturesController();
 
-/**
- * POST /api/mgmt/v1/lectures
- * 강의 생성
- */
+// /api/mgmt/v1/lectures
+
+/** POST:강의 생성 */
 router.post(
   '/',
   validate(createLectureSchema, 'body'),
