@@ -579,38 +579,3 @@ model Session {
   @@index([token])
   @@map("sessions")
 }
-
-// 통합 계정 테이블 (OAuth 확장용)
-model Account {
-  id                    String    @id @default(cuid(2))
-  userId                String    @map("user_id")
-  userType              String    @map("user_type") // INSTRUCTOR, ASSISTANT, STUDENT, PARENT
-  providerId            String    @map("provider_id") // credential, google, kakao
-  providerAccountId     String    @map("provider_account_id") // 이메일 또는 OAuth ID
-  accessToken           String?   @map("access_token")
-  refreshToken          String?   @map("refresh_token")
-  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
-  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
-  scope                 String?
-  idToken               String?   @map("id_token")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  
-  @@unique([userId, userType, providerId])
-  @@unique([providerId, providerAccountId, userType])
-  @@index([userId, userType])
-  @@map("accounts")
-}
-
-// 비밀번호 재설정 등 검증용
-model Verification {
-  id         String   @id @default(cuid(2))
-  identifier String
-  value      String
-  expiresAt  DateTime @map("expires_at")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  
-  @@unique([identifier, value])
-  @@map("verifications")
-}
