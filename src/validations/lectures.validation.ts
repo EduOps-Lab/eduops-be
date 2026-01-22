@@ -41,3 +41,33 @@ export const createLectureSchema = z.object({
 });
 
 export type CreateLectureDto = z.infer<typeof createLectureSchema>;
+
+/**
+ * 강의 리스트 조회 쿼리 파라미터 스키마
+ * @example
+ * {
+ *   "instructorId": "abc1234",
+ *   "cursor": "cm5abc123",
+ *   "limit": 20
+ * }
+ */
+export const getLecturesQuerySchema = z.object({
+  instructorId: z.string().optional(),
+  cursor: z.string().optional(),
+  limit: z.coerce.number().min(1).max(100).default(20),
+});
+
+export type GetLecturesQueryDto = z.infer<typeof getLecturesQuerySchema>;
+
+/**
+ * 강의 ID 파라미터 스키마
+ * @example
+ * {
+ *   "id": "cm5abc123"
+ * }
+ */
+export const lectureIdParamSchema = z.object({
+  id: z.string().min(1, { message: '강의 ID는 필수입니다.' }),
+});
+
+export type LectureIdParamDto = z.infer<typeof lectureIdParamSchema>;
