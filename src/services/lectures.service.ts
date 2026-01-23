@@ -1,9 +1,13 @@
 import { Lecture } from '../generated/prisma/client.js';
-import { NotFoundException } from '../err/http.exception.js';
+import {
+  NotFoundException,
+  ForbiddenException,
+} from '../err/http.exception.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import {
   CreateLectureDto,
   GetLecturesQueryDto,
+  UpdateLectureDto,
 } from '../validations/lectures.validation.js';
 
 export class LecturesService {
@@ -64,5 +68,58 @@ export class LecturesService {
     }
 
     return lecture;
+  }
+
+  /** 강의 수정 */
+  async updateLecture(id: string, data: UpdateLectureDto): Promise<Lecture> {
+    const { instructorId, ...updateData } = data;
+
+    const lecture = await this.lecturesRepository.findById(id);
+
+    if (!lecture) {
+      throw new NotFoundException(`강의를 찾을 수 없습니다. (ID: ${id})`);
+    }
+
+    if (lecture.instructorId !== instructorId) {
+      throw new ForbiddenException('해당 강의를 수정할 권한이 없습니다.');
+    }
+
+    const updatePayload: Partial<{
+      title: string;
+      subject: string;
+      description: string;
+      endAt: Date | null;
+      isActive: boolean;
+    }> = {};
+
+    if (updateData.title !== undefined) updatePayload.title = updateData.title;
+    if (updateData.subject !== undefined)
+      updatePayload.subject = updateData.subject;
+    if (updateData.description !== undefined)
+      updatePayload.description = updateData.description;
+    if (updateData.isActive !== undefined)
+      updatePayload.isActive = updateData.isActive;
+    if (updateData.endAt !== undefined) {
+      updatePayload.endAt = updateData.endAt
+        ? new Date(updateData.endAt)
+        : null;
+    }
+
+    return await this.lecturesRepository.update(id, updatePayload);
+  }
+
+  /** 강의 삭제 (Soft Delete) */
+  async deleteLecture(id: string, instructorId: string): Promise<void> {
+    const lecture = await this.lecturesRepository.findById(id);
+
+    if (!lecture) {
+      throw new NotFoundException(`강의를 찾을 수 없습니다. (ID: ${id})`);
+    }
+
+    if (lecture.instructorId !== instructorId) {
+      throw new ForbiddenException('해당 강의를 삭제할 권한이 없습니다.');
+    }
+
+    await this.lecturesRepository.softDelete(id);
   }
 }

@@ -90,4 +90,37 @@ export class LecturesRepository {
       // }
     });
   }
+
+  /** 강의 수정 */
+  async update(
+    id: string,
+    data: Partial<{
+      title: string;
+      subject: string;
+      description: string;
+      endAt: Date | null;
+      isActive: boolean;
+    }>,
+  ): Promise<Lecture> {
+    return await prisma.lecture.update({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      data,
+    });
+  }
+
+  /** 강의 soft delete */
+  async softDelete(id: string): Promise<Lecture> {
+    return await prisma.lecture.update({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+  }
 }
