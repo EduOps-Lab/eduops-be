@@ -47,14 +47,16 @@ export type CreateLectureDto = z.infer<typeof createLectureSchema>;
  * @example
  * {
  *   "instructorId": "abc1234",
- *   "cursor": "cm5abc123",
- *   "limit": 20
+ *   "page": 1,
+ *   "limit": 20,
+ *   "search": "수학"
  * }
  */
 export const getLecturesQuerySchema = z.object({
   instructorId: z.string().optional(),
-  cursor: z.string().optional(),
-  limit: z.coerce.number().min(1).max(100).default(20),
+  page: z.coerce.number().min(1).default(1).optional(),
+  limit: z.coerce.number().min(1).max(100).default(20).optional(),
+  search: z.string().trim().optional(),
 });
 
 export type GetLecturesQueryDto = z.infer<typeof getLecturesQuerySchema>;

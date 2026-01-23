@@ -1,5 +1,5 @@
 import express from 'express';
-import lecturesRouter from './api/mgmt/v1/lectures.route.js';
+import lecturesRouter from './mgmt/v1/lectures.route.js';
 
 export const router = express.Router();
 

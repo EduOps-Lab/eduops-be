@@ -11,11 +11,7 @@ import {
 } from '../validations/lectures.validation.js';
 
 export class LecturesService {
-  private lecturesRepository: LecturesRepository;
-
-  constructor() {
-    this.lecturesRepository = new LecturesRepository();
-  }
+  constructor(private readonly lecturesRepository: LecturesRepository) {}
 
   /** 강의 생성 */
   async createLecture(data: CreateLectureDto): Promise<Lecture> {
@@ -23,39 +19,32 @@ export class LecturesService {
       data.instructorId,
     );
 
-    if (!instructor) {
-      throw new NotFoundException(
-        `강사를 찾을 수 없습니다. (ID: ${data.instructorId})`,
-      );
-    }
+    if (!instructor) throw new NotFoundException('강사를 찾을 수 없습니다.');
 
-    const lecture = await this.lecturesRepository.create(data);
-
-    return lecture;
+    return await this.lecturesRepository.create(data);
   }
 
   /** 강의 리스트 조회 */
-  async getLectures(query: GetLecturesQueryDto): Promise<{
-    lectures: Lecture[];
-    nextCursor: string | null;
-  }> {
-    const { cursor, limit } = query;
+  async getLectures(query: GetLecturesQueryDto) {
+    const { page = 1, limit = 4, instructorId, search } = query;
 
-    const lectures = await this.lecturesRepository.findMany({
-      cursor,
+    const { lectures, totalCount } = await this.lecturesRepository.findMany({
+      page,
       limit,
+      instructorId,
+      search,
     });
 
-    const hasNextPage = lectures.length > limit;
-
-    const resultLectures = hasNextPage ? lectures.slice(0, limit) : lectures;
-
-    // nextCursor 계산: limit보다 많이 조회되면 마지막 항목을 제거하고 그 ID를 커서로 사용
-    const nextCursor = hasNextPage ? lectures[limit - 1].id : null;
-
     return {
-      lectures: resultLectures,
-      nextCursor: nextCursor,
+      lectures,
+      pagination: {
+        totalCount,
+        totalPage: Math.ceil(totalCount / limit),
+        currentPage: page,
+        limit,
+        hasNextPage: page * limit < totalCount,
+        hasPrevPage: page > 1,
+      },
     };
   }
 
@@ -63,9 +52,7 @@ export class LecturesService {
   async getLectureById(id: string): Promise<Lecture> {
     const lecture = await this.lecturesRepository.findByIdWithRelations(id);
 
-    if (!lecture) {
-      throw new NotFoundException(`강의를 찾을 수 없습니다. (ID: ${id})`);
-    }
+    if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
 
     return lecture;
   }
@@ -76,34 +63,14 @@ export class LecturesService {
 
     const lecture = await this.lecturesRepository.findById(id);
 
-    if (!lecture) {
-      throw new NotFoundException(`강의를 찾을 수 없습니다. (ID: ${id})`);
-    }
-
-    if (lecture.instructorId !== instructorId) {
+    if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
+    if (lecture.instructorId !== instructorId)
       throw new ForbiddenException('해당 강의를 수정할 권한이 없습니다.');
-    }
 
-    const updatePayload: Partial<{
-      title: string;
-      subject: string;
-      description: string;
-      endAt: Date | null;
-      isActive: boolean;
-    }> = {};
-
-    if (updateData.title !== undefined) updatePayload.title = updateData.title;
-    if (updateData.subject !== undefined)
-      updatePayload.subject = updateData.subject;
-    if (updateData.description !== undefined)
-      updatePayload.description = updateData.description;
-    if (updateData.isActive !== undefined)
-      updatePayload.isActive = updateData.isActive;
-    if (updateData.endAt !== undefined) {
-      updatePayload.endAt = updateData.endAt
-        ? new Date(updateData.endAt)
-        : null;
-    }
+    // undefined를 제외한 필드만 추출
+    const updatePayload = Object.fromEntries(
+      Object.entries(updateData).filter(([_, value]) => value !== undefined),
+    );
 
     return await this.lecturesRepository.update(id, updatePayload);
   }
@@ -112,13 +79,10 @@ export class LecturesService {
   async deleteLecture(id: string, instructorId: string): Promise<void> {
     const lecture = await this.lecturesRepository.findById(id);
 
-    if (!lecture) {
-      throw new NotFoundException(`강의를 찾을 수 없습니다. (ID: ${id})`);
-    }
+    if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
 
-    if (lecture.instructorId !== instructorId) {
+    if (lecture.instructorId !== instructorId)
       throw new ForbiddenException('해당 강의를 삭제할 권한이 없습니다.');
-    }
 
     await this.lecturesRepository.softDelete(id);
   }
