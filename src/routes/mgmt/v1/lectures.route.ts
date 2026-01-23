@@ -18,7 +18,7 @@ const lectureRepository = new LecturesRepository(prisma);
 const lecturesService = new LecturesService(lectureRepository);
 const lecturesController = new LecturesController(lecturesService);
 
-// /api/mgmt/v1/lectures
+// /api/mgmt/v1/lectures 강사/조교
 
 /** GET:강의 리스트 조회 */
 router.get(
