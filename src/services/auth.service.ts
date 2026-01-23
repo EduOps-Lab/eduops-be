@@ -25,6 +25,15 @@ export class AuthService {
 
   // 회원가입 (Better Auth 유저 생성 + 역할별 프로필 생성)
   async signUp(userType: UserType, data: SignUpData) {
+    const existingProfile = await this.findProfileByPhoneNumber(
+      userType,
+      data.phoneNumber,
+    );
+
+    if (existingProfile) {
+      throw new BadRequestException('이미 가입된 전화번호입니다.');
+    }
+
     const result = await auth.api.signUpEmail({
       body: {
         email: data.email,
@@ -186,6 +195,23 @@ export class AuthService {
         return this.studentRepo.findByUserId(userId);
       case UserType.PARENT:
         return this.parentRepo.findByUserId(userId);
+    }
+  }
+
+  // 전화번호로 프로필 조회
+  private async findProfileByPhoneNumber(
+    userType: UserType,
+    phoneNumber: string,
+  ) {
+    switch (userType) {
+      case UserType.INSTRUCTOR:
+        return this.instructorRepo.findByPhoneNumber(phoneNumber);
+      case UserType.ASSISTANT:
+        return this.assistantRepo.findByPhoneNumber(phoneNumber);
+      case UserType.STUDENT:
+        return this.studentRepo.findByPhoneNumber(phoneNumber);
+      case UserType.PARENT:
+        return this.parentRepo.findByPhoneNumber(phoneNumber);
     }
   }
 }

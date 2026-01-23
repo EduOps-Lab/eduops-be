@@ -18,6 +18,11 @@ export class StudentRepository {
     return client.appStudent.findUnique({ where: { id } });
   }
 
+  async findByPhoneNumber(phoneNumber: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? prisma;
+    return client.appStudent.findUnique({ where: { phoneNumber } });
+  }
+
   async create(data: CreateStudentData, tx?: Prisma.TransactionClient) {
     const client = tx ?? prisma;
     return client.appStudent.create({ data });

@@ -17,6 +17,11 @@ export class ParentRepository {
     return client.appParent.findUnique({ where: { id } });
   }
 
+  async findByPhoneNumber(phoneNumber: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? prisma;
+    return client.appParent.findUnique({ where: { phoneNumber } });
+  }
+
   async create(data: CreateParentData, tx?: Prisma.TransactionClient) {
     const client = tx ?? prisma;
     return client.appParent.create({ data });

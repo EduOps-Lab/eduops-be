@@ -19,6 +19,11 @@ export class InstructorRepository {
     return client.instructor.findUnique({ where: { id } });
   }
 
+  async findByPhoneNumber(phoneNumber: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? prisma;
+    return client.instructor.findFirst({ where: { phoneNumber } });
+  }
+
   async create(data: CreateInstructorData, tx?: Prisma.TransactionClient) {
     const client = tx ?? prisma;
     return client.instructor.create({ data });
