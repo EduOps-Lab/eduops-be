@@ -22,5 +22,3 @@ export class ParentRepository {
     return client.appParent.create({ data });
   }
 }
-
-export const parentRepo = new ParentRepository();

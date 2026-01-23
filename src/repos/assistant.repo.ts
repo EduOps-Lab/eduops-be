@@ -24,5 +24,3 @@ export class AssistantRepository {
     return client.assistant.create({ data });
   }
 }
-
-export const assistantRepo = new AssistantRepository();

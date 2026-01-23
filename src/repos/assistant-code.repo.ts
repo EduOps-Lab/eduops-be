@@ -23,5 +23,3 @@ export class AssistantCodeRepository {
     });
   }
 }
-
-export const assistantCodeRepo = new AssistantCodeRepository();

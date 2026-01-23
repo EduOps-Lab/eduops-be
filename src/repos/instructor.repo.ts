@@ -24,5 +24,3 @@ export class InstructorRepository {
     return client.instructor.create({ data });
   }
 }
-
-export const instructorRepo = new InstructorRepository();

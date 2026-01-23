@@ -23,5 +23,3 @@ export class StudentRepository {
     return client.appStudent.create({ data });
   }
 }
-
-export const studentRepo = new StudentRepository();

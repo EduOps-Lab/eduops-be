@@ -7,14 +7,22 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '../err/http.exception.js';
-import { instructorRepo } from '../repos/instructor.repo.js';
-import { assistantRepo } from '../repos/assistant.repo.js';
-import { assistantCodeRepo } from '../repos/assistant-code.repo.js';
-import { studentRepo } from '../repos/student.repo.js';
-import { parentRepo } from '../repos/parent.repo.js';
+import { InstructorRepository } from '../repos/instructor.repo.js';
+import { AssistantRepository } from '../repos/assistant.repo.js';
+import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
+import { StudentRepository } from '../repos/student.repo.js';
+import { ParentRepository } from '../repos/parent.repo.js';
 import { SignUpData, AuthResponse } from '../types/auth.types.js';
 
 export class AuthService {
+  constructor(
+    private readonly instructorRepo: InstructorRepository,
+    private readonly assistantRepo: AssistantRepository,
+    private readonly assistantCodeRepo: AssistantCodeRepository,
+    private readonly studentRepo: StudentRepository,
+    private readonly parentRepo: ParentRepository,
+  ) {}
+
   // 회원가입 (Better Auth 유저 생성 + 역할별 프로필 생성)
   async signUp(userType: UserType, data: SignUpData) {
     const result = await auth.api.signUpEmail({
@@ -113,7 +121,7 @@ export class AuthService {
 
   // 강사 프로필 생성
   private async createInstructor(userId: string, data: SignUpData) {
-    return await instructorRepo.create({
+    return await this.instructorRepo.create({
       userId,
       phoneNumber: data.phoneNumber,
       subject: data.subject,
@@ -127,7 +135,7 @@ export class AuthService {
       throw new BadRequestException('조교가입코드가 필요합니다.');
     }
 
-    const assistantCode = await assistantCodeRepo.findValidCode(
+    const assistantCode = await this.assistantCodeRepo.findValidCode(
       data.signupCode,
     );
     if (!assistantCode) {
@@ -137,8 +145,8 @@ export class AuthService {
     }
 
     return await prisma.$transaction(async (tx) => {
-      await assistantCodeRepo.markAsUsed(assistantCode.id, tx);
-      return await assistantRepo.create(
+      await this.assistantCodeRepo.markAsUsed(assistantCode.id, tx);
+      return await this.assistantRepo.create(
         {
           userId,
           phoneNumber: data.phoneNumber,
@@ -152,7 +160,7 @@ export class AuthService {
 
   // 학생 프로필 생성
   private async createStudent(userId: string, data: SignUpData) {
-    return await studentRepo.create({
+    return await this.studentRepo.create({
       userId,
       phoneNumber: data.phoneNumber,
       school: data.school,
@@ -161,7 +169,7 @@ export class AuthService {
 
   // 학부모 프로필 생성
   private async createParent(userId: string, data: SignUpData) {
-    return await parentRepo.create({
+    return await this.parentRepo.create({
       userId,
       phoneNumber: data.phoneNumber,
     });
@@ -171,15 +179,13 @@ export class AuthService {
   private async findProfileByUserId(userType: UserType, userId: string) {
     switch (userType) {
       case UserType.INSTRUCTOR:
-        return instructorRepo.findByUserId(userId);
+        return this.instructorRepo.findByUserId(userId);
       case UserType.ASSISTANT:
-        return assistantRepo.findByUserId(userId);
+        return this.assistantRepo.findByUserId(userId);
       case UserType.STUDENT:
-        return studentRepo.findByUserId(userId);
+        return this.studentRepo.findByUserId(userId);
       case UserType.PARENT:
-        return parentRepo.findByUserId(userId);
+        return this.parentRepo.findByUserId(userId);
     }
   }
 }
-
-export const authService = new AuthService();

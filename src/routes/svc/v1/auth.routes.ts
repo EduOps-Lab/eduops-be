@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authController } from '../../../controllers/auth.controller.js';
+import { container } from '../../../config/container.config.js';
 import { validate } from '../../../middlewares/validate.middleware.js';
 import {
   signInSchema,
@@ -13,25 +13,31 @@ export const svcAuthRouter = Router();
 svcAuthRouter.post(
   '/student/signup',
   validate(studentSignUpSchema),
-  authController.studentSignUp.bind(authController),
+  container.authController.studentSignUp.bind(container.authController),
 );
 
 // 학부모 회원가입
 svcAuthRouter.post(
   '/parent/signup',
   validate(parentSignUpSchema),
-  authController.parentSignUp.bind(authController),
+  container.authController.parentSignUp.bind(container.authController),
 );
 
 // 학생/학부모 로그인
 svcAuthRouter.post(
   '/signin',
   validate(signInSchema),
-  authController.signIn.bind(authController),
+  container.authController.signIn.bind(container.authController),
 );
 
 // 학생/학부모 로그아웃
-svcAuthRouter.post('/signout', authController.signOut.bind(authController));
+svcAuthRouter.post(
+  '/signout',
+  container.authController.signOut.bind(container.authController),
+);
 
 // 학생/학부모 세션 조회
-svcAuthRouter.get('/session', authController.getSession.bind(authController));
+svcAuthRouter.get(
+  '/session',
+  container.authController.getSession.bind(container.authController),
+);

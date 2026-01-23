@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { authService } from '../services/auth.service.js';
+import { container } from '../config/container.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import { AuthSession } from '../types/auth.types.js';
 import {
@@ -30,7 +30,7 @@ export async function requireAuth(
   res: Response,
   next: NextFunction,
 ) {
-  const result = await authService.getSession(req.headers);
+  const result = await container.authService.getSession(req.headers);
 
   if (!result) {
     throw new UnauthorizedException('인증이 필요합니다.');
@@ -83,7 +83,7 @@ export async function optionalAuth(
   next: NextFunction,
 ) {
   try {
-    const result = await authService.getSession(req.headers);
+    const result = await container.authService.getSession(req.headers);
     if (result) {
       req.user = {
         ...result.user,
