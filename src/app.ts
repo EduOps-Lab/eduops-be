@@ -47,10 +47,10 @@ const gracefulShutdown = async () => {
   // 1. 새로운 요청 거부 (기존 요청은 처리)
   server.close(() => {
     console.log('🔒 HTTP server closed');
+    // 2. DB 연결 종료 및 프로세스 종료
+    disconnectDB();
+    process.exit(0);
   });
-  // 2. DB 연결 종료 및 프로세스 종료
-  await disconnectDB();
-  process.exit(0);
 };
 
 // SIGTERM: Docker, Kubernetes 등에서 컨테이너 종료 시 발생

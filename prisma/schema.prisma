@@ -20,28 +20,28 @@ datasource db {
 // 사용자 권한 레이어 (아이덴티티)
 model AppStudent {
   id            String   @id @default(uuid(7))
-  email         String   @unique
-  password      String
-  phoneNumber   String   @unique @map("phone_number")
-  name          String
-  school        String?
-  emailVerified Boolean  @default(false) @map("email_verified")
+  userId        String   @unique @map("user_id")
   
+  phoneNumber   String   @unique @map("phone_number")
+  school        String?
+  grade         String?
+
   createdAt     DateTime @default(now()) @map("created_at")
 
-  enrollments Enrollment[]
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrollments   Enrollment[]
 
   @@map("app_students")
 }
 
 model AppParent {
   id            String   @id @default(uuid(7))
-  email         String   @unique
-  password      String
+  userId        String   @unique @map("user_id")
+
   phoneNumber   String   @unique @map("phone_number")
-  emailVerified Boolean  @default(false) @map("email_verified")
   createdAt     DateTime @default(now()) @map("created_at")
 
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   childLinks   ParentChildLink[] 
 
   @@map("app_parents")
@@ -82,19 +82,18 @@ model VerificationCode {
 
 model Instructor {
   id            String   @id @default(uuid(7))
-  email         String   @unique
-  password      String
-  name          String
+  userId        String   @unique @map("user_id")
+  
   phoneNumber   String   @map("phone_number")
   subject       String?
   academy       String?
-  emailVerified Boolean  @default(false) @map("email_verified")
   
   createdAt     DateTime @default(now()) @map("created_at")
   
   // [Safety] 계정 삭제 시 실수 방지를 위한 Soft Delete
   deletedAt     DateTime? @map("deleted_at")
 
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   lectures          Lecture[]
   assistants        Assistant[]
   assistantCodes    AssistantCode[]
@@ -112,18 +111,17 @@ model Instructor {
 
 model Assistant {
   id            String   @id @default(uuid(7))
+  userId        String   @unique @map("user_id")
   instructorId  String   @map("instructor_id")
-  email         String   @unique
-  password      String
-  name          String
+  
   phoneNumber   String   @map("phone_number")
-  emailVerified Boolean  @default(false) @map("email_verified")
   
   signupCode    String?  @map("signup_code")
   contract      String?
 
   createdAt     DateTime @default(now()) @map("created_at")
   
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   instructor        Instructor       @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   comments          Comment[]
   uploadedMaterials Material[]       @relation("AssistantUploads")
@@ -559,23 +557,75 @@ model Comment {
 }
 
 // --------------------------------------------------------
-// 9. AUTHENTICATION (통합 인증 시스템)
+// 9. AUTHENTICATION (Better Auth 통합 인증 시스템)
 // --------------------------------------------------------
 
-// 통합 세션 테이블
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @map("email_verified")
+  image         String?
+  createdAt     DateTime  @map("created_at")
+  updatedAt     DateTime  @map("updated_at")
+  
+  // Custom: Role-based user type for easier identification
+  userType      String    @map("user_type") // INSTRUCTOR, ASSISTANT, STUDENT, PARENT
+
+  sessions      Session[]
+  accounts      Account[]
+  
+  // Profile links
+  studentProfile   AppStudent?
+  parentProfile    AppParent?
+  instructorProfile Instructor?
+  assistantProfile  Assistant?
+
+  @@unique([email])
+  @@map("user")
+}
+
 model Session {
-  id        String   @id @default(cuid(2))
-  userId    String   @map("user_id")
-  userType  String   @map("user_type") // INSTRUCTOR, ASSISTANT, STUDENT, PARENT
-  token     String   @unique
+  id        String   @id
   expiresAt DateTime @map("expires_at")
+  token     String
+  createdAt DateTime @map("created_at")
+  updatedAt DateTime @map("updated_at")
   ipAddress String?  @map("ip_address")
   userAgent String?  @map("user_agent")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  
-  @@unique([userId, userType])
-  @@index([userId, userType])
-  @@index([token])
-  @@map("sessions")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  userId                String    @map("user_id")
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @map("created_at")
+  updatedAt             DateTime  @map("updated_at")
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime? @map("created_at")
+  updatedAt  DateTime? @map("updated_at")
+
+  @@map("verification")
 }

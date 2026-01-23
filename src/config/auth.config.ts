@@ -1,16 +1,37 @@
 import { betterAuth } from 'better-auth';
+import { prismaAdapter } from 'better-auth/adapters/prisma';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { prisma } from './db.config.js';
 import { config } from './env.config.js';
+import { AUTH_COOKIE_PREFIX } from '../constants/auth.constant.js';
 
 export const auth = betterAuth({
-  database: prisma as unknown as PrismaClient,
+  database: prismaAdapter(prisma as unknown as PrismaClient, {
+    provider: 'postgresql',
+  }),
   secret: config.BETTER_AUTH_SECRET,
   baseURL: config.BETTER_AUTH_URL,
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false, // 나중에 활성화 가능
+    requireEmailVerification: false,
+  },
+
+  user: {
+    additionalFields: {
+      userType: {
+        type: 'string',
+        required: true,
+        defaultValue: 'STUDENT',
+      },
+    },
+  },
+
+  modelName: {
+    user: 'user',
+    session: 'session',
+    account: 'account',
+    verification: 'verification',
   },
 
   session: {
@@ -23,7 +44,7 @@ export const auth = betterAuth({
   },
 
   advanced: {
-    cookiePrefix: 'eduops_auth',
+    cookiePrefix: AUTH_COOKIE_PREFIX,
     useSecureCookies: config.ENVIRONMENT === 'production',
   },
 

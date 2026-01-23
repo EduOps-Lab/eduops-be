@@ -2,17 +2,15 @@ import { prisma } from '../config/db.config.js';
 import type { Prisma } from '../generated/prisma/client.js';
 
 interface CreateStudentData {
-  email: string;
-  password: string;
-  name: string;
+  userId: string;
   phoneNumber: string;
   school?: string;
 }
 
 export class StudentRepository {
-  async findByEmail(email: string, tx?: Prisma.TransactionClient) {
+  async findByUserId(userId: string, tx?: Prisma.TransactionClient) {
     const client = tx ?? prisma;
-    return client.appStudent.findUnique({ where: { email } });
+    return client.appStudent.findUnique({ where: { userId } });
   }
 
   async findById(id: string, tx?: Prisma.TransactionClient) {

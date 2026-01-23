@@ -1,6 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service.js';
 import { UserType } from '../constants/auth.constant.js';
+import { AuthSession } from '../types/auth.types.js';
+import {
+  UnauthorizedException,
+  ForbiddenException,
+} from '../err/http.exception.js';
 
 // Request 타입 확장
 declare global {
@@ -10,17 +15,11 @@ declare global {
         id: string;
         email: string;
         userType: UserType;
-        name?: string;
-        phoneNumber?: string;
-        school?: string;
-        subject?: string;
-        academy?: string;
+        name: string;
+        image?: string | null;
       };
-      authSession?: {
-        id: string;
-        token: string;
-        expiresAt: Date;
-      };
+      profile?: unknown;
+      authSession?: AuthSession | { token: string } | null;
     }
   }
 }
@@ -31,37 +30,31 @@ export async function requireAuth(
   res: Response,
   next: NextFunction,
 ) {
-  try {
-    const token = req.cookies.session_token;
+  const result = await authService.getSession(req.headers);
 
-    if (!token) {
-      return res.status(401).json({ error: '인증이 필요합니다.' });
-    }
-
-    const session = await authService.getSession(token);
-    if (!session) {
-      res.clearCookie('session_token');
-      return res.status(401).json({ error: '세션이 만료되었습니다.' });
-    }
-
-    req.user = session.user;
-    req.authSession = session.session;
-
-    next();
-  } catch (_error) {
-    return res.status(401).json({ error: '인증에 실패했습니다.' });
+  if (!result) {
+    throw new UnauthorizedException('인증이 필요합니다.');
   }
+
+  req.user = {
+    ...result.user,
+    userType: result.user.userType as UserType,
+  };
+  req.authSession = result.session;
+  req.profile = result.profile;
+
+  next();
 }
 
 // 특정 userType만 허용
 export function requireUserType(...allowedTypes: UserType[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ error: '인증이 필요합니다.' });
+      return next(new UnauthorizedException('인증이 필요합니다.'));
     }
 
     if (!allowedTypes.includes(req.user.userType)) {
-      return res.status(403).json({ error: '접근 권한이 없습니다.' });
+      return next(new ForbiddenException('접근 권한이 없습니다.'));
     }
 
     next();
@@ -90,16 +83,15 @@ export async function optionalAuth(
   next: NextFunction,
 ) {
   try {
-    const token = req.cookies.session_token;
-
-    if (token) {
-      const session = await authService.getSession(token);
-      if (session) {
-        req.user = session.user;
-        req.authSession = session.session;
-      }
+    const result = await authService.getSession(req.headers);
+    if (result) {
+      req.user = {
+        ...result.user,
+        userType: result.user.userType as UserType,
+      };
+      req.authSession = result.session;
+      req.profile = result.profile;
     }
-
     next();
   } catch (_error) {
     next();

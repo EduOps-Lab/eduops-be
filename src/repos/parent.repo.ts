@@ -2,15 +2,14 @@ import { prisma } from '../config/db.config.js';
 import type { Prisma } from '../generated/prisma/client.js';
 
 interface CreateParentData {
-  email: string;
-  password: string;
+  userId: string;
   phoneNumber: string;
 }
 
 export class ParentRepository {
-  async findByEmail(email: string, tx?: Prisma.TransactionClient) {
+  async findByUserId(userId: string, tx?: Prisma.TransactionClient) {
     const client = tx ?? prisma;
-    return client.appParent.findUnique({ where: { email } });
+    return client.appParent.findUnique({ where: { userId } });
   }
 
   async findById(id: string, tx?: Prisma.TransactionClient) {
