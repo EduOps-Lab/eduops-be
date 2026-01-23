@@ -4,6 +4,8 @@ import {
   CreateLectureDto,
   GetLecturesQueryDto,
   LectureIdParamDto,
+  UpdateLectureDto,
+  DeleteLectureDto,
 } from '../validations/lectures.validation.js';
 
 export class LecturesController {
@@ -64,6 +66,40 @@ export class LecturesController {
       const lecture = await this.lecturesService.getLectureById(id);
 
       res.status(200).json(lecture);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** PATCH:강의 수정 핸들러 */
+  update = async (
+    req: Request<LectureIdParamDto, object, UpdateLectureDto>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      const lecture = await this.lecturesService.updateLecture(id, updateData);
+
+      res.status(200).json(lecture);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /** DELETE:강의 삭제 핸들러 (Soft Delete) */
+  delete = async (
+    req: Request<LectureIdParamDto, object, DeleteLectureDto>,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { instructorId } = req.body;
+      await this.lecturesService.deleteLecture(id, instructorId);
+
+      res.status(204).send();
     } catch (error) {
       next(error);
     }
