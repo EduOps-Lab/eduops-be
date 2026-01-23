@@ -7,11 +7,14 @@ export class EnrollmentsController {
   /**GET: 수강 목록 조회 핸들러*/
   getEnrollments = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { appStudentId, appParentLinkId } = req.body;
+      const { appStudentId, appParentLinkId, studentPhone, parentPhone } =
+        req.query;
 
       const result = await this.enrollmentsService.getEnrollments({
         appStudentId: appStudentId ? String(appStudentId) : undefined,
         appParentLinkId: appParentLinkId ? String(appParentLinkId) : undefined,
+        studentPhone: studentPhone ? String(studentPhone) : undefined,
+        parentPhone: parentPhone ? String(parentPhone) : undefined,
       });
 
       res.status(200).json({
@@ -28,7 +31,8 @@ export class EnrollmentsController {
   getEnrollment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { enrollmentId } = req.params;
-      const { appStudentId, appParentLinkId } = req.query;
+      const { appStudentId, appParentLinkId, studentPhone, parentPhone } =
+        req.query;
 
       const enrollment = await this.enrollmentsService.getEnrollmentById(
         enrollmentId,
@@ -37,6 +41,8 @@ export class EnrollmentsController {
           appParentLinkId: appParentLinkId
             ? String(appParentLinkId)
             : undefined,
+          studentPhone: studentPhone ? String(studentPhone) : undefined,
+          parentPhone: parentPhone ? String(parentPhone) : undefined,
         },
       );
 

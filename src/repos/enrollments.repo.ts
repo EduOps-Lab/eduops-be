@@ -82,4 +82,60 @@ export class EnrollmentsRepository {
       },
     });
   }
+
+  /** 학생 전화번호로 수강 목록 조회 */
+  async findByStudentPhone(studentPhone: string) {
+    return await this.prisma.enrollment.findMany({
+      where: {
+        studentPhone,
+        deletedAt: null,
+      },
+      include: {
+        lecture: {
+          include: {
+            instructor: {
+              select: {
+                id: true,
+                name: true,
+                subject: true,
+                phoneNumber: true,
+                academy: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        registeredAt: 'desc',
+      },
+    });
+  }
+
+  /** 학부모 전화번호로 수강 목록 조회 */
+  async findByParentPhone(parentPhone: string) {
+    return await this.prisma.enrollment.findMany({
+      where: {
+        parentPhone,
+        deletedAt: null,
+      },
+      include: {
+        lecture: {
+          include: {
+            instructor: {
+              select: {
+                id: true,
+                name: true,
+                subject: true,
+                phoneNumber: true,
+                academy: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        registeredAt: 'desc',
+      },
+    });
+  }
 }

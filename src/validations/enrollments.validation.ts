@@ -15,10 +15,21 @@ export const getEnrollmentsQuerySchema = z
   .object({
     appStudentId: z.string().min(1).trim().optional(),
     appParentLinkId: z.string().min(1).trim().optional(),
+    // @todo: 전화 기반으로 조회 할수있게 추가
+    studentPhone: z.string().min(1).trim().optional(),
+    parentPhone: z.string().min(1).trim().optional(),
   })
-  .refine((data) => data.appStudentId || data.appParentLinkId, {
-    message: 'appStudentId 또는 appParentLinkId 중 하나는 필수입니다.',
-  });
+  .refine(
+    (data) =>
+      data.appStudentId ||
+      data.appParentLinkId ||
+      data.studentPhone ||
+      data.parentPhone,
+    {
+      message:
+        'appStudentId, appParentLinkId, studentPhone, parentPhone 중 하나는 필수입니다.',
+    },
+  );
 
 export type GetEnrollmentsQueryDto = z.infer<typeof getEnrollmentsQuerySchema>;
 
@@ -50,10 +61,21 @@ export const getEnrollmentDetailQuerySchema = z
   .object({
     appStudentId: z.string().min(1).trim().optional(),
     appParentLinkId: z.string().min(1).trim().optional(),
+    // @todo: 전화 번호 기반으로 조회 할수있게 추가
+    studentPhone: z.string().min(1).trim().optional(),
+    parentPhone: z.string().min(1).trim().optional(),
   })
-  .refine((data) => data.appStudentId || data.appParentLinkId, {
-    message: 'appStudentId 또는 appParentLinkId 중 하나는 필수입니다.',
-  });
+  .refine(
+    (data) =>
+      data.appStudentId ||
+      data.appParentLinkId ||
+      data.studentPhone ||
+      data.parentPhone,
+    {
+      message:
+        'appStudentId, appParentLinkId, studentPhone, parentPhone 중 하나는 필수입니다.',
+    },
+  );
 
 export type GetEnrollmentDetailQueryDto = z.infer<
   typeof getEnrollmentDetailQuerySchema
