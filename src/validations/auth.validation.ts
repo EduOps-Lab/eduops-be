@@ -23,6 +23,7 @@ export const signInSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   userType: userTypeSchema,
+  rememberMe: z.boolean().optional(),
 });
 
 // 회원가입 - 강사

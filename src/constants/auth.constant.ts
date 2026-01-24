@@ -20,10 +20,11 @@ export const UserTypeToModel = {
 // 쿠키 설정
 export const AUTH_COOKIE_PREFIX = 'eduops_auth';
 export const AUTH_COOKIE_NAME = `${AUTH_COOKIE_PREFIX}.session_token`;
-export const AUTH_COOKIE_OPTIONS = {
+
+export const getAuthCookieOptions = (rememberMe?: boolean) => ({
   httpOnly: true,
   secure: isProduction(),
   sameSite: 'lax' as const,
   path: '/',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
-};
+  ...(rememberMe ? { maxAge: 7 * 24 * 60 * 60 * 1000 } : {}), // rememberMe가 true일 때만 7일 설정 (false면 세션 쿠키)
+});

@@ -82,7 +82,12 @@ export class AuthService {
   }
 
   // 로그인 (Better Auth API 사용)
-  async signIn(email: string, password: string, requiredUserType: UserType) {
+  async signIn(
+    email: string,
+    password: string,
+    requiredUserType: UserType,
+    rememberMe: boolean = false,
+  ) {
     // 1. 이메일로 유저 조회하여 타입 검증 먼저 수행
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -100,6 +105,7 @@ export class AuthService {
       body: {
         email,
         password,
+        rememberMe,
       },
     });
 

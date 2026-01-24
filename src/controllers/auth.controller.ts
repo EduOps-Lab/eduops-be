@@ -3,7 +3,7 @@ import { AuthService } from '../services/auth.service.js';
 import {
   UserType,
   AUTH_COOKIE_NAME,
-  AUTH_COOKIE_OPTIONS,
+  getAuthCookieOptions,
 } from '../constants/auth.constant.js';
 import { AuthResponse } from '../types/auth.types.js';
 import { UnauthorizedException } from '../err/http.exception.js';
@@ -16,10 +16,11 @@ export class AuthController {
     result: AuthResponse,
     message: string,
     statusCode: number = 200,
+    rememberMe: boolean = false,
   ) {
     const token = result.session?.token ?? result.token;
     if (token) {
-      res.cookie(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS);
+      res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions(rememberMe));
     }
     res.status(statusCode).json({
       message,
@@ -77,11 +78,16 @@ export class AuthController {
   // 통합 로그인
   async signIn(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password, userType } = req.body;
+      const { email, password, userType, rememberMe } = req.body;
 
-      const result = await this.authService.signIn(email, password, userType);
+      const result = await this.authService.signIn(
+        email,
+        password,
+        userType,
+        !!rememberMe,
+      );
 
-      this.handleAuthResponse(res, result, '로그인 성공');
+      this.handleAuthResponse(res, result, '로그인 성공', 200, !!rememberMe);
     } catch (error) {
       next(error);
     }
