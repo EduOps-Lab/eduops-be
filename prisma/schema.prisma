@@ -93,6 +93,9 @@ model Instructor {
   deletedAt   DateTime? @map("deleted_at")
 
   lectures          Lecture[]
+  lectureTimes      LectureTime[]
+  enrollments       Enrollment[]
+  instructorExams   Exam[]
   assistants        Assistant[]
   assistantCodes    AssistantCode[]
   schedules         Schedule[]
@@ -172,6 +175,7 @@ model Lecture {
   exams       Exam[]
   materials   Material[]
   clinics     Clinic[]
+  lectureTimes LectureTime[]
   
   instructorPosts InstructorPost[]
   studentPosts    StudentPost[]
@@ -181,11 +185,28 @@ model Lecture {
   @@map("lectures")
 }
 
+model LectureTime {
+  id           String   @id @default(cuid(2))
+  lectureId    String   @map("lecture_id")
+  instructorId String   @map("instructor_id")
+  day          String[] @map("day")
+  startTime    String   @map("start_time")
+  endTime      String   @map("end_time")
+
+  lecture    Lecture    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([lectureId])
+  @@index([instructorId])
+  @@map("lecture_times")
+}
+
 // 수강  및 출석 레이어
 // Enrollment & Attendance
 model Enrollment {
   id           String   @id @default(cuid(2))
   lectureId    String   @map("lecture_id")
+  instructorId String   @map("instructor_id")
   
   // [Snapshot] 수강 등록 시점의 학생 정보 (검색용)
   studentName  String   @map("student_name")
@@ -202,6 +223,7 @@ model Enrollment {
   deletedAt    DateTime? @map("deleted_at")
 
   lecture    Lecture     @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   appStudent AppStudent? @relation(fields: [appStudentId], references: [id])
   appParentLink ParentChildLink?  @relation(fields: [appParentLinkId], references: [id])
   
@@ -253,12 +275,14 @@ model Attendance {
 model Exam {
   id          String   @id @default(cuid(2))
   lectureId   String   @map("lecture_id")
+  instructorId String   @map("instructor_id")
   title       String
   cutoffScore Int      @default(0) @map("cutoff_score")
   source      String?
 
   lecture   Lecture    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
-  
+  instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
   questions Question[]
   grades    Grade[]
   clinics   Clinic[]

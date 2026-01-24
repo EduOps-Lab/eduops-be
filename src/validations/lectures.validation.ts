@@ -1,6 +1,29 @@
 import { z } from 'zod';
 
 /**
+ * LectureTime 단일 항목 스키마
+ * @example
+ * {
+ *   "day": ["월", "화"],
+ *   "startTime": "14:00",
+ *   "endTime": "16:00"
+ * }
+ */
+export const lectureTimeItemSchema = z.object({
+  day: z
+    .array(z.string())
+    .min(1, { message: '요일은 최소 1개 이상이어야 합니다.' }),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+    message: '시작 시간은 HH:MM 형식이어야 합니다.',
+  }),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+    message: '종료 시간은 HH:MM 형식이어야 합니다.',
+  }),
+});
+
+export type LectureTimeItemDto = z.infer<typeof lectureTimeItemSchema>;
+
+/**
  * 강의 생성 요청 DTO 스키마 (frontend에서 요청하는 데이터 형식)
  *  변경 사항 발생 시 여기서 수정
  * @example
@@ -9,7 +32,10 @@ import { z } from 'zod';
  *   "title": "강의 제목",
  *   "subject": "강의 과목",
  *   "description": "강의 설명",
- *   "endAt": "2026-01-22T10:00:00.000Z"
+ *   "endAt": "2026-01-22T10:00:00.000Z",
+ *   "lectureTimes": [
+ *     { "day": ["월"], "startTime": "14:00", "endTime": "16:00" }
+ *   ]
  * }
  */
 export const createLectureSchema = z.object({
@@ -38,6 +64,8 @@ export const createLectureSchema = z.object({
     .datetime({ message: '유효한 ISO 8601 날짜 형식이어야 합니다.' })
     .optional()
     .nullable(),
+
+  lectureTimes: z.array(lectureTimeItemSchema).optional(),
 });
 
 export type CreateLectureDto = z.infer<typeof createLectureSchema>;

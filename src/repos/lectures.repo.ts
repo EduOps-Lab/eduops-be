@@ -11,14 +11,36 @@ export class LecturesRepository {
   constructor(private readonly prisma: PrismaClient) {}
   /** 강의 생성 */
   async create(data: CreateLectureDto): Promise<Lecture> {
-    return await this.prisma.lecture.create({
-      data: {
-        instructorId: data.instructorId,
-        title: data.title,
-        subject: data.subject,
-        description: data.description,
-        endAt: data.endAt ? new Date(data.endAt) : null,
-      },
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Lecture 생성
+      const lecture = await tx.lecture.create({
+        data: {
+          instructorId: data.instructorId,
+          title: data.title,
+          subject: data.subject,
+          description: data.description,
+          endAt: data.endAt ? new Date(data.endAt) : null,
+        },
+      });
+
+      // 2. LectureTime 배열 생성
+      if (data.lectureTimes && data.lectureTimes.length > 0) {
+        await tx.lectureTime.createMany({
+          data: data.lectureTimes.map((time) => ({
+            lectureId: lecture.id,
+            instructorId: data.instructorId,
+            day: time.day,
+            startTime: time.startTime,
+            endTime: time.endTime,
+          })),
+        });
+      }
+
+      // 3. lectureTimes 포함하여 반환
+      return await tx.lecture.findUniqueOrThrow({
+        where: { id: lecture.id },
+        include: { lectureTimes: true },
+      });
     });
   }
 
