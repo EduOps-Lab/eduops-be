@@ -36,7 +36,7 @@ export class LecturesRepository {
     });
   }
 
-  /** 강의 리스트 조회 (커서 기반 페이지네이션) */
+  /** 강의 리스트 조회 (오프셋 기반 페이지네이션) */
   async findMany(options: {
     page: number;
     limit: number;

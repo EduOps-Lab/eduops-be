@@ -54,8 +54,8 @@ export type CreateLectureDto = z.infer<typeof createLectureSchema>;
  */
 export const getLecturesQuerySchema = z.object({
   instructorId: z.string().optional(),
-  page: z.coerce.number().min(1).default(1).optional(),
-  limit: z.coerce.number().min(1).max(100).default(20).optional(),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(20),
   search: z.string().trim().optional(),
 });
 

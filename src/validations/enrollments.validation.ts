@@ -13,11 +13,11 @@ import { z } from 'zod';
  */
 export const getEnrollmentsQuerySchema = z
   .object({
-    appStudentId: z.string().min(1).trim().optional(),
-    appParentLinkId: z.string().min(1).trim().optional(),
+    appStudentId: z.string().trim().min(1).optional(),
+    appParentLinkId: z.string().trim().min(1).optional(),
     // @todo: 전화 기반으로 조회 할수있게 추가
-    studentPhone: z.string().min(1).trim().optional(),
-    parentPhone: z.string().min(1).trim().optional(),
+    studentPhone: z.string().trim().min(1).optional(),
+    parentPhone: z.string().trim().min(1).optional(),
   })
   .refine(
     (data) =>
@@ -41,7 +41,10 @@ export type GetEnrollmentsQueryDto = z.infer<typeof getEnrollmentsQuerySchema>;
  * }
  */
 export const enrollmentIdParamSchema = z.object({
-  enrollmentId: z.string().min(1, { message: 'Enrollment ID는 필수입니다.' }),
+  enrollmentId: z
+    .string()
+    .trim()
+    .min(1, { message: 'Enrollment ID는 필수입니다.' }),
 });
 
 export type EnrollmentIdParamDto = z.infer<typeof enrollmentIdParamSchema>;

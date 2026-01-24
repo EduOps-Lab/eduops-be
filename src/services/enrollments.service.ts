@@ -1,6 +1,7 @@
 import {
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '../err/http.exception.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import {
@@ -30,7 +31,7 @@ export class EnrollmentsService {
       enrollments =
         await this.enrollmentsRepository.findByParentPhone(parentPhone);
     } else {
-      throw new Error(
+      throw new BadRequestException(
         'appStudentId, appParentLinkId, studentPhone, parentPhone 중 하나는 필수입니다.',
       );
     }
