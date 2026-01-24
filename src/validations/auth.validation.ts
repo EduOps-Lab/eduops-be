@@ -21,7 +21,7 @@ const userTypeSchema = z.enum([
 // 로그인 (통합)
 export const signInSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, '비밀번호를 입력해주세요.'),
+  password: passwordSchema,
   userType: userTypeSchema,
 });
 
@@ -51,6 +51,7 @@ export const studentSignUpSchema = z.object({
   name: z.string().min(2, '이름은 최소 2자 이상이어야 합니다.'),
   phoneNumber: phoneSchema,
   school: z.string().optional(),
+  schoolYear: z.string().optional(),
 });
 
 // 회원가입 - 학부모

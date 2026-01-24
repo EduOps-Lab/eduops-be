@@ -1,13 +1,8 @@
 import express from 'express';
-import { toNodeHandler } from 'better-auth/node';
 import { mgmtV1Router } from './mgmt/v1/index.js';
 import { svcV1Router } from './svc/v1/index.js';
-import { auth } from '../config/auth.config.js';
 
 export const router = express.Router();
-
-// Better Auth 핸들러 마운트
-router.use('/api/auth', toNodeHandler(auth));
 
 // 기본 라우트
 router.get('/', (req, res) => {

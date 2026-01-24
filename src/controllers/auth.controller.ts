@@ -17,9 +17,9 @@ export class AuthController {
     message: string,
     statusCode: number = 200,
   ) {
-    const { session } = result;
-    if (session?.token) {
-      res.cookie(AUTH_COOKIE_NAME, session.token, AUTH_COOKIE_OPTIONS);
+    const token = result.session?.token ?? result.token;
+    if (token) {
+      res.cookie(AUTH_COOKIE_NAME, token, AUTH_COOKIE_OPTIONS);
     }
     res.status(statusCode).json({
       message,
@@ -77,8 +77,10 @@ export class AuthController {
   // 통합 로그인
   async signIn(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password } = req.body;
-      const result = await this.authService.signIn(email, password);
+      const { email, password, userType } = req.body;
+
+      const result = await this.authService.signIn(email, password, userType);
+
       this.handleAuthResponse(res, result, '로그인 성공');
     } catch (error) {
       next(error);

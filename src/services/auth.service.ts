@@ -4,6 +4,7 @@ import { prisma } from '../config/db.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import {
   BadRequestException,
+  ForbiddenException,
   InternalServerErrorException,
   UnauthorizedException,
 } from '../err/http.exception.js';
@@ -72,7 +73,20 @@ export class AuthService {
   }
 
   // 로그인 (Better Auth API 사용)
-  async signIn(email: string, password: string) {
+  async signIn(email: string, password: string, requiredUserType: UserType) {
+    // 1. 이메일로 유저 조회하여 타입 검증 먼저 수행
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (
+      existingUser &&
+      (existingUser.userType as UserType) !== requiredUserType
+    ) {
+      throw new ForbiddenException('유저 역할이 잘못되었습니다.');
+    }
+
+    // 2. Better Auth로 로그인 시도 (이메일, 비밀번호만 사용)
     const result = await auth.api.signInEmail({
       body: {
         email,
@@ -87,9 +101,10 @@ export class AuthService {
     }
 
     const { user, session, token } = result as AuthResponse;
+
     const finalSession = session || (token ? { token } : null);
 
-    // 프로필 정보 함께 조회
+    // 3. 프로필 정보 함께 조회
     const profile = await this.findProfileByUserId(
       user.userType as UserType,
       user.id,

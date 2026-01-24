@@ -7,6 +7,8 @@ import { requestTimer } from './middlewares/reqtimer.middleware.js';
 import { config, isDevelopment, isProduction } from './config/env.config.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { disconnectDB } from './config/db.config.js';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from './config/auth.config.js';
 
 const app = express();
 
@@ -32,6 +34,8 @@ if (isDevelopment()) {
   app.use(logger);
   app.use(requestTimer);
 }
+
+app.all('/api/auth/', toNodeHandler(auth));
 
 app.use('/', router);
 
