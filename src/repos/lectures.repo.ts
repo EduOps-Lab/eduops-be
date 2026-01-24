@@ -1,5 +1,6 @@
 import {
   Lecture,
+  LectureTime,
   Instructor,
   PrismaClient,
   Prisma,
@@ -7,10 +8,12 @@ import {
 import { QueryMode } from '../generated/prisma/internal/prismaNamespace.js';
 import { CreateLectureDto } from '../validations/lectures.validation.js';
 
+type LectureWithTimes = Lecture & { lectureTimes: LectureTime[] };
+
 export class LecturesRepository {
   constructor(private readonly prisma: PrismaClient) {}
   /** 강의 생성 */
-  async create(data: CreateLectureDto): Promise<Lecture> {
+  async create(data: CreateLectureDto): Promise<LectureWithTimes> {
     return await this.prisma.$transaction(async (tx) => {
       // 1. Lecture 생성
       const lecture = await tx.lecture.create({
