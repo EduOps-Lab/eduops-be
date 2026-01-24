@@ -44,13 +44,32 @@ const server = app.listen(config.PORT, () => {
 
 const gracefulShutdown = async () => {
   console.log('🛑 Received kill signal, shutting down gracefully');
-  // 1. 새로운 요청 거부 (기존 요청은 처리)
-  server.close(() => {
-    console.log('🔒 HTTP server closed');
-    // 2. DB 연결 종료 및 프로세스 종료
-    disconnectDB();
-    process.exit(0);
+
+  // 1. 새로운 요청 거부 및 기존 요청 처리 완료 대기 (Promise로 래핑)
+  const closeServer = new Promise<void>((resolve, reject) => {
+    server.close((err) => {
+      if (err) {
+        console.error('❌ Error closing server:', err);
+        return reject(err);
+      }
+      console.log('🔒 HTTP server closed');
+      resolve();
+    });
   });
+
+  try {
+    // 서버가 닫힐 때까지 기다림 (기존 요청 처리 완료 보장)
+    await closeServer;
+
+    // 2. 그 후 DB 연결 종료
+    await disconnectDB();
+    console.log('👋 Bye');
+
+    process.exit(0);
+  } catch (error) {
+    console.error('💥 Error during shutdown:', error);
+    process.exit(1);
+  }
 };
 
 // SIGTERM: Docker, Kubernetes 등에서 컨테이너 종료 시 발생
