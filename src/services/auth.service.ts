@@ -54,19 +54,28 @@ export class AuthService {
     const userId = user.id;
 
     let profile;
-    switch (userType) {
-      case UserType.INSTRUCTOR:
-        profile = await this.createInstructor(userId, data);
-        break;
-      case UserType.ASSISTANT:
-        profile = await this.createAssistant(userId, data);
-        break;
-      case UserType.STUDENT:
-        profile = await this.createStudent(userId, data);
-        break;
-      case UserType.PARENT:
-        profile = await this.createParent(userId, data);
-        break;
+    try {
+      switch (userType) {
+        case UserType.INSTRUCTOR:
+          profile = await this.createInstructor(userId, data);
+          break;
+        case UserType.ASSISTANT:
+          profile = await this.createAssistant(userId, data);
+          break;
+        case UserType.STUDENT:
+          profile = await this.createStudent(userId, data);
+          break;
+        case UserType.PARENT:
+          profile = await this.createParent(userId, data);
+          break;
+      }
+    } catch (error) {
+      // 프로필 생성 실패 시 유저 정보 롤백 (삭제)
+      // Cascade 설정에 의해 Session, Account 등도 함께 삭제됨
+      await prisma.user.delete({
+        where: { id: userId },
+      });
+      throw error;
     }
 
     return { user, session: finalSession, profile };

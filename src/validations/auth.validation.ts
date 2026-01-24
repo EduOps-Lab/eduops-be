@@ -10,7 +10,7 @@ const passwordSchema = z
   .regex(/[0-9]/, '비밀번호에 숫자가 포함되어야 합니다.');
 const phoneSchema = z
   .string()
-  .regex(/^01[0-9]-?[0-9]{4}-?[0-9]{4}$/, '유효한 전화번호 형식이 아닙니다.');
+  .regex(/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/, '유효한 전화번호 형식이 아닙니다.');
 const userTypeSchema = z.enum([
   UserType.INSTRUCTOR,
   UserType.ASSISTANT,
