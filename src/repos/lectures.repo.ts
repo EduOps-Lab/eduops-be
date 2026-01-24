@@ -13,50 +13,62 @@ type LectureWithTimes = Lecture & { lectureTimes: LectureTime[] };
 export class LecturesRepository {
   constructor(private readonly prisma: PrismaClient) {}
   /** 강의 생성 */
-  async create(data: CreateLectureDto): Promise<LectureWithTimes> {
-    return await this.prisma.$transaction(async (tx) => {
-      // 1. Lecture 생성
-      const lecture = await tx.lecture.create({
-        data: {
-          instructorId: data.instructorId,
-          title: data.title,
-          subject: data.subject,
-          description: data.description,
-          endAt: data.endAt ? new Date(data.endAt) : null,
-        },
-      });
-
-      // 2. LectureTime 배열 생성
-      if (data.lectureTimes && data.lectureTimes.length > 0) {
-        await tx.lectureTime.createMany({
-          data: data.lectureTimes.map((time) => ({
-            lectureId: lecture.id,
-            instructorId: data.instructorId,
-            day: time.day,
-            startTime: time.startTime,
-            endTime: time.endTime,
-          })),
-        });
-      }
-
-      // 3. lectureTimes 포함하여 반환
-      return await tx.lecture.findUniqueOrThrow({
-        where: { id: lecture.id },
-        include: { lectureTimes: true },
-      });
+  async create(
+    data: CreateLectureDto,
+    tx?: Prisma.TransactionClient,
+  ): Promise<LectureWithTimes> {
+    const client = tx ?? this.prisma;
+    // 1. Lecture 생성
+    const lecture = await client.lecture.create({
+      data: {
+        instructorId: data.instructorId,
+        title: data.title,
+        subject: data.subject,
+        description: data.description,
+        endAt: data.endAt ? new Date(data.endAt) : null,
+      },
     });
+
+    // 2. LectureTime 배열 생성
+    if (data.lectureTimes && data.lectureTimes.length > 0) {
+      await client.lectureTime.createMany({
+        data: data.lectureTimes.map((time) => ({
+          lectureId: lecture.id,
+          instructorId: data.instructorId,
+          day: time.day,
+          startTime: time.startTime,
+          endTime: time.endTime,
+        })),
+      });
+    }
+
+    // 3. lectureTimes 포함하여 반환
+    const lectureWithTimes = await client.lecture.findUnique({
+      where: { id: lecture.id },
+      include: { lectureTimes: true },
+    });
+
+    return lectureWithTimes as LectureWithTimes;
   }
 
   /** ID로 강의 조회 */
-  async findById(id: string): Promise<Lecture | null> {
-    return await this.prisma.lecture.findUnique({
+  async findById(
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Lecture | null> {
+    const client = tx ?? this.prisma;
+    return await client.lecture.findUnique({
       where: { id, deletedAt: null },
     });
   }
 
   /** ID로 강사 조회 (존재 확인용) */
-  async findInstructorById(instructorId: string): Promise<Instructor | null> {
-    return await this.prisma.instructor.findUnique({
+  async findInstructorById(
+    instructorId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Instructor | null> {
+    const client = tx ?? this.prisma;
+    return await client.instructor.findUnique({
       where: { id: instructorId, deletedAt: null }, // Soft delete 확인
     });
   }
@@ -95,8 +107,12 @@ export class LecturesRepository {
   }
 
   /** ID로 강의 조회  */
-  async findByIdWithRelations(id: string): Promise<Lecture | null> {
-    return await this.prisma.lecture.findUnique({
+  async findByIdWithRelations(
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Lecture | null> {
+    const client = tx ?? this.prisma;
+    return await client.lecture.findUnique({
       where: { id, deletedAt: null },
       // TODO: 추후 instructor, assistants 관계 데이터 포함 가능 (담당 조교)
       // include: {
@@ -116,16 +132,19 @@ export class LecturesRepository {
       description: string;
       endAt: Date | null;
     }>,
+    tx?: Prisma.TransactionClient,
   ): Promise<Lecture> {
-    return await this.prisma.lecture.update({
+    const client = tx ?? this.prisma;
+    return await client.lecture.update({
       where: { id, deletedAt: null },
       data,
     });
   }
 
   /** 강의 soft delete */
-  async softDelete(id: string): Promise<void> {
-    await this.prisma.lecture.update({
+  async softDelete(id: string, tx?: Prisma.TransactionClient): Promise<void> {
+    const client = tx ?? this.prisma;
+    await client.lecture.update({
       where: { id, deletedAt: null },
       data: { deletedAt: new Date() },
     });

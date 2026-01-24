@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { LecturesController } from '../../../controllers/lectures.controller.js';
+import { container } from '../../../config/container.config.js';
 import { validate } from '../../../middlewares/validate.middleware.js';
 import {
   createLectureSchema,
@@ -8,53 +8,42 @@ import {
   updateLectureSchema,
   deleteLectureSchema,
 } from '../../../validations/lectures.validation.js';
-import { prisma } from '../../../config/db.config.js';
-import { LecturesRepository } from '../../../repos/lectures.repo.js';
-import { LecturesService } from '../../../services/lectures.service.js';
 
-const router = Router();
-
-const lectureRepository = new LecturesRepository(prisma);
-const lecturesService = new LecturesService(lectureRepository);
-const lecturesController = new LecturesController(lecturesService);
-
-// /api/mgmt/v1/lectures 강사/조교
+export const mgmtLecturesRouter = Router();
 
 /** GET:강의 리스트 조회 */
-router.get(
+mgmtLecturesRouter.get(
   '/',
   validate(getLecturesQuerySchema, 'query'),
-  lecturesController.getLectures,
+  container.lecturesController.getLectures,
 );
 
 /** GET:강의 개별 조회 */
-router.get(
+mgmtLecturesRouter.get(
   '/:id',
   validate(lectureIdParamSchema, 'params'),
-  lecturesController.getLecture,
+  container.lecturesController.getLecture,
 );
 
 /** POST:강의 생성 */
-router.post(
+mgmtLecturesRouter.post(
   '/',
   validate(createLectureSchema, 'body'),
-  lecturesController.createLecture,
+  container.lecturesController.createLecture,
 );
 
 /** PATCH:강의 수정 */
-router.patch(
+mgmtLecturesRouter.patch(
   '/:id',
   validate(lectureIdParamSchema, 'params'),
   validate(updateLectureSchema, 'body'),
-  lecturesController.updateLecture,
+  container.lecturesController.updateLecture,
 );
 
 /** DELETE:강의 삭제 (Soft Delete) */
-router.delete(
+mgmtLecturesRouter.delete(
   '/:id',
   validate(lectureIdParamSchema, 'params'),
   validate(deleteLectureSchema, 'body'),
-  lecturesController.deleteLecture,
+  container.lecturesController.deleteLecture,
 );
-
-export default router;

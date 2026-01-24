@@ -1,4 +1,4 @@
-import { Lecture } from '../generated/prisma/client.js';
+import { Lecture, PrismaClient } from '../generated/prisma/client.js';
 import {
   NotFoundException,
   ForbiddenException,
@@ -11,7 +11,10 @@ import {
 } from '../validations/lectures.validation.js';
 
 export class LecturesService {
-  constructor(private readonly lecturesRepository: LecturesRepository) {}
+  constructor(
+    private readonly lecturesRepository: LecturesRepository,
+    private readonly prisma: PrismaClient,
+  ) {}
 
   /** 강의 생성 */
   async createLecture(data: CreateLectureDto): Promise<Lecture> {
@@ -21,7 +24,10 @@ export class LecturesService {
 
     if (!instructor) throw new NotFoundException('강사를 찾을 수 없습니다.');
 
-    return await this.lecturesRepository.create(data);
+    return await this.prisma.$transaction(async (tx) => {
+      const lecture = await this.lecturesRepository.create(data, tx);
+      return lecture;
+    });
   }
 
   /** 강의 리스트 조회 */

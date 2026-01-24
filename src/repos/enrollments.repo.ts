@@ -1,11 +1,15 @@
-import { PrismaClient } from '../generated/prisma/client.js';
+import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 
 export class EnrollmentsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
   /** 학생 ID로 수강 목록 조회 (Lecture, Instructor 포함) */
-  async findByAppStudentId(appStudentId: string) {
-    return await this.prisma.enrollment.findMany({
+  async findByAppStudentId(
+    appStudentId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findMany({
       where: {
         appStudentId,
         deletedAt: null,
@@ -32,8 +36,12 @@ export class EnrollmentsRepository {
   }
 
   /** 학부모-자녀 연결 ID로 수강 목록 조회 (Lecture, Instructor 포함) */
-  async findByAppParentLinkId(appParentLinkId: string) {
-    return await this.prisma.enrollment.findMany({
+  async findByAppParentLinkId(
+    appParentLinkId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findMany({
       where: {
         appParentLinkId,
         deletedAt: null,
@@ -60,8 +68,12 @@ export class EnrollmentsRepository {
   }
 
   /** Enrollment ID로 상세 조회 (관계 포함) */
-  async findByIdWithRelations(enrollmentId: string) {
-    return await this.prisma.enrollment.findUnique({
+  async findByIdWithRelations(
+    enrollmentId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findUnique({
       where: {
         id: enrollmentId,
       },
@@ -84,8 +96,12 @@ export class EnrollmentsRepository {
   }
 
   /** 학생 전화번호로 수강 목록 조회 */
-  async findByStudentPhone(studentPhone: string) {
-    return await this.prisma.enrollment.findMany({
+  async findByStudentPhone(
+    studentPhone: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findMany({
       where: {
         studentPhone,
         deletedAt: null,
@@ -112,8 +128,9 @@ export class EnrollmentsRepository {
   }
 
   /** 학부모 전화번호로 수강 목록 조회 */
-  async findByParentPhone(parentPhone: string) {
-    return await this.prisma.enrollment.findMany({
+  async findByParentPhone(parentPhone: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findMany({
       where: {
         parentPhone,
         deletedAt: null,
