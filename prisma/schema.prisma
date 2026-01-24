@@ -24,7 +24,7 @@ model AppStudent {
 
   phoneNumber String  @unique @map("phone_number")
   school      String?
-  grade       String?
+  schoolYear  String? @map("school_year")
 
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -213,6 +213,9 @@ model Enrollment {
   id        String @id @default(cuid(2))
   lectureId String @map("lecture_id")
 
+  school      String
+  schoolYear  String @map("school_year")
+
   // [Snapshot] 수강 등록 시점의 학생 정보 (검색용)
   studentName  String @map("student_name")
   studentPhone String @map("student_phone")
@@ -231,8 +234,8 @@ model Enrollment {
   appStudent    AppStudent?      @relation(fields: [appStudentId], references: [id])
   appParentLink ParentChildLink? @relation(fields: [appParentLinkId], references: [id])
 
-  instructorId String?     @map("instructor_id")
-  instructor   Instructor? @relation(fields: [instructorId], references: [id])
+  instructorId String     @map("instructor_id")
+  instructor   Instructor @relation(fields: [instructorId], references: [id])
 
   grades         Grade[]
   studentAnswers StudentAnswer[]

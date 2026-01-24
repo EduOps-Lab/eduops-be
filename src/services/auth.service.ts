@@ -203,6 +203,7 @@ export class AuthService {
       userId,
       phoneNumber: data.phoneNumber,
       school: data.school,
+      schoolYear: data.schoolYear,
     });
   }
 

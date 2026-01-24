@@ -7,7 +7,7 @@ export interface SignUpData {
   academy?: string;
   signupCode?: string;
   school?: string;
-  years?: number;
+  schoolYear?: string;
 }
 
 export interface AuthUser {

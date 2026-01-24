@@ -5,6 +5,7 @@ interface CreateStudentData {
   userId: string;
   phoneNumber: string;
   school?: string;
+  schoolYear?: string;
 }
 
 export class StudentRepository {
