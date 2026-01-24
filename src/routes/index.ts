@@ -1,6 +1,6 @@
 import express from 'express';
-import lecturesRouter from './mgmt/v1/lectures.route.js';
-import enrollmentsRouter from './svc/v1/enrollments.route.js';
+import { mgmtV1Router } from './mgmt/v1/index.js';
+import { svcV1Router } from './svc/v1/index.js';
 
 export const router = express.Router();
 
@@ -13,8 +13,10 @@ router.get('/', (req, res) => {
   });
 });
 
-// API 라우트 등록
-router.use('/api/mgmt/v1/lectures', lecturesRouter);
-router.use('/api/svc/v1/enrollments', enrollmentsRouter);
+// 강사/조교용 API (Management)
+router.use('/api/mgmt/v1', mgmtV1Router);
+
+// 학생/학부모용 API (Service)
+router.use('/api/svc/v1', svcV1Router);
 
 export default router;
