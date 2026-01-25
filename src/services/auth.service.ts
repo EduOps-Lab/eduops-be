@@ -69,6 +69,10 @@ export class AuthService {
         case UserType.PARENT:
           profile = await this.createParent(userId, data);
           break;
+        default:
+          throw new BadRequestException(
+            `지원하지 않는 유저 타입입니다: ${userType}`,
+          );
       }
     } catch (error) {
       // 프로필 생성 실패 시 유저 정보 롤백 (삭제)
