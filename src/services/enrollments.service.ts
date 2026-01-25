@@ -1,39 +1,28 @@
+import { UserType } from '../constants/auth.constant.js';
 import {
   NotFoundException,
   ForbiddenException,
-  BadRequestException,
 } from '../err/http.exception.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
-import {
-  GetEnrollmentsQueryDto,
-  GetEnrollmentDetailQueryDto,
-} from '../validations/enrollments.validation.js';
 
 export class EnrollmentsService {
   constructor(private readonly enrollmentsRepository: EnrollmentsRepository) {}
 
   /** 수강 목록 조회 */
-  async getEnrollments(query: GetEnrollmentsQueryDto) {
-    const { appStudentId, appParentLinkId, studentPhone, parentPhone } = query;
-
+  async getEnrollments(userType: UserType, profileId: string) {
     let enrollments;
 
-    if (appStudentId) {
+    /**  userType에 따라 수강 목록 조회*/
+    if (userType === UserType.STUDENT) {
+      //  appStudentId로 조회
       enrollments =
-        await this.enrollmentsRepository.findByAppStudentId(appStudentId);
-    } else if (appParentLinkId) {
+        await this.enrollmentsRepository.findByAppStudentId(profileId);
+    } else if (userType === UserType.PARENT) {
+      // appParentId로 ParentChildLink 을 찾고 각 link의 ID로 enrollments 조회 후 병합
       enrollments =
-        await this.enrollmentsRepository.findByAppParentLinkId(appParentLinkId);
-    } else if (studentPhone) {
-      enrollments =
-        await this.enrollmentsRepository.findByStudentPhone(studentPhone);
-    } else if (parentPhone) {
-      enrollments =
-        await this.enrollmentsRepository.findByParentPhone(parentPhone);
+        await this.enrollmentsRepository.findByAppParentLinkId(profileId);
     } else {
-      throw new BadRequestException(
-        'appStudentId, appParentLinkId, studentPhone, parentPhone 중 하나는 필수입니다.',
-      );
+      throw new ForbiddenException('해당 수강 정보에 접근할 권한이 없습니다.');
     }
 
     return {
@@ -44,34 +33,49 @@ export class EnrollmentsService {
   /** Enrollment 상세 조회 */
   async getEnrollmentById(
     enrollmentId: string,
-    userQuery: GetEnrollmentDetailQueryDto,
+    userType: UserType,
+    profileId: string,
   ) {
     const enrollment =
       await this.enrollmentsRepository.findByIdWithRelations(enrollmentId);
 
-    if (!enrollment) {
+    if (!enrollment || enrollment.deletedAt) {
       throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
     }
 
-    // 삭제된 enrollment는 조회 불가
-    if (enrollment.deletedAt) {
-      throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
+    /** userType에 따른 권한 체크 */
+    let hasPermission = false;
+
+    if (userType === UserType.STUDENT) {
+      hasPermission = enrollment.appStudentId === profileId;
+    } else if (userType === UserType.PARENT) {
+      // 학부모인 경우 ParentChildLink를 통해 확인
+      hasPermission = enrollment.appParentLinkId
+        ? await this.checkParentPermission(
+            profileId,
+            enrollment.appParentLinkId,
+          )
+        : false;
     }
-
-    // 권한 확인
-    const { appStudentId, appParentLinkId, studentPhone, parentPhone } =
-      userQuery;
-
-    const hasPermission =
-      (appStudentId && enrollment.appStudentId === appStudentId) ||
-      (appParentLinkId && enrollment.appParentLinkId === appParentLinkId) ||
-      (studentPhone && enrollment.studentPhone === studentPhone) ||
-      (parentPhone && enrollment.parentPhone === parentPhone);
 
     if (!hasPermission) {
       throw new ForbiddenException('해당 수강 정보에 접근할 권한이 없습니다.');
     }
 
     return enrollment;
+  }
+
+  /** -------- Helper Functions -------- */
+
+  /** 학부모 권한 체크 */
+  private async checkParentPermission(
+    appParentId: string,
+    appParentLinkId: string,
+  ): Promise<boolean> {
+    const link =
+      await this.enrollmentsRepository.findParentIdByParentChildLinkId(
+        appParentLinkId,
+      );
+    return link?.appParentId === appParentId;
   }
 }

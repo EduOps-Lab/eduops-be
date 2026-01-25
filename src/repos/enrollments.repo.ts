@@ -20,7 +20,6 @@ export class EnrollmentsRepository {
             instructor: {
               select: {
                 id: true,
-                name: true,
                 subject: true,
                 phoneNumber: true,
                 academy: true,
@@ -52,7 +51,6 @@ export class EnrollmentsRepository {
             instructor: {
               select: {
                 id: true,
-                name: true,
                 subject: true,
                 phoneNumber: true,
                 academy: true,
@@ -83,7 +81,6 @@ export class EnrollmentsRepository {
             instructor: {
               select: {
                 id: true,
-                name: true,
                 subject: true,
                 phoneNumber: true,
                 academy: true,
@@ -112,7 +109,6 @@ export class EnrollmentsRepository {
             instructor: {
               select: {
                 id: true,
-                name: true,
                 subject: true,
                 phoneNumber: true,
                 academy: true,
@@ -141,7 +137,6 @@ export class EnrollmentsRepository {
             instructor: {
               select: {
                 id: true,
-                name: true,
                 subject: true,
                 phoneNumber: true,
                 academy: true,
@@ -153,6 +148,18 @@ export class EnrollmentsRepository {
       orderBy: {
         registeredAt: 'desc',
       },
+    });
+  }
+
+  /** ParentChildLink ID로 Parent ID 조회 */
+  async findParentIdByParentChildLinkId(
+    id: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.parentChildLink.findUnique({
+      where: { id },
+      select: { appParentId: true },
     });
   }
 }
