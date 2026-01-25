@@ -93,7 +93,7 @@ export class LecturesService {
   }
 
   /** 강의 삭제 (Soft Delete) */
-  async deleteLecture(id: string, instructorId: string): Promise<void> {
+  async deleteLecture(instructorId: string, id: string): Promise<void> {
     const lecture = await this.lecturesRepository.findById(id);
 
     if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');

@@ -89,7 +89,7 @@ export class LecturesController {
     try {
       const instructorId = req.profile!.id;
       const { id } = req.params;
-      await this.lecturesService.deleteLecture(id, instructorId);
+      await this.lecturesService.deleteLecture(instructorId, id);
 
       res.status(204).send();
     } catch (error) {
