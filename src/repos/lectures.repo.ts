@@ -6,7 +6,7 @@ import type {
   Prisma,
 } from '../generated/prisma/client.js';
 import { QueryMode } from '../generated/prisma/internal/prismaNamespace.js';
-import { CreateLectureWIthInstructorIdDto } from '../validations/lectures.validation.js';
+import { CreateLectureWithInstructorIdDto } from '../validations/lectures.validation.js';
 
 type LectureWithTimes = Lecture & { lectureTimes: LectureTime[] };
 
@@ -14,7 +14,7 @@ export class LecturesRepository {
   constructor(private readonly prisma: PrismaClient) {}
   /** 강의 생성 */
   async create(
-    data: CreateLectureWIthInstructorIdDto,
+    data: CreateLectureWithInstructorIdDto,
     tx?: Prisma.TransactionClient,
   ): Promise<LectureWithTimes> {
     const client = tx ?? this.prisma;
@@ -43,12 +43,12 @@ export class LecturesRepository {
     }
 
     // lectureTimes 포함하여 반환
-    const lectureWithTimes = await client.lecture.findUnique({
+    const lectureWithTimes = await client.lecture.findUniqueOrThrow({
       where: { id: lecture.id },
       include: { lectureTimes: true },
     });
 
-    return lectureWithTimes as LectureWithTimes;
+    return lectureWithTimes;
   }
 
   /** ID로 강의 조회 */

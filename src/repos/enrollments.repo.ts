@@ -71,7 +71,7 @@ export class EnrollmentsRepository {
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx ?? this.prisma;
-    return await client.enrollment.findUnique({
+    return await client.enrollment.findFirst({
       where: {
         id: enrollmentId,
         deletedAt: null,
