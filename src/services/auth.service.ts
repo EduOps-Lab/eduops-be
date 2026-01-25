@@ -1,4 +1,5 @@
 import { IncomingHttpHeaders } from 'http';
+import { parse as parseCookies } from 'cookie';
 import { auth } from '../config/auth.config.js';
 import { prisma } from '../config/db.config.js';
 import { UserType } from '../constants/auth.constant.js';
@@ -141,19 +142,62 @@ export class AuthService {
 
   // 세션 조회
   async getSession(headers: IncomingHttpHeaders) {
-    const session = (await auth.api.getSession({
-      headers: headers as Record<string, string>,
-    })) as AuthResponse | null;
+    console.log('🔍 [Debug] Cookie string:', headers.cookie);
 
-    if (!session) return null;
+    if (!headers.cookie) {
+      console.log('❌ No cookie header');
+      return null;
+    }
 
-    const profile = await this.findProfileByUserId(
-      session.user.userType as UserType,
-      session.user.id,
+    // 1. 쿠키 파싱
+    const cookies = parseCookies(headers.cookie);
+    const sessionToken = cookies['eduops_auth.session_token'];
+
+    console.log(
+      '🔍 [Debug] Session token:',
+      sessionToken ? 'found' : 'not found',
     );
 
+    if (!sessionToken) {
+      return null;
+    }
+
+    // 2. DB에서 세션과 유저 정보 함께 조회
+    const dbSession = await prisma.session.findUnique({
+      where: { token: sessionToken },
+      include: { user: true },
+    });
+
+    console.log('🔍 [Debug] Session from DB:', !!dbSession);
+
+    if (!dbSession) {
+      console.log('❌ Session not found in DB');
+      return null;
+    }
+
+    // 3. 만료 체크
+    if (dbSession.expiresAt < new Date()) {
+      console.log('❌ Session expired');
+      return null;
+    }
+
+    console.log('✅ Valid session found');
+
+    // 4. 프로필 조회
+    const profile = await this.findProfileByUserId(
+      dbSession.user.userType as UserType,
+      dbSession.user.id,
+    );
+
+    console.log('🔍 [Debug] Profile found:', !!profile);
+
+    // 5. Better Auth 호환 형식으로 반환
     return {
-      ...session,
+      user: dbSession.user,
+      session: {
+        token: dbSession.token,
+        expiresAt: dbSession.expiresAt,
+      },
       profile,
     };
   }
