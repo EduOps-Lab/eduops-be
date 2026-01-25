@@ -109,11 +109,7 @@ model Instructor {
 
   // [Audit] 성적 수정 이력
   updatedGradeLogs GradeLog[]
-
-  enrollments  Enrollment[]
-  exams        Exam[]
   clinics      Clinic[]
-  lectureTimes LectureTime[]
 
   @@map("instructors")
 }
