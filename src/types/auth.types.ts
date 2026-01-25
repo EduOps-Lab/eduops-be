@@ -31,3 +31,10 @@ export interface AuthResponse {
   token?: string;
   profile?: unknown;
 }
+
+export interface ProfileBase {
+  id: string;
+  userId: string;
+  phoneNumber: string;
+  createdAt: Date;
+}

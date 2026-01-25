@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { container } from '../config/container.config.js';
 import { UserType } from '../constants/auth.constant.js';
-import { AuthSession } from '../types/auth.types.js';
+import { AuthSession, ProfileBase } from '../types/auth.types.js';
 import {
   UnauthorizedException,
   ForbiddenException,
@@ -18,7 +18,7 @@ declare global {
         name: string;
         image?: string | null;
       };
-      profile?: unknown;
+      profile?: ProfileBase | null;
       authSession?: AuthSession | { token: string } | null;
     }
   }
