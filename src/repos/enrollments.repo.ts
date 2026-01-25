@@ -162,4 +162,58 @@ export class EnrollmentsRepository {
       select: { appParentId: true },
     });
   }
+
+  /** 학부모 ID로 수강 목록 조회 (ParentChildLink를 통해) */
+  async findByAppParentId(appParentId: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+
+    // 1. 학부모의 모든 자녀 연결 조회
+    const links = await client.parentChildLink.findMany({
+      where: { appParentId },
+    });
+
+    const linkIds = links.map((link) => link.id);
+
+    // 2. 모든 자녀의 수강 정보 조회
+    return await client.enrollment.findMany({
+      where: {
+        appParentLinkId: { in: linkIds },
+        deletedAt: null,
+      },
+      include: {
+        lecture: {
+          include: {
+            instructor: {
+              select: {
+                id: true,
+                subject: true,
+                phoneNumber: true,
+                academy: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        registeredAt: 'desc',
+      },
+    });
+  }
+
+  /** 전화번호로 enrollment 존재 여부 확인 */
+  async checkPhoneHasEnrollments(
+    phoneNumber: string,
+    userType: string,
+  ): Promise<boolean> {
+    const count = await this.prisma.enrollment.count({
+      where: {
+        ...(userType === 'STUDENT'
+          ? { studentPhone: phoneNumber }
+          : { parentPhone: phoneNumber }),
+        deletedAt: null,
+      },
+    });
+
+    return count > 0;
+  }
 }
