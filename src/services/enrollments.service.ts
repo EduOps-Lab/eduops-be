@@ -1,3 +1,4 @@
+import { isDevelopment } from '../config/env.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import {
   NotFoundException,
@@ -8,12 +9,24 @@ import {
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import crypto from 'crypto';
-
 /** 임시 토큰 캐시 (실제로는 Redis 사용 권장) */
 const tempTokenStore = new Map<
   string,
   { phoneNumber: string; userType: UserType; expiresAt: Date }
 >();
+
+/** 만료된 토큰 정리 (주기적 호출 필요) */
+function cleanupExpiredTokens() {
+  const now = new Date();
+  for (const [token, data] of tempTokenStore) {
+    if (data.expiresAt < now) {
+      tempTokenStore.delete(token);
+    }
+  }
+}
+
+// 5분마다 만료 토큰 정리
+setInterval(cleanupExpiredTokens, 5 * 60 * 1000);
 
 export class EnrollmentsService {
   constructor(
@@ -132,6 +145,7 @@ export class EnrollmentsService {
 
   async requestPhoneVerification(phoneNumber: string, userType: UserType) {
     // 해당 전화번호로 enrollment가 있는지 확인
+    // Rate Limiting 설정 (코드 요청 횟수 제한)
     const hasEnrollment =
       await this.enrollmentsRepository.checkPhoneHasEnrollments(
         phoneNumber,
@@ -156,9 +170,12 @@ export class EnrollmentsService {
       },
     });
 
-    console.log(
-      `${phoneNumber} 전화번호로 인증 코드 ${code}가 발송되었습니다.`,
-    );
+    if (isDevelopment()) {
+      console.log(
+        `${phoneNumber} 전화번호로 인증 코드 ${code}가 발송되었습니다.`,
+      );
+    }
+    // @TODO: 인증 코드 발송 로직 추가
 
     return true;
   }

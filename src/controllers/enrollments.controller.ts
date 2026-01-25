@@ -9,10 +9,10 @@ export class EnrollmentsController {
   /**GET: 수강 목록 조회 핸들러*/
   getEnrollments = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userType = req.user!.userType;
+      const userType = req.user?.userType;
       const profileId = req.profile?.id;
 
-      if (!profileId) {
+      if (!profileId || !userType) {
         throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
       }
 
@@ -100,7 +100,7 @@ export class EnrollmentsController {
       res.status(200).json({
         success: true,
         data: tempToken,
-        message: '인증이 완료되었습니다..',
+        message: '인증이 완료되었습니다.',
       });
     } catch (error) {
       next(error);
