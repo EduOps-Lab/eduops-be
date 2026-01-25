@@ -4,7 +4,7 @@ import { z } from 'zod';
  * LectureTime 단일 항목 스키마
  * @example
  * {
- *   "day": ["월", "화"],
+ *   "day": "월",
  *   "startTime": "14:00",
  *   "endTime": "16:00"
  * }

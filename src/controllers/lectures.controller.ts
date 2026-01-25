@@ -91,7 +91,7 @@ export class LecturesController {
       const { id } = req.params;
       await this.lecturesService.deleteLecture(id, instructorId);
 
-      res.status(204).json({ success: true, message: '강의 삭제 성공' });
+      res.status(204).send();
     } catch (error) {
       next(error);
     }
