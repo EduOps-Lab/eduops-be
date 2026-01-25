@@ -26,6 +26,15 @@ svcEnrollmentsRouter.get(
   container.enrollmentsController.getEnrollments,
 );
 
+/** GET:  전화번호로 수강 상세 조회 (임시 토큰 필요)*/
+svcEnrollmentsRouter.get(
+  '/phone/:enrollmentId',
+  optionalAuth,
+  validate(enrollmentIdParamSchema, 'params'),
+  validate(getEnrollmentDetailByPhoneQuerySchema, 'query'),
+  container.enrollmentsController.getEnrollmentByPhone,
+);
+
 /** GET: 수강 상세 조회 */
 svcEnrollmentsRouter.get(
   '/:enrollmentId',
@@ -57,13 +66,4 @@ svcEnrollmentsRouter.get(
   optionalAuth,
   validate(getEnrollmentsByPhoneQuerySchema, 'query'),
   container.enrollmentsController.getEnrollmentsByPhone,
-);
-
-/** GET:  전화번호로 수강 상세 조회 (임시 토큰 필요)*/
-svcEnrollmentsRouter.get(
-  '/phone/:enrollmentId',
-  optionalAuth,
-  validate(enrollmentIdParamSchema, 'params'),
-  validate(getEnrollmentDetailByPhoneQuerySchema, 'query'),
-  container.enrollmentsController.getEnrollmentByPhone,
 );
