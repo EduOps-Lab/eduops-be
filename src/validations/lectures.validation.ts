@@ -10,9 +10,7 @@ import { z } from 'zod';
  * }
  */
 export const lectureTimeItemSchema = z.object({
-  day: z
-    .array(z.string())
-    .min(1, { message: '요일은 최소 1개 이상이어야 합니다.' }),
+  day: z.string().min(1, { message: '요일은 최소 1개 이상이어야 합니다.' }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
     message: '시작 시간은 HH:MM 형식이어야 합니다.',
   }),
@@ -39,8 +37,6 @@ export type LectureTimeItemDto = z.infer<typeof lectureTimeItemSchema>;
  * }
  */
 export const createLectureSchema = z.object({
-  instructorId: z.string().min(1, { message: '강사 ID는 필수입니다.' }).trim(),
-
   title: z
     .string()
     .min(1, { message: '강의 제목은 필수입니다.' })
@@ -69,6 +65,9 @@ export const createLectureSchema = z.object({
 });
 
 export type CreateLectureDto = z.infer<typeof createLectureSchema>;
+export type CreateLectureWIthInstructorIdDto = CreateLectureDto & {
+  instructorId: string;
+};
 
 /**
  * 강의 리스트 조회 쿼리 파라미터 스키마
@@ -81,7 +80,6 @@ export type CreateLectureDto = z.infer<typeof createLectureSchema>;
  * }
  */
 export const getLecturesQuerySchema = z.object({
-  instructorId: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
   search: z.string().trim().optional(),
@@ -115,8 +113,6 @@ export type LectureIdParamDto = z.infer<typeof lectureIdParamSchema>;
  * }
  */
 export const updateLectureSchema = z.object({
-  instructorId: z.string().min(1, { message: '강사 ID는 필수입니다.' }).trim(),
-
   title: z
     .string()
     .min(1, { message: '강의 제목은 필수입니다.' })
@@ -154,8 +150,6 @@ export type UpdateLectureDto = z.infer<typeof updateLectureSchema>;
  *   "instructorId": "abc1234"
  * }
  */
-export const deleteLectureSchema = z.object({
-  instructorId: z.string().min(1, { message: '강사 ID는 필수입니다.' }).trim(),
-});
+export const deleteLectureSchema = z.object({});
 
 export type DeleteLectureDto = z.infer<typeof deleteLectureSchema>;

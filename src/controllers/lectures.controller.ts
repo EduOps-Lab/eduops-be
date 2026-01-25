@@ -7,8 +7,13 @@ export class LecturesController {
   /** POST:강의 생성 핸들러 */
   createLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const instructorId = req.profile!.id;
       const lectureData = req.body;
-      const lecture = await this.lecturesService.createLecture(lectureData);
+
+      const lecture = await this.lecturesService.createLecture(
+        instructorId,
+        lectureData,
+      );
 
       res
         .status(201)
@@ -22,14 +27,12 @@ export class LecturesController {
   getLectures = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { page, limit, search } = req.query;
-      // req.user
-      const { instructorId } = req.body;
+      const instructorId = req.profile!.id;
 
       //  타입변환
-      const result = await this.lecturesService.getLectures({
+      const result = await this.lecturesService.getLectures(instructorId, {
         page: Number(page) || 1,
         limit: Number(limit) || 4,
-        instructorId: instructorId ? String(instructorId) : undefined,
         search: search ? String(search) : undefined,
       });
 
@@ -46,8 +49,12 @@ export class LecturesController {
   /** GET:강의 개별 조회 핸들러 */
   getLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const instructorId = req.profile!.id;
       const { id } = req.params;
-      const lecture = await this.lecturesService.getLectureById(id);
+      const lecture = await this.lecturesService.getLectureById(
+        instructorId,
+        id,
+      );
 
       res
         .status(200)
@@ -61,8 +68,13 @@ export class LecturesController {
   updateLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
+      const instructorId = req.profile!.id;
       const updateData = req.body;
-      const lecture = await this.lecturesService.updateLecture(id, updateData);
+      const lecture = await this.lecturesService.updateLecture(
+        instructorId,
+        id,
+        updateData,
+      );
 
       res
         .status(200)
@@ -75,8 +87,8 @@ export class LecturesController {
   /** DELETE:강의 삭제 핸들러 (Soft Delete) */
   deleteLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const instructorId = req.profile!.id;
       const { id } = req.params;
-      const { instructorId } = req.body;
       await this.lecturesService.deleteLecture(id, instructorId);
 
       res.status(204).json({ success: true, message: '강의 삭제 성공' });

@@ -6,14 +6,19 @@ import {
   getLecturesQuerySchema,
   lectureIdParamSchema,
   updateLectureSchema,
-  deleteLectureSchema,
 } from '../../../validations/lectures.validation.js';
+import {
+  requireAuth,
+  requireInstructorOrAssistant,
+} from '../../../middlewares/auth.middleware.js';
 
 export const mgmtLecturesRouter = Router();
 
 /** GET:강의 리스트 조회 */
 mgmtLecturesRouter.get(
   '/',
+  requireAuth,
+  requireInstructorOrAssistant,
   validate(getLecturesQuerySchema, 'query'),
   container.lecturesController.getLectures,
 );
@@ -21,6 +26,8 @@ mgmtLecturesRouter.get(
 /** GET:강의 개별 조회 */
 mgmtLecturesRouter.get(
   '/:id',
+  requireAuth,
+  requireInstructorOrAssistant,
   validate(lectureIdParamSchema, 'params'),
   container.lecturesController.getLecture,
 );
@@ -28,6 +35,8 @@ mgmtLecturesRouter.get(
 /** POST:강의 생성 */
 mgmtLecturesRouter.post(
   '/',
+  requireAuth,
+  requireInstructorOrAssistant,
   validate(createLectureSchema, 'body'),
   container.lecturesController.createLecture,
 );
@@ -35,6 +44,8 @@ mgmtLecturesRouter.post(
 /** PATCH:강의 수정 */
 mgmtLecturesRouter.patch(
   '/:id',
+  requireAuth,
+  requireInstructorOrAssistant,
   validate(lectureIdParamSchema, 'params'),
   validate(updateLectureSchema, 'body'),
   container.lecturesController.updateLecture,
@@ -43,7 +54,8 @@ mgmtLecturesRouter.patch(
 /** DELETE:강의 삭제 (Soft Delete) */
 mgmtLecturesRouter.delete(
   '/:id',
+  requireAuth,
+  requireInstructorOrAssistant,
   validate(lectureIdParamSchema, 'params'),
-  validate(deleteLectureSchema, 'body'),
   container.lecturesController.deleteLecture,
 );

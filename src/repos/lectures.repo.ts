@@ -1,4 +1,4 @@
-import {
+import type {
   Lecture,
   LectureTime,
   Instructor,
@@ -6,7 +6,7 @@ import {
   Prisma,
 } from '../generated/prisma/client.js';
 import { QueryMode } from '../generated/prisma/internal/prismaNamespace.js';
-import { CreateLectureDto } from '../validations/lectures.validation.js';
+import { CreateLectureWIthInstructorIdDto } from '../validations/lectures.validation.js';
 
 type LectureWithTimes = Lecture & { lectureTimes: LectureTime[] };
 
@@ -14,11 +14,11 @@ export class LecturesRepository {
   constructor(private readonly prisma: PrismaClient) {}
   /** 강의 생성 */
   async create(
-    data: CreateLectureDto,
+    data: CreateLectureWIthInstructorIdDto,
     tx?: Prisma.TransactionClient,
   ): Promise<LectureWithTimes> {
     const client = tx ?? this.prisma;
-    // 1. Lecture 생성
+    // Lecture 생성
     const lecture = await client.lecture.create({
       data: {
         instructorId: data.instructorId,
@@ -29,7 +29,7 @@ export class LecturesRepository {
       },
     });
 
-    // 2. LectureTime 배열 생성
+    // LectureTime 배열 생성 (day array 말고 문자열로)
     if (data.lectureTimes && data.lectureTimes.length > 0) {
       await client.lectureTime.createMany({
         data: data.lectureTimes.map((time) => ({
@@ -42,7 +42,7 @@ export class LecturesRepository {
       });
     }
 
-    // 3. lectureTimes 포함하여 반환
+    // lectureTimes 포함하여 반환
     const lectureWithTimes = await client.lecture.findUnique({
       where: { id: lecture.id },
       include: { lectureTimes: true },
