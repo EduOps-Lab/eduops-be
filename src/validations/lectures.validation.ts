@@ -65,7 +65,7 @@ export const createLectureSchema = z.object({
 });
 
 export type CreateLectureDto = z.infer<typeof createLectureSchema>;
-export type CreateLectureWIthInstructorIdDto = CreateLectureDto & {
+export type CreateLectureWithInstructorIdDto = CreateLectureDto & {
   instructorId: string;
 };
 
