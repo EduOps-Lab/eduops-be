@@ -32,7 +32,7 @@ export type LectureTimeItemDto = z.infer<typeof lectureTimeItemSchema>;
  *   "description": "강의 설명",
  *   "endAt": "2026-01-22T10:00:00.000Z",
  *   "lectureTimes": [
- *     { "day": ["월"], "startTime": "14:00", "endTime": "16:00" }
+ *     { "day": "월", "startTime": "14:00", "endTime": "16:00" }
  *   ]
  * }
  */
@@ -73,7 +73,6 @@ export type CreateLectureWithInstructorIdDto = CreateLectureDto & {
  * 강의 리스트 조회 쿼리 파라미터 스키마
  * @example
  * {
- *   "instructorId": "abc1234",
  *   "page": 1,
  *   "limit": 20,
  *   "search": "수학"

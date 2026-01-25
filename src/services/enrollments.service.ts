@@ -158,7 +158,7 @@ export class EnrollmentsService {
       );
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = crypto.randomInt(100000, 1000000).toString();
 
     // DB에 저장 (트렌젝션 을 사용하기에 이대로 코드를 작성)
     await this.prisma.verificationCode.create({

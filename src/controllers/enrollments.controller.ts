@@ -35,10 +35,10 @@ export class EnrollmentsController {
   getEnrollment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { enrollmentId } = req.params;
-      const userType = req.user!.userType;
+      const userType = req.user?.userType;
       const profileId = req.profile?.id;
 
-      if (!profileId) {
+      if (!profileId || !userType) {
         throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
       }
 

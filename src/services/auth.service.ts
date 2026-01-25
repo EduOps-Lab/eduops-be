@@ -146,21 +146,13 @@ export class AuthService {
 
   // 세션 조회
   async getSession(headers: IncomingHttpHeaders) {
-    console.log('🔍 [Debug] Cookie string:', headers.cookie);
-
     if (!headers.cookie) {
-      console.log('❌ No cookie header');
       return null;
     }
 
     // 1. 쿠키 파싱
     const cookies = parseCookies(headers.cookie);
     const sessionToken = cookies['eduops_auth.session_token'];
-
-    console.log(
-      '🔍 [Debug] Session token:',
-      sessionToken ? 'found' : 'not found',
-    );
 
     if (!sessionToken) {
       return null;
@@ -172,28 +164,20 @@ export class AuthService {
       include: { user: true },
     });
 
-    console.log('🔍 [Debug] Session from DB:', !!dbSession);
-
     if (!dbSession) {
-      console.log('❌ Session not found in DB');
       return null;
     }
 
     // 3. 만료 체크
     if (dbSession.expiresAt < new Date()) {
-      console.log('❌ Session expired');
       return null;
     }
-
-    console.log('✅ Valid session found');
 
     // 4. 프로필 조회
     const profile = await this.findProfileByUserId(
       dbSession.user.userType as UserType,
       dbSession.user.id,
     );
-
-    console.log('🔍 [Debug] Profile found:', !!profile);
 
     // 5. Better Auth 호환 형식으로 반환
     return {
