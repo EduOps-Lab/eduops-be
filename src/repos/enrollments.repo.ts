@@ -74,6 +74,7 @@ export class EnrollmentsRepository {
     return await client.enrollment.findUnique({
       where: {
         id: enrollmentId,
+        deletedAt: null,
       },
       include: {
         lecture: {
@@ -204,8 +205,10 @@ export class EnrollmentsRepository {
   async checkPhoneHasEnrollments(
     phoneNumber: string,
     userType: string,
+    tx?: Prisma.TransactionClient,
   ): Promise<boolean> {
-    const count = await this.prisma.enrollment.count({
+    const client = tx ?? this.prisma;
+    const count = await client.enrollment.count({
       where: {
         ...(userType === 'STUDENT'
           ? { studentPhone: phoneNumber }
