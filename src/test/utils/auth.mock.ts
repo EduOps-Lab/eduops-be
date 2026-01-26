@@ -167,14 +167,3 @@ export const asStudent = (overrides?: Partial<MockUser>) =>
 /** 학부모 Mock 사용자 생성 */
 export const asParent = (overrides?: Partial<MockUser>) =>
   createMockUser(UserType.PARENT, overrides);
-
-export const createMockBetterAuth = () => ({
-  auth: {
-    api: {
-      signUpEmail: jest.fn(),
-      signInEmail: jest.fn(),
-      signOut: jest.fn(),
-      getSession: jest.fn(),
-    },
-  },
-});

@@ -1,13 +1,12 @@
-// Mock 함수들
-export const mockSignUpEmail = jest.fn();
-export const mockSignInEmail = jest.fn();
-export const mockSignOut = jest.fn();
-export const mockGetSession = jest.fn();
+/** Better-Auth Mock 객체 생성 */
+export const createMockBetterAuth = () => ({
+  api: {
+    signUpEmail: jest.fn(),
+    signInEmail: jest.fn(),
+    signOut: jest.fn(),
+    getSession: jest.fn(),
+  },
+});
 
-/** Better-Auth Mock 리셋 */
-export const resetBetterAuthMock = () => {
-  mockSignUpEmail.mockReset();
-  mockSignInEmail.mockReset();
-  mockSignOut.mockReset();
-  mockGetSession.mockReset();
-};
+/** Better-Auth Mock 타입 */
+export type MockBetterAuth = ReturnType<typeof createMockBetterAuth>;

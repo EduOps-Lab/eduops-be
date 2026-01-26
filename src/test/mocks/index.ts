@@ -11,25 +11,8 @@ export {
 export { createMockAuthService } from './services.mock.js';
 
 // Better-Auth Mocks
-export {
-  mockSignUpEmail,
-  mockSignInEmail,
-  mockSignOut,
-  mockGetSession,
-  resetBetterAuthMock,
-} from './better-auth.mock.js';
+export { createMockBetterAuth } from './better-auth.mock.js';
+export type { MockBetterAuth } from './better-auth.mock.js';
 
 // Prisma Mocks
-export {
-  mockUserFindUnique,
-  mockUserDelete,
-  mockTransaction,
-  createMockPrisma,
-  resetPrismaMock,
-} from './prisma.mock.js';
-
-// Container Mocks
-export {
-  mockContainerGetSession,
-  resetContainerMock,
-} from './container.mock.js';
+export { createMockPrisma } from './prisma.mock.js';
