@@ -1,17 +1,22 @@
 import express from 'express';
 import cors, { CorsOptions } from 'cors';
+import cookieParser from 'cookie-parser';
 import { router } from './routes/index.js';
 import { logger } from './middlewares/logger.middleware.js';
 import { requestTimer } from './middlewares/reqtimer.middleware.js';
 import { config, isDevelopment, isProduction } from './config/env.config.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { disconnectDB } from './config/db.config.js';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from './config/auth.config.js';
 
 const app = express();
 
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
+
+app.use(cookieParser());
 
 // CORS 옵션 설정
 const whiteList: string[] = config.FRONT_URL
@@ -33,6 +38,8 @@ if (isDevelopment()) {
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
+app.all('/api/auth/', toNodeHandler(auth));
+
 app.use('/', router);
 
 app.use(errorHandler);
@@ -44,13 +51,32 @@ const server = app.listen(config.PORT, () => {
 
 const gracefulShutdown = async () => {
   console.log('🛑 Received kill signal, shutting down gracefully');
-  // 1. 새로운 요청 거부 (기존 요청은 처리)
-  server.close(() => {
-    console.log('🔒 HTTP server closed');
+
+  // 1. 새로운 요청 거부 및 기존 요청 처리 완료 대기 (Promise로 래핑)
+  const closeServer = new Promise<void>((resolve, reject) => {
+    server.close((err) => {
+      if (err) {
+        console.error('❌ Error closing server:', err);
+        return reject(err);
+      }
+      console.log('🔒 HTTP server closed');
+      resolve();
+    });
   });
-  // 2. DB 연결 종료 및 프로세스 종료
-  await disconnectDB();
-  process.exit(0);
+
+  try {
+    // 서버가 닫힐 때까지 기다림 (기존 요청 처리 완료 보장)
+    await closeServer;
+
+    // 2. 그 후 DB 연결 종료
+    await disconnectDB();
+    console.log('👋 Bye');
+
+    process.exit(0);
+  } catch (error) {
+    console.error('💥 Error during shutdown:', error);
+    process.exit(1);
+  }
 };
 
 // SIGTERM: Docker, Kubernetes 등에서 컨테이너 종료 시 발생
