@@ -14,6 +14,7 @@ import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
 import { SignUpData, AuthResponse } from '../types/auth.types.js';
+import { fromNodeHeaders } from 'better-auth/node';
 
 export class AuthService {
   constructor(
@@ -24,7 +25,7 @@ export class AuthService {
     private readonly parentRepo: ParentRepository,
   ) {}
 
-  // 회원가입 (Better Auth 유저 생성 + 역할별 프로필 생성)
+  // 회원가입
   async signUp(userType: UserType, data: SignUpData) {
     const existingProfile = await this.findProfileByPhoneNumber(
       userType,
@@ -35,20 +36,33 @@ export class AuthService {
       throw new BadRequestException('이미 가입된 전화번호입니다.');
     }
 
-    const result = await auth.api.signUpEmail({
-      body: {
+    // auth.handler를 사용하여 요청을 처리하고 쿠키를 캡처
+    const baseURL = 'http://localhost:3000'; // 내부 호출용 URL
+    const signUpReq = new Request(`${baseURL}/api/auth/sign-up/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         email: data.email,
         password: data.password,
         name: data.name || data.email,
         userType: userType,
-      },
+      }),
     });
 
-    if (!result) {
-      throw new InternalServerErrorException('회원가입에 실패했습니다.');
+    const response = await auth.handler(signUpReq);
+
+    if (!response.ok) {
+      // 에러 처리
+      const errorBody = await response.json();
+      throw new InternalServerErrorException(
+        errorBody.message || '회원가입 실패',
+      );
     }
 
-    // result의 타입을 명시적으로 캐스팅하여 속성 접근
+    const result = await response.json();
+    const setCookie = response.headers.get('set-cookie');
+
+    // result의 구조: { user, session, token } (토큰 반환 설정 여부에 따라 다름)
     const { user, session, token } = result as AuthResponse;
     const finalSession = session || (token ? { token } : null);
     const userId = user.id;
@@ -70,25 +84,21 @@ export class AuthService {
           break;
       }
     } catch (error) {
-      // 프로필 생성 실패 시 유저 정보 롤백 (삭제)
-      // Cascade 설정에 의해 Session, Account 등도 함께 삭제됨
-      await prisma.user.delete({
-        where: { id: userId },
-      });
+      await prisma.user.delete({ where: { id: userId } });
       throw error;
     }
 
-    return { user, session: finalSession, profile };
+    return { user, session: finalSession, profile, setCookie };
   }
 
-  // 로그인 (Better Auth API 사용)
+  // 로그인
   async signIn(
     email: string,
     password: string,
     requiredUserType: UserType,
     rememberMe: boolean = false,
   ) {
-    // 1. 이메일로 유저 조회하여 타입 검증 먼저 수행
+    // 1. 이메일로 유저 조회하여 타입 검증
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -100,26 +110,34 @@ export class AuthService {
       throw new ForbiddenException('유저 역할이 잘못되었습니다.');
     }
 
-    // 2. Better Auth로 로그인 시도 (이메일, 비밀번호만 사용)
-    const result = await auth.api.signInEmail({
-      body: {
+    // 2. auth.handler를 사용하여 로그인 및 쿠키 캡처
+    const baseURL = 'http://localhost:3000';
+    const signInReq = new Request(`${baseURL}/api/auth/sign-in/email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         email,
         password,
         rememberMe,
-      },
+      }),
     });
 
-    if (!result) {
+    const response = await auth.handler(signInReq);
+
+    if (!response.ok) {
+      const errorData = await response.json(); // 에러 메시지 확인용
+      console.log('SignIn Error:', errorData);
       throw new UnauthorizedException(
         '이메일 또는 비밀번호가 올바르지 않습니다.',
       );
     }
 
-    const { user, session, token } = result as AuthResponse;
+    const result = await response.json();
+    const setCookie = response.headers.get('set-cookie');
 
+    const { user, session, token } = result as AuthResponse;
     const finalSession = session || (token ? { token } : null);
 
-    // 3. 프로필 정보 함께 조회
     const profile = await this.findProfileByUserId(
       user.userType as UserType,
       user.id,
@@ -129,6 +147,7 @@ export class AuthService {
       user,
       session: finalSession,
       profile,
+      setCookie, // 쿠키 헤더 반환
     };
   }
 
@@ -141,9 +160,9 @@ export class AuthService {
 
   // 세션 조회
   async getSession(headers: IncomingHttpHeaders) {
-    const session = (await auth.api.getSession({
-      headers: headers as Record<string, string>,
-    })) as AuthResponse | null;
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(headers),
+    });
 
     if (!session) return null;
 

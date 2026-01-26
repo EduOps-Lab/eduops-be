@@ -2,8 +2,7 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import type { PrismaClient } from '../generated/prisma/client.js';
 import { prisma } from './db.config.js';
-import { config } from './env.config.js';
-import { AUTH_COOKIE_PREFIX } from '../constants/auth.constant.js';
+import { config, isDevelopment } from './env.config.js';
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma as unknown as PrismaClient, {
@@ -38,14 +37,13 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7일
     updateAge: 60 * 60 * 24, // 1일마다 갱신
     cookieCache: {
-      enabled: true,
+      enabled: true, // 필수: getSession이 작동하려면 true여야 함
       maxAge: 60 * 5, // 5분 캐시
     },
   },
 
   advanced: {
-    cookiePrefix: AUTH_COOKIE_PREFIX,
-    useSecureCookies: config.ENVIRONMENT === 'production',
+    useSecureCookies: !isDevelopment(),
   },
 
   trustedOrigins: config.FRONT_URL ? config.FRONT_URL.split(',') : [],

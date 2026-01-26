@@ -12,6 +12,8 @@ import { auth } from './config/auth.config.js';
 
 const app = express();
 
+app.all('/api/auth/*splat', toNodeHandler(auth));
+
 app.use(express.json());
 
 app.use(express.urlencoded({ extended: true }));
@@ -34,8 +36,6 @@ if (isDevelopment()) {
   app.use(logger);
   app.use(requestTimer);
 }
-
-app.all('/api/auth/', toNodeHandler(auth));
 
 app.use('/', router);
 
