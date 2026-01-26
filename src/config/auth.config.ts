@@ -43,6 +43,7 @@ export const auth = betterAuth({
   },
 
   advanced: {
+    cookiePrefix: 'ssamebee-auth',
     useSecureCookies: !isDevelopment(),
   },
 
