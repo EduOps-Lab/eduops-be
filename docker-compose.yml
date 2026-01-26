@@ -1,0 +1,53 @@
+services:
+  # 백엔드 Blue (기본)
+  backend-blue:
+    image: ghcr.io/${GITHUB_REPOSITORY}:latest  # GHCR 이미지 사용
+    container_name: eduops-backend-blue
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      FRONT_URL: ${FRONT_URL}
+    networks:
+      - lms-network
+    restart: unless-stopped #Prisma 마이그레이션 실행 후 서버 시작
+    command: sh -c "npx prisma migrate deploy && pnpm start"
+
+  #배포 시에만 실행(포트 4001)
+  backend-green:
+    image: ghcr.io/${GITHUB_REPOSITORY}:latest  # GHCR 이미지 사용
+    container_name: eduops-backend-green
+    ports:
+      - "4001:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL} # AWS RDS 연결 문자열
+      FRONT_URL: ${FRONT_URL}
+    networks:
+      - lms-network
+    restart: unless-stopped #Prisma 마이그레이션 실행 후 서버 시작
+    command: sh -c "npx prisma migrate deploy && pnpm start"
+    profiles:
+      - green # 기본적으로 실행 되지않음
+
+# Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name:  eduops-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - backend-blue
+    networks:
+      - lms-network
+    restart: unless-stopped
+  
+networks:
+  lms-network:
+    driver: bridge
