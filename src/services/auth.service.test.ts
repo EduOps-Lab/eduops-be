@@ -10,14 +10,8 @@ import {
   createMockAssistantRepository,
   createMockParentRepository,
   createMockAssistantCodeRepository,
+  createMockBetterAuth,
   createMockPrisma,
-  mockSignUpEmail,
-  mockSignInEmail,
-  mockSignOut,
-  mockGetSession,
-  mockUserFindUnique,
-  mockUserDelete,
-  mockTransaction,
 } from '../test/mocks/index.js';
 import {
   mockUsers,
@@ -27,30 +21,7 @@ import {
   mockAssistantCode,
 } from '../test/fixtures/index.js';
 import { PrismaClient } from '../generated/prisma/client.js';
-
-// better-auth Mock 설정
-jest.mock('../config/auth.config', () => ({
-  auth: {
-    api: {
-      signUpEmail: (...args: unknown[]) => mockSignUpEmail(...args),
-      signInEmail: (...args: unknown[]) => mockSignInEmail(...args),
-      signOut: (...args: unknown[]) => mockSignOut(...args),
-      getSession: (...args: unknown[]) => mockGetSession(...args),
-    },
-  },
-}));
-
-// prisma Mock 설정
-jest.mock('../config/db.config', () => ({
-  prisma: {
-    user: {
-      findUnique: (...args: unknown[]) => mockUserFindUnique(...args),
-      delete: (...args: unknown[]) => mockUserDelete(...args),
-    },
-    $transaction: (fn: (tx: unknown) => Promise<unknown>) =>
-      mockTransaction(fn),
-  },
-}));
+import type { auth } from '../config/auth.config.js';
 
 describe('AuthService', () => {
   // Mock Dependencies
@@ -61,6 +32,7 @@ describe('AuthService', () => {
   >;
   let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
   let mockParentRepo: ReturnType<typeof createMockParentRepository>;
+  let mockBetterAuth: ReturnType<typeof createMockBetterAuth>;
   let mockPrisma: PrismaClient;
 
   // Service under test
@@ -76,15 +48,17 @@ describe('AuthService', () => {
     mockAssistantCodeRepo = createMockAssistantCodeRepository();
     mockStudentRepo = createMockStudentRepository();
     mockParentRepo = createMockParentRepository();
+    mockBetterAuth = createMockBetterAuth();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
-    // Create AuthService with mocked dependencies (DI)
+    // Create AuthService DI (모든 의존성 주입)
     authService = new AuthService(
       mockInstructorRepo,
       mockAssistantRepo,
       mockAssistantCodeRepo,
       mockStudentRepo,
       mockParentRepo,
+      mockBetterAuth as unknown as typeof auth,
       mockPrisma,
     );
   });
@@ -99,7 +73,7 @@ describe('AuthService', () => {
         // Arrange
         mockInstructorRepo.findByPhoneNumber.mockResolvedValue(null);
         mockInstructorRepo.create.mockResolvedValue(mockProfiles.instructor);
-        mockSignUpEmail.mockResolvedValue({
+        mockBetterAuth.api.signUpEmail.mockResolvedValue({
           user: mockUsers.instructor,
           session: mockSession,
         });
@@ -116,7 +90,7 @@ describe('AuthService', () => {
         expect(mockInstructorRepo.findByPhoneNumber).toHaveBeenCalledWith(
           signUpRequests.instructor.phoneNumber,
         );
-        expect(mockSignUpEmail).toHaveBeenCalledWith({
+        expect(mockBetterAuth.api.signUpEmail).toHaveBeenCalledWith({
           body: {
             email: signUpRequests.instructor.email,
             password: signUpRequests.instructor.password,
@@ -152,12 +126,14 @@ describe('AuthService', () => {
         mockAssistantCodeRepo.markAsUsed.mockResolvedValue(mockAssistantCode);
         mockAssistantRepo.create.mockResolvedValue(mockProfiles.assistant);
 
-        mockSignUpEmail.mockResolvedValue({
+        mockBetterAuth.api.signUpEmail.mockResolvedValue({
           user: mockUsers.assistant,
           session: mockSession,
         });
 
-        mockTransaction.mockImplementation(async (fn) => fn({}));
+        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
+          fn({}),
+        );
 
         // Act
         const result = await authService.signUp(
@@ -179,7 +155,7 @@ describe('AuthService', () => {
           signupCode: undefined,
         };
         mockAssistantRepo.findByPhoneNumber.mockResolvedValue(null);
-        mockSignUpEmail.mockResolvedValue({
+        mockBetterAuth.api.signUpEmail.mockResolvedValue({
           user: mockUsers.assistant,
           session: mockSession,
         });
@@ -194,7 +170,7 @@ describe('AuthService', () => {
         // Arrange
         mockAssistantRepo.findByPhoneNumber.mockResolvedValue(null);
         mockAssistantCodeRepo.findValidCode.mockResolvedValue(null);
-        mockSignUpEmail.mockResolvedValue({
+        mockBetterAuth.api.signUpEmail.mockResolvedValue({
           user: mockUsers.assistant,
           session: mockSession,
         });
@@ -215,7 +191,7 @@ describe('AuthService', () => {
         mockStudentRepo.findByPhoneNumber.mockResolvedValue(null);
         mockStudentRepo.create.mockResolvedValue(mockProfiles.student);
 
-        mockSignUpEmail.mockResolvedValue({
+        mockBetterAuth.api.signUpEmail.mockResolvedValue({
           user: mockUsers.student,
           session: mockSession,
         });
@@ -238,7 +214,7 @@ describe('AuthService', () => {
         mockParentRepo.findByPhoneNumber.mockResolvedValue(null);
         mockParentRepo.create.mockResolvedValue(mockProfiles.parent);
 
-        mockSignUpEmail.mockResolvedValue({
+        mockBetterAuth.api.signUpEmail.mockResolvedValue({
           user: mockUsers.parent,
           session: mockSession,
         });
@@ -260,13 +236,13 @@ describe('AuthService', () => {
     describe('AUTH-05: 로그인 성공', () => {
       it('올바른 자격 증명으로 로그인 성공', async () => {
         // Arrange
-        mockUserFindUnique.mockResolvedValue({
+        (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
           id: mockUsers.instructor.id,
           email: mockUsers.instructor.email,
           userType: UserType.INSTRUCTOR,
         });
 
-        mockSignInEmail.mockResolvedValue({
+        mockBetterAuth.api.signInEmail.mockResolvedValue({
           user: mockUsers.instructor,
           session: mockSession,
         });
@@ -293,7 +269,7 @@ describe('AuthService', () => {
     describe('AUTH-08: userType 불일치 로그인', () => {
       it('다른 역할로 로그인 시도 시 ForbiddenException 발생', async () => {
         // Arrange - 강사로 가입된 유저가 학생으로 로그인 시도
-        mockUserFindUnique.mockResolvedValue({
+        (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
           id: mockUsers.instructor.id,
           email: mockUsers.instructor.email,
           userType: UserType.INSTRUCTOR,
@@ -326,7 +302,7 @@ describe('AuthService', () => {
         // Arrange
         const headers = { cookie: 'session_token=test-token' };
 
-        mockGetSession.mockResolvedValue({
+        mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.instructor,
           session: mockSession,
         });
@@ -347,7 +323,7 @@ describe('AuthService', () => {
       it('유효하지 않은 세션 시 null 반환', async () => {
         // Arrange
         const headers = {};
-        mockGetSession.mockResolvedValue(null);
+        mockBetterAuth.api.getSession.mockResolvedValue(null);
 
         // Act
         const result = await authService.getSession(headers);
@@ -363,13 +339,13 @@ describe('AuthService', () => {
       it('로그아웃 시 better-auth API 호출', async () => {
         // Arrange
         const headers = { cookie: 'session_token=test-token' };
-        mockSignOut.mockResolvedValue({ success: true });
+        mockBetterAuth.api.signOut.mockResolvedValue({ success: true });
 
         // Act
         await authService.signOut(headers);
 
         // Assert
-        expect(mockSignOut).toHaveBeenCalledWith({
+        expect(mockBetterAuth.api.signOut).toHaveBeenCalledWith({
           headers: headers,
         });
       });
@@ -384,7 +360,7 @@ describe('AuthService', () => {
     describe('RBAC-U01: 강사 프로필 조회', () => {
       it('강사 세션에서 강사 프로필 조회', async () => {
         // Arrange
-        mockGetSession.mockResolvedValue({
+        mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.instructor,
           session: mockSession,
         });
@@ -406,7 +382,7 @@ describe('AuthService', () => {
     describe('RBAC-U02: 조교 프로필 조회', () => {
       it('조교 세션에서 조교 프로필 조회', async () => {
         // Arrange
-        mockGetSession.mockResolvedValue({
+        mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.assistant,
           session: mockSession,
         });
@@ -428,7 +404,7 @@ describe('AuthService', () => {
     describe('RBAC-U03: 학생/학부모 프로필 분리 조회', () => {
       it('학생 세션에서 학생 프로필 조회', async () => {
         // Arrange
-        mockGetSession.mockResolvedValue({
+        mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.student,
           session: mockSession,
         });
@@ -446,7 +422,7 @@ describe('AuthService', () => {
 
       it('학부모 세션에서 학부모 프로필 조회', async () => {
         // Arrange
-        mockGetSession.mockResolvedValue({
+        mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.parent,
           session: mockSession,
         });
@@ -477,7 +453,7 @@ describe('AuthService', () => {
           new Error('Profile creation failed'),
         );
 
-        mockSignUpEmail.mockResolvedValue({
+        mockBetterAuth.api.signUpEmail.mockResolvedValue({
           user: mockUsers.instructor,
           session: mockSession,
         });
@@ -488,7 +464,7 @@ describe('AuthService', () => {
         ).rejects.toThrow('Profile creation failed');
 
         // 롤백 확인
-        expect(mockUserDelete).toHaveBeenCalledWith({
+        expect(mockPrisma.user.delete).toHaveBeenCalledWith({
           where: { id: mockUsers.instructor.id },
         });
       });
