@@ -1,6 +1,5 @@
 import { IncomingHttpHeaders } from 'http';
 import { auth } from '../config/auth.config.js';
-import { prisma } from '../config/db.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import {
   BadRequestException,
@@ -14,6 +13,7 @@ import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
 import { SignUpData, AuthResponse } from '../types/auth.types.js';
+import { PrismaClient } from '../generated/prisma/client.js';
 
 export class AuthService {
   constructor(
@@ -22,6 +22,7 @@ export class AuthService {
     private readonly assistantCodeRepo: AssistantCodeRepository,
     private readonly studentRepo: StudentRepository,
     private readonly parentRepo: ParentRepository,
+    private readonly prisma: PrismaClient,
   ) {}
 
   // 회원가입 (Better Auth 유저 생성 + 역할별 프로필 생성)
@@ -72,7 +73,7 @@ export class AuthService {
     } catch (error) {
       // 프로필 생성 실패 시 유저 정보 롤백 (삭제)
       // Cascade 설정에 의해 Session, Account 등도 함께 삭제됨
-      await prisma.user.delete({
+      await this.prisma.user.delete({
         where: { id: userId },
       });
       throw error;
@@ -89,7 +90,7 @@ export class AuthService {
     rememberMe: boolean = false,
   ) {
     // 1. 이메일로 유저 조회하여 타입 검증 먼저 수행
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
@@ -183,7 +184,7 @@ export class AuthService {
       );
     }
 
-    return await prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       await this.assistantCodeRepo.markAsUsed(assistantCode.id, tx);
       return await this.assistantRepo.create(
         {
