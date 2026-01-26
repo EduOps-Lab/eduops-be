@@ -1,5 +1,5 @@
 import { IncomingHttpHeaders } from 'http';
-import { auth } from '../config/auth.config.js';
+import type { auth } from '../config/auth.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import {
   BadRequestException,
@@ -22,6 +22,7 @@ export class AuthService {
     private readonly assistantCodeRepo: AssistantCodeRepository,
     private readonly studentRepo: StudentRepository,
     private readonly parentRepo: ParentRepository,
+    private readonly authClient: typeof auth,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -36,7 +37,7 @@ export class AuthService {
       throw new BadRequestException('이미 가입된 전화번호입니다.');
     }
 
-    const result = await auth.api.signUpEmail({
+    const result = await this.authClient.api.signUpEmail({
       body: {
         email: data.email,
         password: data.password,
@@ -102,7 +103,7 @@ export class AuthService {
     }
 
     // 2. Better Auth로 로그인 시도 (이메일, 비밀번호만 사용)
-    const result = await auth.api.signInEmail({
+    const result = await this.authClient.api.signInEmail({
       body: {
         email,
         password,
@@ -135,14 +136,14 @@ export class AuthService {
 
   // 로그아웃 (핸들러에서 처리하거나 API 호출)
   async signOut(headers: IncomingHttpHeaders) {
-    return await auth.api.signOut({
+    return await this.authClient.api.signOut({
       headers: headers as Record<string, string>,
     });
   }
 
   // 세션 조회
   async getSession(headers: IncomingHttpHeaders) {
-    const session = (await auth.api.getSession({
+    const session = (await this.authClient.api.getSession({
       headers: headers as Record<string, string>,
     })) as AuthResponse | null;
 
