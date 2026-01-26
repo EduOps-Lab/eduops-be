@@ -1,3 +1,4 @@
+import { prisma } from './db.config.js';
 import { InstructorRepository } from '../repos/instructor.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
@@ -7,11 +8,11 @@ import { AuthService } from '../services/auth.service.js';
 import { AuthController } from '../controllers/auth.controller.js';
 
 // 1. Instantiate Repositories
-const instructorRepo = new InstructorRepository();
-const studentRepo = new StudentRepository();
-const assistantRepo = new AssistantRepository();
-const parentRepo = new ParentRepository();
-const assistantCodeRepo = new AssistantCodeRepository();
+const instructorRepo = new InstructorRepository(prisma);
+const studentRepo = new StudentRepository(prisma);
+const assistantRepo = new AssistantRepository(prisma);
+const parentRepo = new ParentRepository(prisma);
+const assistantCodeRepo = new AssistantCodeRepository(prisma);
 
 // 2. Instantiate Services (Inject Repos)
 const authService = new AuthService(
@@ -20,6 +21,7 @@ const authService = new AuthService(
   assistantCodeRepo,
   studentRepo,
   parentRepo,
+  prisma,
 );
 
 // 3. Instantiate Controllers (Inject Services)

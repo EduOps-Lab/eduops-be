@@ -1,9 +1,9 @@
-import { prisma } from '../config/db.config.js';
-import type { Prisma } from '../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 
 export class AssistantCodeRepository {
+  constructor(private readonly prisma: PrismaClient) {}
   async findValidCode(code: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? prisma;
+    const client = tx ?? this.prisma;
     return client.assistantCode.findFirst({
       where: {
         code,
@@ -17,7 +17,7 @@ export class AssistantCodeRepository {
 
   async markAsUsed(id: string, tx?: Prisma.TransactionClient) {
     // 트랜잭션 클라이언트가 있으면 사용하고, 없으면 기본 prisma 인스턴스 사용
-    const client = tx ?? prisma;
+    const client = tx ?? this.prisma;
     const now = new Date();
 
     // 원자적 업데이트: 조건(사용 안 됨, 만료 안 됨) 확인과 업데이트를 동시에 수행
