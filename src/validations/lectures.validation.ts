@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { createEnrollmentSchema } from './enrollments.validation.js';
+import { Regex } from '../constants/regex.constant.js';
+import {
+  LectureLimits,
+  LectureStatus,
+} from '../constants/lectures.constant.js';
+import { PaginationDefaults } from '../constants/common.constant.js';
 
 /**
  * LectureTime 단일 항목 스키마
@@ -11,10 +18,10 @@ import { z } from 'zod';
  */
 export const lectureTimeItemSchema = z.object({
   day: z.string().min(1, { message: '요일은 최소 1개 이상이어야 합니다.' }),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+  startTime: z.string().regex(Regex.TIME_HHMM, {
     message: '시작 시간은 HH:MM 형식이어야 합니다.',
   }),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, {
+  endTime: z.string().regex(Regex.TIME_HHMM, {
     message: '종료 시간은 HH:MM 형식이어야 합니다.',
   }),
 });
@@ -26,13 +33,16 @@ export type LectureTimeItemDto = z.infer<typeof lectureTimeItemSchema>;
  *  변경 사항 발생 시 여기서 수정
  * @example
  * {
- *   "instructorId": "abc1234",
  *   "title": "강의 제목",
  *   "subject": "강의 과목",
  *   "description": "강의 설명",
+ *   "startAt": "2026-01-22T10:00:00.000Z",
  *   "endAt": "2026-01-22T10:00:00.000Z",
  *   "lectureTimes": [
  *     { "day": "월", "startTime": "14:00", "endTime": "16:00" }
+ *   ],
+ *   "enrollments": [
+ *     { "school": "서울고", "schoolYear": "고1", "studentName": "홍길동", "studentPhone": "010-1234-5678", "parentPhone": "010-9876-5432" }
  *   ]
  * }
  */
@@ -40,20 +50,32 @@ export const createLectureSchema = z.object({
   title: z
     .string()
     .min(1, { message: '강의 제목은 필수입니다.' })
-    .max(255, { message: '강의 제목은 255자를 초과할 수 없습니다.' })
+    .max(LectureLimits.TITLE_MAX_LENGTH, {
+      message: `강의 제목은 ${LectureLimits.TITLE_MAX_LENGTH}자를 초과할 수 없습니다.`,
+    })
     .trim(),
 
   subject: z
     .string()
-    .max(100, { message: '과목명은 100자를 초과할 수 없습니다.' })
+    .max(LectureLimits.SUBJECT_MAX_LENGTH, {
+      message: `과목명은 ${LectureLimits.SUBJECT_MAX_LENGTH}자를 초과할 수 없습니다.`,
+    })
     .trim()
     .optional(),
 
   description: z
     .string()
-    .max(5000, { message: '설명은 5000자를 초과할 수 없습니다.' })
+    .max(LectureLimits.DESCRIPTION_MAX_LENGTH, {
+      message: `설명은 ${LectureLimits.DESCRIPTION_MAX_LENGTH}자를 초과할 수 없습니다.`,
+    })
     .trim()
     .optional(),
+
+  startAt: z
+    .string()
+    .datetime({ message: '유효한 ISO 8601 날짜 형식이어야 합니다.' })
+    .optional()
+    .nullable(),
 
   endAt: z
     .string()
@@ -61,7 +83,14 @@ export const createLectureSchema = z.object({
     .optional()
     .nullable(),
 
+  status: z
+    .nativeEnum(LectureStatus)
+    .optional()
+    .default(LectureStatus.SCHEDULED),
+
   lectureTimes: z.array(lectureTimeItemSchema).optional(),
+
+  enrollments: z.array(createEnrollmentSchema).optional(),
 });
 
 export type CreateLectureDto = z.infer<typeof createLectureSchema>;
@@ -79,8 +108,12 @@ export type CreateLectureWithInstructorIdDto = CreateLectureDto & {
  * }
  */
 export const getLecturesQuerySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(20),
+  page: z.coerce.number().min(1).default(PaginationDefaults.PAGE),
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(PaginationDefaults.MAX_LIMIT)
+    .default(PaginationDefaults.LIMIT),
   search: z.string().trim().optional(),
 });
 
@@ -115,21 +148,33 @@ export const updateLectureSchema = z.object({
   title: z
     .string()
     .min(1, { message: '강의 제목은 필수입니다.' })
-    .max(255, { message: '강의 제목은 255자를 초과할 수 없습니다.' })
+    .max(LectureLimits.TITLE_MAX_LENGTH, {
+      message: `강의 제목은 ${LectureLimits.TITLE_MAX_LENGTH}자를 초과할 수 없습니다.`,
+    })
     .trim()
     .optional(),
 
   subject: z
     .string()
-    .max(100, { message: '과목명은 100자를 초과할 수 없습니다.' })
+    .max(LectureLimits.SUBJECT_MAX_LENGTH, {
+      message: `과목명은 ${LectureLimits.SUBJECT_MAX_LENGTH}자를 초과할 수 없습니다.`,
+    })
     .trim()
     .optional(),
 
   description: z
     .string()
-    .max(5000, { message: '설명은 5000자를 초과할 수 없습니다.' })
+    .max(LectureLimits.DESCRIPTION_MAX_LENGTH, {
+      message: `설명은 ${LectureLimits.DESCRIPTION_MAX_LENGTH}자를 초과할 수 없습니다.`,
+    })
     .trim()
     .optional(),
+
+  startAt: z
+    .string()
+    .datetime({ message: '유효한 ISO 8601 날짜 형식이어야 합니다.' })
+    .optional()
+    .nullable(),
 
   endAt: z
     .string()
@@ -137,7 +182,7 @@ export const updateLectureSchema = z.object({
     .optional()
     .nullable(),
 
-  isActive: z.boolean().optional(),
+  status: z.nativeEnum(LectureStatus).optional(),
 });
 
 export type UpdateLectureDto = z.infer<typeof updateLectureSchema>;

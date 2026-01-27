@@ -25,7 +25,9 @@ export class LecturesRepository {
         title: data.title,
         subject: data.subject,
         description: data.description,
+        startAt: data.startAt ? new Date(data.startAt) : null,
         endAt: data.endAt ? new Date(data.endAt) : null,
+        status: data.status,
       },
     });
 
@@ -130,7 +132,9 @@ export class LecturesRepository {
       title: string;
       subject: string;
       description: string;
+      startAt: Date | null;
       endAt: Date | null;
+      status: string;
     }>,
     tx?: Prisma.TransactionClient,
   ): Promise<Lecture> {

@@ -167,7 +167,9 @@ model Lecture {
   description String? @db.Text
 
   isActive  Boolean   @default(true) @map("is_active")
+  status    String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED
   createdAt DateTime  @default(now()) @map("created_at")
+  startAt   DateTime? @map("start_at")
   endAt     DateTime? @map("end_at")
 
   // [Safety] 강의 삭제 시 연관 데이터 보존을 위한 Soft Delete

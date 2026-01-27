@@ -33,7 +33,11 @@ const authService = new AuthService(
   parentRepo,
 );
 
-const lecturesService = new LecturesService(lecturesRepo, prisma);
+const lecturesService = new LecturesService(
+  lecturesRepo,
+  enrollmentsRepo,
+  prisma,
+);
 const enrollmentsService = new EnrollmentsService(
   enrollmentsRepo,
   lecturesRepo,

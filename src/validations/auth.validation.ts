@@ -1,16 +1,17 @@
 import { z } from 'zod';
 import { UserType } from '../constants/auth.constant.js';
+import { Regex } from '../constants/regex.constant.js';
 
 // 공통 필드
 const emailSchema = z.string().email('유효한 이메일 형식이 아닙니다.');
 const passwordSchema = z
   .string()
   .min(8, '비밀번호는 최소 8자 이상이어야 합니다.')
-  .regex(/[A-Za-z]/, '비밀번호에 영문자가 포함되어야 합니다.')
-  .regex(/[0-9]/, '비밀번호에 숫자가 포함되어야 합니다.');
+  .regex(Regex.PASSWORD_ALPHA, '비밀번호에 영문자가 포함되어야 합니다.')
+  .regex(Regex.PASSWORD_NUMBER, '비밀번호에 숫자가 포함되어야 합니다.');
 const phoneSchema = z
   .string()
-  .regex(/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/, '유효한 전화번호 형식이 아닙니다.');
+  .regex(Regex.PHONE, '유효한 전화번호 형식이 아닙니다.');
 const userTypeSchema = z.enum([
   UserType.INSTRUCTOR,
   UserType.ASSISTANT,

@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 
 export class EnrollmentsRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -13,7 +14,7 @@ export class EnrollmentsRepository {
       where: {
         appStudentId,
         deletedAt: null,
-        status: 'ACTIVE', // 기본적으로 수강중인 것만 조회
+        status: EnrollmentStatus.ACTIVE, // 기본적으로 수강중인 것만 조회
       },
       include: {
         lecture: {
@@ -45,7 +46,7 @@ export class EnrollmentsRepository {
       where: {
         appParentLinkId,
         deletedAt: null,
-        status: 'ACTIVE', // 기본적으로 수강중인 것만 조회
+        status: EnrollmentStatus.ACTIVE, // 기본적으로 수강중인 것만 조회
       },
       include: {
         lecture: {
@@ -114,6 +115,17 @@ export class EnrollmentsRepository {
     });
   }
 
+  /** 다수의 수강생 일괄 등록 */
+  async createMany(
+    dataList: Prisma.EnrollmentUncheckedCreateInput[],
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.createManyAndReturn({
+      data: dataList,
+    });
+  }
+
   /** 수강 정보 수정 (Update) */
   async update(
     id: string,
@@ -134,7 +146,7 @@ export class EnrollmentsRepository {
       where: { id },
       data: {
         deletedAt: new Date(),
-        status: 'DROPPED', // 삭제 시 상태도 변경하는 것이 안전
+        status: EnrollmentStatus.DROPPED, // 삭제 시 상태도 변경하는 것이 안전
       },
     });
   }

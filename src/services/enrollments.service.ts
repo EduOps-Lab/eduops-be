@@ -1,4 +1,5 @@
 import { UserType } from '../constants/auth.constant.js';
+import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import {
   NotFoundException,
   ForbiddenException,
@@ -40,7 +41,7 @@ export class EnrollmentsService {
       ...data,
       lectureId,
       instructorId: lecture.instructorId, // 강의의 담당 강사로 설정
-      status: 'ACTIVE',
+      status: EnrollmentStatus.ACTIVE,
     });
   }
 
