@@ -49,6 +49,7 @@ const enrollmentsService = new EnrollmentsService(
   enrollmentsRepo,
   lecturesRepo,
   assistantRepo,
+  prisma,
 );
 
 // 3. Instantiate Controllers (Inject Services)
@@ -70,8 +71,12 @@ const {
 export const container = {
   // Services
   authService,
+  lecturesService,
+  enrollmentsService,
   // Controllers
   authController,
+  lecturesController,
+  enrollmentsController,
   // Middlewares
   requireAuth,
   optionalAuth,
@@ -79,8 +84,4 @@ export const container = {
   requireInstructorOrAssistant,
   requireStudent,
   requireParent,
-  lecturesService,
-  lecturesController,
-  enrollmentsService,
-  enrollmentsController,
 };

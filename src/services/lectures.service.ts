@@ -1,8 +1,5 @@
-import {
-  Lecture,
-  Enrollment,
-  PrismaClient,
-} from '../generated/prisma/client.js';
+import { PrismaClient } from '../generated/prisma/client.js';
+import type { Lecture, Enrollment } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import {
   NotFoundException,

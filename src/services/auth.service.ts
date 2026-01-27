@@ -12,7 +12,7 @@ import { AssistantRepository } from '../repos/assistant.repo.js';
 import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
-import { SignUpData, AuthResponse } from '../types/auth.types.js';
+import type { SignUpData, AuthResponse } from '../types/auth.types.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import { PrismaClient } from '../generated/prisma/client.js';
 

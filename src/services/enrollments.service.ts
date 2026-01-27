@@ -1,3 +1,5 @@
+import { PrismaClient } from '../generated/prisma/client.js';
+import type { Prisma } from '../generated/prisma/client.js';
 import { UserType } from '../constants/auth.constant.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import {
@@ -7,7 +9,6 @@ import {
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
-import { Prisma } from '../generated/prisma/client.js';
 import { GetEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
 
 export class EnrollmentsService {
@@ -15,6 +16,7 @@ export class EnrollmentsService {
     private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly lecturesRepository: LecturesRepository,
     private readonly assistantRepository: AssistantRepository,
+    private readonly prisma: PrismaClient,
   ) {}
 
   /** Enrollment 생성 */

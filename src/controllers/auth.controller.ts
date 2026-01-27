@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { UserType } from '../constants/auth.constant.js';
-import { AuthResponse } from '../types/auth.types.js';
+import type { AuthResponse } from '../types/auth.types.js';
 import { UnauthorizedException } from '../err/http.exception.js';
 
 export class AuthController {

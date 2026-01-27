@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient } from '../generated/prisma/client.js';
+import type { Prisma } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import { getPagingParams } from '../utils/pagination.util.js';
 
