@@ -226,6 +226,10 @@ model Enrollment {
 
   registeredAt DateTime @default(now()) @map("registered_at")
 
+  // [State] 수강 상태 (ACTIVE: 수강중, DROPPED: 퇴원, PAUSED: 휴원)
+  status String @default("ACTIVE")
+  memo   String? // [New] 수강 관련 메모 (강사/조교용)
+
   // [Safety] 수강 취소/퇴원 시 이력 보존
   deletedAt DateTime? @map("deleted_at")
 
