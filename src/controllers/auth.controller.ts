@@ -1,10 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
-import {
-  UserType,
-  AUTH_COOKIE_NAME,
-  getAuthCookieOptions,
-} from '../constants/auth.constant.js';
+import { UserType } from '../constants/auth.constant.js';
 import { AuthResponse } from '../types/auth.types.js';
 import { UnauthorizedException } from '../err/http.exception.js';
 
@@ -16,12 +12,13 @@ export class AuthController {
     result: AuthResponse,
     message: string,
     statusCode: number = 200,
-    rememberMe: boolean = false,
+    _rememberMe: boolean = false,
   ) {
-    const token = result.session?.token ?? result.token;
-    if (token) {
-      res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions(rememberMe));
+    // Better Auth Handler로부터 받은 쿠키가 있으면 설정
+    if (result.setCookie) {
+      res.setHeader('Set-Cookie', result.setCookie);
     }
+
     res.status(statusCode).json({
       message,
       user: result.user,
@@ -98,7 +95,6 @@ export class AuthController {
     try {
       // Better Auth는 헤더에서 세션을 파싱하므로 req.headers를 전달
       await this.authService.signOut(req.headers);
-      res.clearCookie(AUTH_COOKIE_NAME);
       res.json({ message: '로그아웃 되었습니다.' });
     } catch (error) {
       next(error);
@@ -110,7 +106,6 @@ export class AuthController {
     try {
       const session = await this.authService.getSession(req.headers);
       if (!session) {
-        res.clearCookie(AUTH_COOKIE_NAME);
         throw new UnauthorizedException('인증이 필요합니다.');
       }
 
