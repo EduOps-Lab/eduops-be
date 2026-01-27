@@ -469,7 +469,7 @@ describe('AuthController', () => {
 
       mockAuthService.signIn.mockResolvedValue({
         user: mockUsers.instructor,
-        session: { token: 'direct-token' },
+        session: null,
         profile: mockProfiles.instructor,
         setCookie: 'session_token=test-cookie',
       });
