@@ -25,6 +25,7 @@ export interface MockProfile {
   id: string;
   userId: string;
   phoneNumber: string;
+  createdAt: Date;
   [key: string]: unknown;
 }
 
@@ -76,6 +77,7 @@ export const createMockProfile = (
     id: `test-profile-${userType.toLowerCase()}-${Date.now()}`,
     userId,
     phoneNumber: '010-1234-5678',
+    createdAt: new Date('2024-01-01'),
     ...overrides,
   };
 

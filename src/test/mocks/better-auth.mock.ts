@@ -1,5 +1,6 @@
 /** Better-Auth Mock 객체 생성 */
 export const createMockBetterAuth = () => ({
+  handler: jest.fn(),
   api: {
     signUpEmail: jest.fn(),
     signInEmail: jest.fn(),

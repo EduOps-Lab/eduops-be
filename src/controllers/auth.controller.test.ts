@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthController } from './auth.controller.js';
-import { UserType, AUTH_COOKIE_NAME } from '../constants/auth.constant.js';
+import { UserType } from '../constants/auth.constant.js';
 import {
   UnauthorizedException,
   BadRequestException,
@@ -45,6 +45,7 @@ describe('AuthController', () => {
       json: jest.fn().mockReturnThis(),
       cookie: jest.fn().mockReturnThis(),
       clearCookie: jest.fn().mockReturnThis(),
+      setHeader: jest.fn().mockReturnThis(),
     };
 
     // Setup mock NextFunction
@@ -65,6 +66,7 @@ describe('AuthController', () => {
           user: mockUsers.instructor,
           session: mockSession,
           profile: mockProfiles.instructor,
+          setCookie: 'session_token=test-cookie',
         });
 
         // Act
@@ -87,10 +89,9 @@ describe('AuthController', () => {
             profile: mockProfiles.instructor,
           }),
         );
-        expect(mockRes.cookie).toHaveBeenCalledWith(
-          AUTH_COOKIE_NAME,
-          mockSession.token,
-          expect.any(Object),
+        expect(mockRes.setHeader).toHaveBeenCalledWith(
+          'Set-Cookie',
+          'session_token=test-cookie',
         );
       });
 
@@ -122,6 +123,7 @@ describe('AuthController', () => {
           user: mockUsers.assistant,
           session: mockSession,
           profile: mockProfiles.assistant,
+          setCookie: 'session_token=test-cookie',
         });
 
         // Act
@@ -149,6 +151,7 @@ describe('AuthController', () => {
           user: mockUsers.student,
           session: mockSession,
           profile: mockProfiles.student,
+          setCookie: 'session_token=test-cookie',
         });
 
         // Act
@@ -176,6 +179,7 @@ describe('AuthController', () => {
           user: mockUsers.parent,
           session: mockSession,
           profile: mockProfiles.parent,
+          setCookie: 'session_token=test-cookie',
         });
 
         // Act
@@ -209,6 +213,7 @@ describe('AuthController', () => {
           user: mockUsers.instructor,
           session: mockSession,
           profile: mockProfiles.instructor,
+          setCookie: 'session_token=test-cookie',
         });
 
         // Act
@@ -232,12 +237,9 @@ describe('AuthController', () => {
             user: mockUsers.instructor,
           }),
         );
-        expect(mockRes.cookie).toHaveBeenCalledWith(
-          AUTH_COOKIE_NAME,
-          mockSession.token,
-          expect.objectContaining({
-            httpOnly: true,
-          }),
+        expect(mockRes.setHeader).toHaveBeenCalledWith(
+          'Set-Cookie',
+          'session_token=test-cookie',
         );
       });
 
@@ -253,6 +255,7 @@ describe('AuthController', () => {
           user: mockUsers.instructor,
           session: mockSession,
           profile: mockProfiles.instructor,
+          setCookie: 'session_token=test-cookie',
         });
 
         // Act
@@ -289,7 +292,6 @@ describe('AuthController', () => {
 
         // Assert
         expect(mockAuthService.signOut).toHaveBeenCalledWith(mockReq.headers);
-        expect(mockRes.clearCookie).toHaveBeenCalledWith(AUTH_COOKIE_NAME);
         expect(mockRes.json).toHaveBeenCalledWith({
           message: '로그아웃 되었습니다.',
         });
@@ -341,7 +343,6 @@ describe('AuthController', () => {
         );
 
         // Assert
-        expect(mockRes.clearCookie).toHaveBeenCalledWith(AUTH_COOKIE_NAME);
         expect(mockNext).toHaveBeenCalledWith(
           expect.any(UnauthorizedException),
         );
@@ -442,6 +443,7 @@ describe('AuthController', () => {
         user: mockUsers.instructor,
         session: { token: 'session-token' },
         profile: mockProfiles.instructor,
+        setCookie: 'session_token=test-cookie',
       });
 
       // Act
@@ -452,10 +454,9 @@ describe('AuthController', () => {
       );
 
       // Assert
-      expect(mockRes.cookie).toHaveBeenCalledWith(
-        AUTH_COOKIE_NAME,
-        'session-token',
-        expect.any(Object),
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        'session_token=test-cookie',
       );
     });
 
@@ -470,6 +471,7 @@ describe('AuthController', () => {
         user: mockUsers.instructor,
         session: { token: 'direct-token' },
         profile: mockProfiles.instructor,
+        setCookie: 'session_token=test-cookie',
       });
 
       // Act
@@ -480,10 +482,9 @@ describe('AuthController', () => {
       );
 
       // Assert
-      expect(mockRes.cookie).toHaveBeenCalledWith(
-        AUTH_COOKIE_NAME,
-        'direct-token',
-        expect.any(Object),
+      expect(mockRes.setHeader).toHaveBeenCalledWith(
+        'Set-Cookie',
+        'session_token=test-cookie',
       );
     });
   });

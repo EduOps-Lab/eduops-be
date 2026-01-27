@@ -1,8 +1,13 @@
 /** Mock Session 데이터 */
 export const mockSession = {
   id: 'test-session-id',
+  userId: 'test-user-id',
   token: 'test-session-token',
   expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  ipAddress: '127.0.0.1',
+  userAgent: 'jest-test',
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
 } as const;
 
 /** 회원가입 요청 데이터 */

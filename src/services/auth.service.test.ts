@@ -73,10 +73,19 @@ describe('AuthService', () => {
         // Arrange
         mockInstructorRepo.findByPhoneNumber.mockResolvedValue(null);
         mockInstructorRepo.create.mockResolvedValue(mockProfiles.instructor);
-        mockBetterAuth.api.signUpEmail.mockResolvedValue({
-          user: mockUsers.instructor,
-          session: mockSession,
-        });
+
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.instructor,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         // Act
         const result = await authService.signUp(
@@ -90,14 +99,6 @@ describe('AuthService', () => {
         expect(mockInstructorRepo.findByPhoneNumber).toHaveBeenCalledWith(
           signUpRequests.instructor.phoneNumber,
         );
-        expect(mockBetterAuth.api.signUpEmail).toHaveBeenCalledWith({
-          body: {
-            email: signUpRequests.instructor.email,
-            password: signUpRequests.instructor.password,
-            name: signUpRequests.instructor.name,
-            userType: UserType.INSTRUCTOR,
-          },
-        });
       });
 
       it('이미 가입된 전화번호로 회원가입 시 BadRequestException 발생', async () => {
@@ -126,10 +127,18 @@ describe('AuthService', () => {
         mockAssistantCodeRepo.markAsUsed.mockResolvedValue(mockAssistantCode);
         mockAssistantRepo.create.mockResolvedValue(mockProfiles.assistant);
 
-        mockBetterAuth.api.signUpEmail.mockResolvedValue({
-          user: mockUsers.assistant,
-          session: mockSession,
-        });
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.assistant,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
           fn({}),
@@ -155,10 +164,19 @@ describe('AuthService', () => {
           signupCode: undefined,
         };
         mockAssistantRepo.findByPhoneNumber.mockResolvedValue(null);
-        mockBetterAuth.api.signUpEmail.mockResolvedValue({
-          user: mockUsers.assistant,
-          session: mockSession,
-        });
+
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.assistant,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         // Act & Assert
         await expect(
@@ -170,10 +188,19 @@ describe('AuthService', () => {
         // Arrange
         mockAssistantRepo.findByPhoneNumber.mockResolvedValue(null);
         mockAssistantCodeRepo.findValidCode.mockResolvedValue(null);
-        mockBetterAuth.api.signUpEmail.mockResolvedValue({
-          user: mockUsers.assistant,
-          session: mockSession,
-        });
+
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.assistant,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         // Act & Assert
         await expect(
@@ -191,10 +218,18 @@ describe('AuthService', () => {
         mockStudentRepo.findByPhoneNumber.mockResolvedValue(null);
         mockStudentRepo.create.mockResolvedValue(mockProfiles.student);
 
-        mockBetterAuth.api.signUpEmail.mockResolvedValue({
-          user: mockUsers.student,
-          session: mockSession,
-        });
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.student,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         // Act
         const result = await authService.signUp(
@@ -214,10 +249,18 @@ describe('AuthService', () => {
         mockParentRepo.findByPhoneNumber.mockResolvedValue(null);
         mockParentRepo.create.mockResolvedValue(mockProfiles.parent);
 
-        mockBetterAuth.api.signUpEmail.mockResolvedValue({
-          user: mockUsers.parent,
-          session: mockSession,
-        });
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.parent,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         // Act
         const result = await authService.signUp(
@@ -242,10 +285,18 @@ describe('AuthService', () => {
           userType: UserType.INSTRUCTOR,
         });
 
-        mockBetterAuth.api.signInEmail.mockResolvedValue({
-          user: mockUsers.instructor,
-          session: mockSession,
-        });
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.instructor,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         mockInstructorRepo.findByUserId.mockResolvedValue(
           mockProfiles.instructor,
@@ -453,10 +504,18 @@ describe('AuthService', () => {
           new Error('Profile creation failed'),
         );
 
-        mockBetterAuth.api.signUpEmail.mockResolvedValue({
-          user: mockUsers.instructor,
-          session: mockSession,
-        });
+        // Mock Response 객체
+        const mockResponse = {
+          ok: true,
+          json: jest.fn().mockResolvedValue({
+            user: mockUsers.instructor,
+            session: mockSession,
+          }),
+          headers: {
+            get: jest.fn().mockReturnValue('session_token=test-cookie'),
+          },
+        };
+        mockBetterAuth.handler.mockResolvedValue(mockResponse);
 
         // Act & Assert
         await expect(

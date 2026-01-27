@@ -4,6 +4,12 @@
 process.env.NODE_ENV = 'test';
 process.env.ENVIRONMENT = 'test';
 
+// better-auth/node mock (ESM 모듈 문제 해결)
+jest.mock('better-auth/node', () => ({
+  fromNodeHeaders: jest.fn((headers) => headers),
+  toNodeHandler: jest.fn(),
+}));
+
 // 테스트 타임아웃 설정 (10초)
 jest.setTimeout(10000);
 
