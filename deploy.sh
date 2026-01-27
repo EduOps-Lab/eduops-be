@@ -79,13 +79,31 @@ else
     NEW_SERVICE="backend-blue"
 fi
 
+# 0. 디스크 공간 확보 (중요: t3.micro 용량 부족 방지)
+echo -e "${YELLOW}사용하지 않는 이미지 및 컨테이너 정리 중...${NC}"
+docker system prune -af --volumes || true
+
+# Docker Compose 명령어 확인 및 설치 (Amazon Linux 2023 대응)
+if docker compose version > /dev/null 2>&1; then
+    COMPOSE="docker compose"
+elif docker-compose version > /dev/null 2>&1; then
+    COMPOSE="docker-compose"
+else
+    echo -e "${YELLOW}Docker Compose를 찾을 수 없습니다. 설치를 시도합니다...${NC}"
+    # Docker Compose V2 바이너리 다운로드 (linux-x86_64)
+    mkdir -p ~/.docker/cli-plugins
+    curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+    chmod +x ~/.docker/cli-plugins/docker-compose
+    COMPOSE="docker compose"
+fi
+
 # 새 컨테이너 시작
 echo -e "${YELLOW}[$TARGET] 컨테이너 시작 중...${NC}"
 
 if [ "$TARGET" = "green" ]; then
-    docker compose --profile green up -d backend-green
+    $COMPOSE --profile green up -d backend-green
 else
-    docker compose up -d backend-blue
+    $COMPOSE up -d backend-blue
 fi
 
 # 컨테이너 실행 대기
@@ -109,8 +127,8 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
     
     if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
         echo -e "${RED}[$TARGET] 컨테이너 실행 실패!${NC}"
-        docker compose logs $NEW_SERVICE
-        docker compose stop $NEW_SERVICE
+        $COMPOSE logs $NEW_SERVICE
+        $COMPOSE stop $NEW_SERVICE
         exit 1
     fi
 done
@@ -124,7 +142,7 @@ if [ "$CONTAINER_READY" = true ]; then
     else
         echo -e "${RED}[$TARGET] 환경 Prisma 마이그레이션 실패!${NC}"
         echo -e "${RED}새 컨테이너를 중지합니다.${NC}"
-        docker compose stop $NEW_SERVICE
+        $COMPOSE stop $NEW_SERVICE
         exit 1
     fi
 fi
@@ -161,15 +179,15 @@ if [ "$HEALTH_CHECK_FAILED" = true ]; then
     
     # 새 컨테이너 로그 확인
     echo -e "${YELLOW}[$TARGET] 컨테이너 로그:${NC}"
-    docker compose logs $NEW_CONTAINER
+    $COMPOSE logs $NEW_CONTAINER
     
     # 새 컨테이너 중지
     echo -e "${YELLOW}[$TARGET] 컨테이너 중지 중...${NC}"
-    docker compose stop $NEW_CONTAINER
+    $COMPOSE stop $NEW_CONTAINER
     
     # 컨테이너 삭제 (리소스 확보)
     echo -e "${YELLOW}[$TARGET] 컨테이너 삭제 중...${NC}"
-    docker compose rm -f $NEW_CONTAINER
+    $COMPOSE rm -f $NEW_CONTAINER
     
     # Nginx 설정 원복 (현재 환경으로)
     if [ "$CURRENT" != "none" ]; then
@@ -181,7 +199,7 @@ if [ "$HEALTH_CHECK_FAILED" = true ]; then
             sed -i 's/server backend-blue:4000;/# server backend-blue:4000;/' nginx/conf.d/default.conf
             sed -i 's/# server backend-green:4000;/server backend-green:4000;/' nginx/conf.d/default.conf
         fi
-        docker compose exec -T nginx nginx -s reload
+        $COMPOSE exec -T nginx nginx -s reload
     fi
     
     echo -e "${RED}배포 중단 및 롤백 완료!${NC}"
@@ -201,9 +219,9 @@ fi
 
 # Nginx 설정 검증 및 리로드
 echo -e "${YELLOW}Nginx 설정 검증 중...${NC}"
-if docker compose exec -T nginx nginx -t; then
+if $COMPOSE exec -T nginx nginx -t; then
     echo -e "${GREEN}Nginx 설정 검증 성공!${NC}"
-    docker compose exec -T nginx nginx -s reload
+    $COMPOSE exec -T nginx nginx -s reload
     echo -e "${GREEN}Nginx 설정 리로드 완료!${NC}"
 else
     echo -e "${RED}Nginx 설정 검증 실패! 롤백합니다.${NC}"
@@ -217,12 +235,12 @@ else
             sed -i 's/server backend-blue:4000;/# server backend-blue:4000;/' nginx/conf.d/default.conf
             sed -i 's/# server backend-green:4000;/server backend-green:4000;/' nginx/conf.d/default.conf
         fi
-        docker compose exec -T nginx nginx -s reload
+        $COMPOSE exec -T nginx nginx -s reload
     fi
     
     # 새 컨테이너 중지
-    docker compose stop $NEW_CONTAINER
-    docker compose rm -f $NEW_CONTAINER
+    $COMPOSE stop $NEW_CONTAINER
+    $COMPOSE rm -f $NEW_CONTAINER
     
     exit 1
 fi
@@ -233,11 +251,11 @@ if [ "$CURRENT" != "none" ]; then
     sleep 5
     
     echo -e "${YELLOW}[$CURRENT] 컨테이너 중지 중...${NC}"
-    docker compose stop $OLD_CONTAINER
+    $COMPOSE stop $OLD_CONTAINER
     
     # 컨테이너 삭제 (리소스 확보)
     echo -e "${YELLOW}[$CURRENT] 컨테이너 삭제 중...${NC}"
-    docker compose rm -f $OLD_CONTAINER
+    $COMPOSE rm -f $OLD_CONTAINER
     
     echo -e "${GREEN}[$CURRENT] 컨테이너 중지 및 정리 완료${NC}"
 fi

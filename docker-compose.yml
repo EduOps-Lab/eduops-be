@@ -15,7 +15,7 @@ services:
     restart: unless-stopped #Prisma 마이그레이션 실행 후 서버 시작
     command: sh -c "npx prisma migrate deploy && pnpm start"
 
-  #배포 시에만 실행(포트 4001)
+  # 배포 시에만 실행(포트 4001)
   backend-green:
     image: ghcr.io/${GITHUB_REPOSITORY}:latest  # GHCR 이미지 사용
     container_name: eduops-backend-green

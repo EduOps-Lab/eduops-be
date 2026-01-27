@@ -131,6 +131,14 @@ resource "aws_instance" "app_server" {
   ami           = data.aws_ami.amazon_linux_2023.id
   instance_type = "t3.micro"
 
+  # 루트 볼륨 크기 지정 (기본 8GB -> 30GB)
+  root_block_device {
+    volume_size = 30
+    volume_type = "gp3"
+    delete_on_termination = true 
+    tags = { Name = "lms-root-volumn"}
+  }
+
   ## Bastion Host (중간 다리 컴퓨터 jump-server) 아니면 AWS SSM(시스템 매니저) 사용 지금은 public으로 개발자가 접속 가능하게
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.app_sg.id]
@@ -145,6 +153,7 @@ resource "aws_instance" "app_server" {
     http_endpoint               = "enabled"
     http_put_response_hop_limit = 1
   }
+
   # EC2  생성 시 자동으로 실행될 스크립트
   user_data = <<-EOF
                 #!/bin/bash
@@ -163,6 +172,10 @@ resource "aws_instance" "app_server" {
                 
                 # 유저를 docker 그룹에 추가 (sudo 없이 사용 위함)
                 usermod -aG docker ec2-user
+                # 현재 구성에서 docker-compose.yml 를 쓰시므로 필수
+                mkdir -p /usr/local/lib/docker/cli-plugins/
+                curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+                chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
                 EOF
 
   tags = { Name = "lms-app-server" }

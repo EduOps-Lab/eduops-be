@@ -59,6 +59,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Copy files to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -67,7 +70,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
           source: "deploy.sh,docker-compose.yml,nginx/"
-          target: "/home/ubuntu/app"
+          target: "/home/${{ secrets.EC2_USER }}/app"
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -78,18 +81,23 @@ jobs:
           port: 22
           script: |
             # 작업 디렉토리로 이동
-            cd /home/ubuntu/app
+            cd /home/ec2-user/app
             
-            # GitHub Container Registry 로그인 (PAT 사용)
+            # 1. 디스크 공간 확보 (중요: t3.micro 용량 부족 방지)
+            echo "디스크 공간 정리 중..."
+            docker system prune -af --volumes || true
+            
+            # 2. 리포지토리 이름을 소문자로 변환
+            IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            
+            # 3. GitHub Container Registry 로그인
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
             
-            # 환경 변수 설정
-            export GITHUB_REPOSITORY="${{ github.repository }}"
+            # 4. 최신 이미지 pull
+            docker pull ghcr.io/$IMAGE_NAME:latest
             
-            # 최신 이미지 pull
-            docker pull ghcr.io/${{ github.repository }}:latest
-            
-            # 무중단 배포 스크립트 실행
+            # 5. 무중단 배포 스크립트 실행
+            export GITHUB_REPOSITORY="$IMAGE_NAME"
             chmod +x deploy.sh
             ./deploy.sh
             
