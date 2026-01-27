@@ -28,7 +28,8 @@ export function isBetterAuthError(error: unknown): error is BetterAuthError {
     'body' in e &&
     typeof e.body === 'object' &&
     e.body !== null &&
-    'code' in (e.body as Record<string, unknown>)
+    'code' in (e.body as Record<string, unknown>) &&
+    typeof (e.body as Record<string, unknown>).code === 'string'
   ) {
     return true;
   }

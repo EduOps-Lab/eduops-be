@@ -1,9 +1,8 @@
 import express from 'express';
+import morgan from 'morgan';
 import cors, { CorsOptions } from 'cors';
 import cookieParser from 'cookie-parser';
 import { router } from './routes/index.js';
-import { logger } from './middlewares/logger.middleware.js';
-import { requestTimer } from './middlewares/reqtimer.middleware.js';
 import { config, isDevelopment, isProduction } from './config/env.config.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { disconnectDB } from './config/db.config.js';
@@ -12,36 +11,39 @@ import { auth } from './config/auth.config.js';
 
 const app = express();
 
-app.use(express.json());
-
-app.use(express.urlencoded({ extended: true }));
-
-app.use(cookieParser());
-
-// CORS 옵션 설정
+// 1. 보안
 const whiteList: string[] = config.FRONT_URL
   ? config.FRONT_URL.split(',').map((url) => url.trim())
   : [];
 
 const corsOptions: CorsOptions = {
   origin: isProduction() ? whiteList : true, // 프로덕션은 화이트리스트, 개발은 모두 허용(true)
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
 };
 
 app.use(cors(corsOptions));
 
+// 2. 로깅
 if (isDevelopment()) {
-  app.use(logger);
-  app.use(requestTimer);
+  app.use(morgan('dev'));
 }
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
 });
-app.all('/api/auth/', toNodeHandler(auth));
+// 3. better auth 내부 우회 api (공식문서상 데이터 파서 앞에)
+app.all('/api/auth/*splat', toNodeHandler(auth));
 
+// 4. 데이터 파서
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// 5. 라우터
 app.use('/', router);
 
+// 6. 에러 핸들러
 app.use(errorHandler);
 
 const server = app.listen(config.PORT, () => {

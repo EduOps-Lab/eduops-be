@@ -96,6 +96,9 @@ model Instructor {
 
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   lectures          Lecture[]
+  lectureTimes      LectureTime[]
+  enrollments       Enrollment[]
+  instructorExams   Exam[]
   assistants        Assistant[]
   assistantCodes    AssistantCode[]
   schedules         Schedule[]
@@ -106,11 +109,7 @@ model Instructor {
 
   // [Audit] 성적 수정 이력
   updatedGradeLogs GradeLog[]
-
-  enrollments  Enrollment[]
-  exams        Exam[]
   clinics      Clinic[]
-  lectureTimes LectureTime[]
 
   @@map("instructors")
 }
@@ -285,13 +284,12 @@ model Attendance {
 model Exam {
   id          String  @id @default(cuid(2))
   lectureId   String  @map("lecture_id")
+  instructorId String?     @map("instructor_id")
   title       String
   cutoffScore Int     @default(0) @map("cutoff_score")
   source      String?
 
   lecture Lecture @relation(fields: [lectureId], references: [id], onDelete: Cascade)
-
-  instructorId String?     @map("instructor_id")
   instructor   Instructor? @relation(fields: [instructorId], references: [id])
 
   questions Question[]

@@ -30,4 +30,12 @@ export interface AuthResponse {
   session?: AuthSession | { token: string } | null;
   token?: string;
   profile?: unknown;
+  setCookie?: string | string[] | null; // For passing cookies from Better Auth handler
+}
+
+export interface ProfileBase {
+  id: string;
+  userId: string;
+  phoneNumber: string;
+  createdAt: Date;
 }
