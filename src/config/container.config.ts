@@ -12,6 +12,12 @@ import {
   createOptionalAuth,
   createRoleMiddlewares,
 } from '../middlewares/auth.middleware.js';
+import { LecturesRepository } from '../repos/lectures.repo.js';
+import { LecturesService } from '../services/lectures.service.js';
+import { LecturesController } from '../controllers/lectures.controller.js';
+import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
+import { EnrollmentsService } from '../services/enrollments.service.js';
+import { EnrollmentsController } from '../controllers/enrollments.controller.js';
 
 // 1. Instantiate Repositories
 const instructorRepo = new InstructorRepository(prisma);
@@ -20,7 +26,10 @@ const assistantRepo = new AssistantRepository(prisma);
 const parentRepo = new ParentRepository(prisma);
 const assistantCodeRepo = new AssistantCodeRepository(prisma);
 
-// 2. Instantiate Services (Inject Repos + AuthClient + Prisma)
+const lecturesRepo = new LecturesRepository(prisma);
+const enrollmentsRepo = new EnrollmentsRepository(prisma);
+
+// 2. Instantiate Services (Inject Repos)
 const authService = new AuthService(
   instructorRepo,
   assistantRepo,
@@ -31,8 +40,13 @@ const authService = new AuthService(
   prisma,
 );
 
+const lecturesService = new LecturesService(lecturesRepo, prisma);
+const enrollmentsService = new EnrollmentsService(enrollmentsRepo);
+
 // 3. Instantiate Controllers (Inject Services)
 const authController = new AuthController(authService);
+const lecturesController = new LecturesController(lecturesService);
+const enrollmentsController = new EnrollmentsController(enrollmentsService);
 
 // 4. Create Middlewares (Inject Services)
 const requireAuth = createRequireAuth(authService);
@@ -57,4 +71,8 @@ export const container = {
   requireInstructorOrAssistant,
   requireStudent,
   requireParent,
+  lecturesService,
+  lecturesController,
+  enrollmentsService,
+  enrollmentsController,
 };
