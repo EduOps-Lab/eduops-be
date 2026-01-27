@@ -1,3 +1,5 @@
+import { UserType } from '../../constants/auth.constant.js';
+
 /** Mock Session 데이터 */
 export const mockSession = {
   id: 'test-session-id',
@@ -38,6 +40,7 @@ export const signUpRequests = {
   parent: {
     email: 'new-parent@example.com',
     password: 'password123!',
+    userType: UserType.PARENT,
     name: 'New Parent',
     phoneNumber: '010-4444-5555',
   },
@@ -48,11 +51,13 @@ export const signInRequests = {
   instructor: {
     email: 'instructor@example.com',
     password: 'password123!',
+    userType: UserType.INSTRUCTOR,
     rememberMe: false,
   },
   student: {
     email: 'student@example.com',
     password: 'password123!',
+    userType: UserType.STUDENT,
     rememberMe: true,
   },
 } as const;
