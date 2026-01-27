@@ -189,10 +189,6 @@ export type UpdateLectureDto = z.infer<typeof updateLectureSchema>;
 
 /**
  * 강의 삭제 요청 스키마
- * @example
- * {
- *   "instructorId": "abc1234"
- * }
  */
 export const deleteLectureSchema = z.object({});
 
