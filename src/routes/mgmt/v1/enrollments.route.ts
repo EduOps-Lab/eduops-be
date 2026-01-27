@@ -8,6 +8,7 @@ import { validate } from '../../../middlewares/validate.middleware.js';
 import {
   enrollmentIdParamSchema,
   updateEnrollmentSchema,
+  getEnrollmentsQuerySchema,
 } from '../../../validations/enrollments.validation.js';
 
 export const mgmtEnrollmentsRouter = Router({ mergeParams: true });
@@ -20,7 +21,11 @@ mgmtEnrollmentsRouter.use(requireInstructorOrAssistant);
  * GET /api/mgmt/v1/enrollments
  * 강사: 본인의 강의를 수강하는 모든 학생 목록 조회
  */
-mgmtEnrollmentsRouter.get('/', container.enrollmentsController.getEnrollments);
+mgmtEnrollmentsRouter.get(
+  '/',
+  validate(getEnrollmentsQuerySchema, 'query'),
+  container.enrollmentsController.getEnrollments,
+);
 
 /**
  * GET /api/mgmt/v1/enrollments/:enrollmentId

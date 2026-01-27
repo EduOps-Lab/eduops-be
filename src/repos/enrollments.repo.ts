@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
+import { getPagingParams } from '../utils/pagination.util.js';
 
 export class EnrollmentsRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -168,17 +169,48 @@ export class EnrollmentsRepository {
     });
   }
 
-  /** 강사별 전체 수강생 목록 조회 */
+  /** 강사별 전체 수강생 목록 조회 (검색/필터/페이지네이션) */
   async findManyByInstructorId(
     instructorId: string,
+    params: {
+      page: number;
+      pageSize: number;
+      keyword?: string;
+      year?: string;
+      status?: EnrollmentStatus;
+    },
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx ?? this.prisma;
-    return await client.enrollment.findMany({
-      where: {
-        instructorId,
-        deletedAt: null,
-      },
+    const { page, pageSize, keyword, year, status } = params;
+
+    // 검색 조건 구성
+    const where: Prisma.EnrollmentWhereInput = {
+      instructorId,
+      deletedAt: null,
+    };
+
+    if (status) {
+      where.status = status;
+    }
+
+    if (year) {
+      where.schoolYear = year;
+    }
+
+    if (keyword) {
+      where.OR = [
+        { studentName: { contains: keyword } },
+        { school: { contains: keyword } },
+        { studentPhone: { contains: keyword } },
+        { parentPhone: { contains: keyword } },
+      ];
+    }
+
+    // 데이터 조회 (페이지네이션)
+    const { skip, take } = getPagingParams(page, pageSize);
+    const enrollments = await client.enrollment.findMany({
+      where,
       include: {
         lecture: {
           select: {
@@ -191,7 +223,17 @@ export class EnrollmentsRepository {
       orderBy: {
         registeredAt: 'desc', // 최신 등록순
       },
+      skip,
+      take,
     });
+
+    // 전체 개수 조회 (페이지네이션 메타데이터용)
+    const totalCount = await client.enrollment.count({ where });
+
+    return {
+      enrollments,
+      totalCount,
+    };
   }
 
   /** ParentChildLink ID로 Parent ID 조회 */

@@ -69,9 +69,16 @@ export type UpdateEnrollmentDto = z.infer<typeof updateEnrollmentSchema>;
 /**
  * 수강생 목록 조회 쿼리 스키마
  */
-export const enrollmentsQuerySchema = z.object({
-  lectureId: z.string().optional(), // 특정 강의만 조회할 경우
-  status: z.nativeEnum(EnrollmentStatus).optional(), // 상태 필터링
+import { paginationQuerySchema } from './common.validation.js';
+
+/**
+ * 수강생 목록 조회 쿼리 스키마
+ */
+export const getEnrollmentsQuerySchema = paginationQuerySchema.extend({
+  keyword: z.string().trim().optional(), // 이름, 학교, 전화번호 검색
+  year: z.enum([...SCHOOL_YEARS] as [string, ...string[]]).optional(), // 학년 필터 (ex: 중1, 고3)
+  status: z.nativeEnum(EnrollmentStatus).optional(), // 상태 필터
+  lectureId: z.string().optional(), // 특정 강의 필터 (선택 사항)
 });
 
-export type EnrollmentsQueryDto = z.infer<typeof enrollmentsQuerySchema>;
+export type GetEnrollmentsQueryDto = z.infer<typeof getEnrollmentsQuerySchema>;

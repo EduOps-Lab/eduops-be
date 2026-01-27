@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { EnrollmentsService } from '../services/enrollments.service.js';
+import { GetEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
+import { getPagingData } from '../utils/pagination.util.js';
 import { UserType } from '../constants/auth.constant.js';
 import { UnauthorizedException } from '../err/http.exception.js';
 
@@ -18,12 +20,25 @@ export class EnrollmentsController {
 
       // 강사/조교인 경우 (관리자 페이지 등에서 호출 시)
       if (userType === UserType.INSTRUCTOR || userType === UserType.ASSISTANT) {
-        const enrollments =
+        const query = req.query as unknown as GetEnrollmentsQueryDto;
+        const { enrollments, totalCount } =
           await this.enrollmentsService.getEnrollmentsByInstructor(
             userType,
             profileId,
+            query,
           );
-        res.status(200).json({ status: 'success', data: { enrollments } });
+
+        const responseData = getPagingData(
+          enrollments,
+          totalCount,
+          query.page,
+          query.pageSize,
+        );
+
+        res.status(200).json({
+          status: 'success',
+          data: responseData,
+        });
         return;
       }
 

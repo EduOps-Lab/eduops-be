@@ -8,6 +8,7 @@ import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
 import { Prisma } from '../generated/prisma/client.js';
+import { GetEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
 
 export class EnrollmentsService {
   constructor(
@@ -67,7 +68,11 @@ export class EnrollmentsService {
   }
 
   /** 강사(조교 포함)별 전체 수강생 목록 조회 */
-  async getEnrollmentsByInstructor(userType: UserType, profileId: string) {
+  async getEnrollmentsByInstructor(
+    userType: UserType,
+    profileId: string,
+    query: GetEnrollmentsQueryDto,
+  ) {
     const targetInstructorId = await this.getEffectiveInstructorId(
       userType,
       profileId,
@@ -75,6 +80,7 @@ export class EnrollmentsService {
 
     return await this.enrollmentsRepository.findManyByInstructorId(
       targetInstructorId,
+      query,
     );
   }
 
