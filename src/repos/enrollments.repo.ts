@@ -13,6 +13,7 @@ export class EnrollmentsRepository {
       where: {
         appStudentId,
         deletedAt: null,
+        status: 'ACTIVE', // 기본적으로 수강중인 것만 조회
       },
       include: {
         lecture: {
@@ -44,6 +45,7 @@ export class EnrollmentsRepository {
       where: {
         appParentLinkId,
         deletedAt: null,
+        status: 'ACTIVE', // 기본적으로 수강중인 것만 조회
       },
       include: {
         lecture: {
@@ -89,6 +91,93 @@ export class EnrollmentsRepository {
             },
           },
         },
+      },
+    });
+  }
+
+  /** ID로 간단 조회 (권한 체크 및 기본 정보 확인용) */
+  async findById(id: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findUnique({
+      where: { id },
+    });
+  }
+
+  /** 수강 등록 (Create) */
+  async create(
+    data: Prisma.EnrollmentUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.create({
+      data,
+    });
+  }
+
+  /** 수강 정보 수정 (Update) */
+  async update(
+    id: string,
+    data: Prisma.EnrollmentUpdateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /** Soft Delete */
+  async softDelete(id: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        status: 'DROPPED', // 삭제 시 상태도 변경하는 것이 안전
+      },
+    });
+  }
+
+  /** 강의별 수강생 목록 조회 */
+  async findManyByLectureId(lectureId: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findMany({
+      where: {
+        lectureId,
+        deletedAt: null,
+      },
+      include: {
+        appStudent: true, // 학생 정보 포함
+      },
+      orderBy: {
+        studentName: 'asc', // 이름순 정렬
+      },
+    });
+  }
+
+  /** 강사별 전체 수강생 목록 조회 */
+  async findManyByInstructorId(
+    instructorId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.findMany({
+      where: {
+        instructorId,
+        deletedAt: null,
+      },
+      include: {
+        lecture: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        appStudent: true,
+      },
+      orderBy: {
+        registeredAt: 'desc', // 최신 등록순
       },
     });
   }

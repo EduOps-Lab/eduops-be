@@ -7,8 +7,10 @@ import {
   lectureIdParamSchema,
   updateLectureSchema,
 } from '../../../validations/lectures.validation.js';
+import { createEnrollmentSchema } from '../../../validations/enrollments.validation.js';
 import {
   requireAuth,
+  requireInstructor,
   requireInstructorOrAssistant,
 } from '../../../middlewares/auth.middleware.js';
 
@@ -36,7 +38,7 @@ mgmtLecturesRouter.get(
 mgmtLecturesRouter.post(
   '/',
   requireAuth,
-  requireInstructorOrAssistant,
+  requireInstructor,
   validate(createLectureSchema, 'body'),
   container.lecturesController.createLecture,
 );
@@ -45,7 +47,7 @@ mgmtLecturesRouter.post(
 mgmtLecturesRouter.patch(
   '/:id',
   requireAuth,
-  requireInstructorOrAssistant,
+  requireInstructor,
   validate(lectureIdParamSchema, 'params'),
   validate(updateLectureSchema, 'body'),
   container.lecturesController.updateLecture,
@@ -55,7 +57,30 @@ mgmtLecturesRouter.patch(
 mgmtLecturesRouter.delete(
   '/:id',
   requireAuth,
-  requireInstructorOrAssistant,
+  requireInstructor,
   validate(lectureIdParamSchema, 'params'),
   container.lecturesController.deleteLecture,
+);
+
+// --- Enrollments (Nested Routes) ---
+
+/**
+ * GET /api/mgmt/v1/lectures/:lectureId/enrollments
+ * 해당 강의의 수강생 목록 조회
+ */
+mgmtLecturesRouter.get(
+  '/:lectureId/enrollments',
+  requireInstructorOrAssistant,
+  container.enrollmentsController.getEnrollmentsByLecture,
+);
+
+/**
+ * POST /api/mgmt/v1/lectures/:lectureId/enrollments
+ * 해당 강의에 수강생 등록
+ */
+mgmtLecturesRouter.post(
+  '/:lectureId/enrollments',
+  requireInstructorOrAssistant,
+  validate(createEnrollmentSchema, 'body'),
+  container.enrollmentsController.createEnrollment,
 );

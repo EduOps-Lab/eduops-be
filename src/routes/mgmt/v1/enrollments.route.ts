@@ -1,0 +1,52 @@
+import { Router } from 'express';
+import { container } from '../../../config/container.config.js';
+import {
+  requireAuth,
+  requireInstructorOrAssistant,
+} from '../../../middlewares/auth.middleware.js';
+import { validate } from '../../../middlewares/validate.middleware.js';
+import {
+  enrollmentIdParamSchema,
+  updateEnrollmentSchema,
+} from '../../../validations/enrollments.validation.js';
+
+export const mgmtEnrollmentsRouter = Router({ mergeParams: true });
+
+// 모든 라우트에 대해 강사/조교 권한 필요
+mgmtEnrollmentsRouter.use(requireAuth);
+mgmtEnrollmentsRouter.use(requireInstructorOrAssistant);
+
+/**
+ * GET /api/mgmt/v1/enrollments
+ * 강사: 본인의 강의를 수강하는 모든 학생 목록 조회
+ */
+mgmtEnrollmentsRouter.get('/', container.enrollmentsController.getEnrollments);
+
+/**
+ * GET /api/mgmt/v1/enrollments/:enrollmentId
+ * 수강 정보 상세 조회
+ */
+mgmtEnrollmentsRouter.get(
+  '/:enrollmentId',
+  validate(enrollmentIdParamSchema, 'params'),
+  container.enrollmentsController.getEnrollment,
+);
+
+/**
+ * PATCH /api/mgmt/v1/enrollments/:enrollmentId
+ * 수강 정보 수정
+ */
+mgmtEnrollmentsRouter.patch(
+  '/:enrollmentId',
+  validate(updateEnrollmentSchema, 'body'),
+  container.enrollmentsController.updateEnrollment,
+);
+
+/**
+ * DELETE /api/mgmt/v1/enrollments/:enrollmentId
+ * 수강 정보 삭제 (Soft Delete)
+ */
+mgmtEnrollmentsRouter.delete(
+  '/:enrollmentId',
+  container.enrollmentsController.deleteEnrollment,
+);
