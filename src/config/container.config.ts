@@ -34,7 +34,7 @@ const authService = new AuthService(
 );
 
 const lecturesService = new LecturesService(lecturesRepo, prisma);
-const enrollmentsService = new EnrollmentsService(enrollmentsRepo, prisma);
+const enrollmentsService = new EnrollmentsService(enrollmentsRepo);
 
 // 3. Instantiate Controllers (Inject Services)
 const authController = new AuthController(authService);

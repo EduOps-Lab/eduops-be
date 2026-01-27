@@ -93,65 +93,6 @@ export class EnrollmentsRepository {
     });
   }
 
-  /** 학생 전화번호로 수강 목록 조회 */
-  async findByStudentPhone(
-    studentPhone: string,
-    tx?: Prisma.TransactionClient,
-  ) {
-    const client = tx ?? this.prisma;
-    return await client.enrollment.findMany({
-      where: {
-        studentPhone,
-        deletedAt: null,
-      },
-      include: {
-        lecture: {
-          include: {
-            instructor: {
-              select: {
-                id: true,
-                subject: true,
-                phoneNumber: true,
-                academy: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        registeredAt: 'desc',
-      },
-    });
-  }
-
-  /** 학부모 전화번호로 수강 목록 조회 */
-  async findByParentPhone(parentPhone: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? this.prisma;
-    return await client.enrollment.findMany({
-      where: {
-        parentPhone,
-        deletedAt: null,
-      },
-      include: {
-        lecture: {
-          include: {
-            instructor: {
-              select: {
-                id: true,
-                subject: true,
-                phoneNumber: true,
-                academy: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        registeredAt: 'desc',
-      },
-    });
-  }
-
   /** ParentChildLink ID로 Parent ID 조회 */
   async findParentIdByParentChildLinkId(
     id: string,
@@ -199,24 +140,5 @@ export class EnrollmentsRepository {
         registeredAt: 'desc',
       },
     });
-  }
-
-  /** 전화번호로 enrollment 존재 여부 확인 */
-  async checkPhoneHasEnrollments(
-    phoneNumber: string,
-    userType: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<boolean> {
-    const client = tx ?? this.prisma;
-    const count = await client.enrollment.count({
-      where: {
-        ...(userType === 'STUDENT'
-          ? { studentPhone: phoneNumber }
-          : { parentPhone: phoneNumber }),
-        deletedAt: null,
-      },
-    });
-
-    return count > 0;
   }
 }
