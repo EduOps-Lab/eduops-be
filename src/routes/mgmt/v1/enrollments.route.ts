@@ -1,9 +1,5 @@
 import { Router } from 'express';
 import { container } from '../../../config/container.config.js';
-import {
-  requireAuth,
-  requireInstructorOrAssistant,
-} from '../../../middlewares/auth.middleware.js';
 import { validate } from '../../../middlewares/validate.middleware.js';
 import {
   enrollmentIdParamSchema,
@@ -12,6 +8,9 @@ import {
 } from '../../../validations/enrollments.validation.js';
 
 export const mgmtEnrollmentsRouter = Router({ mergeParams: true });
+
+const { requireAuth, requireInstructorOrAssistant, enrollmentsController } =
+  container;
 
 // 모든 라우트에 대해 강사/조교 권한 필요
 mgmtEnrollmentsRouter.use(requireAuth);
@@ -24,7 +23,7 @@ mgmtEnrollmentsRouter.use(requireInstructorOrAssistant);
 mgmtEnrollmentsRouter.get(
   '/',
   validate(getEnrollmentsQuerySchema, 'query'),
-  container.enrollmentsController.getEnrollments,
+  enrollmentsController.getEnrollments,
 );
 
 /**
@@ -34,7 +33,7 @@ mgmtEnrollmentsRouter.get(
 mgmtEnrollmentsRouter.get(
   '/:enrollmentId',
   validate(enrollmentIdParamSchema, 'params'),
-  container.enrollmentsController.getEnrollment,
+  enrollmentsController.getEnrollment,
 );
 
 /**
@@ -44,7 +43,7 @@ mgmtEnrollmentsRouter.get(
 mgmtEnrollmentsRouter.patch(
   '/:enrollmentId',
   validate(updateEnrollmentSchema, 'body'),
-  container.enrollmentsController.updateEnrollment,
+  enrollmentsController.updateEnrollment,
 );
 
 /**
@@ -53,5 +52,5 @@ mgmtEnrollmentsRouter.patch(
  */
 mgmtEnrollmentsRouter.delete(
   '/:enrollmentId',
-  container.enrollmentsController.deleteEnrollment,
+  enrollmentsController.deleteEnrollment,
 );
