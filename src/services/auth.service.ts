@@ -1,6 +1,5 @@
 import { IncomingHttpHeaders } from 'http';
 import { auth } from '../config/auth.config.js';
-import { prisma } from '../config/db.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import {
   BadRequestException,
@@ -15,6 +14,7 @@ import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
 import { SignUpData, AuthResponse } from '../types/auth.types.js';
 import { fromNodeHeaders } from 'better-auth/node';
+import { PrismaClient } from '../generated/prisma/client.js';
 
 export class AuthService {
   constructor(
@@ -23,6 +23,8 @@ export class AuthService {
     private readonly assistantCodeRepo: AssistantCodeRepository,
     private readonly studentRepo: StudentRepository,
     private readonly parentRepo: ParentRepository,
+    private readonly authClient: typeof auth,
+    private readonly prisma: PrismaClient,
   ) {}
 
   // 회원가입
@@ -49,7 +51,7 @@ export class AuthService {
       }),
     });
 
-    const response = await auth.handler(signUpReq);
+    const response = await this.authClient.handler(signUpReq);
 
     if (!response.ok) {
       // 에러 처리
@@ -84,7 +86,7 @@ export class AuthService {
           break;
       }
     } catch (error) {
-      await prisma.user.delete({ where: { id: userId } });
+      await this.prisma.user.delete({ where: { id: userId } });
       throw error;
     }
 
@@ -99,7 +101,7 @@ export class AuthService {
     rememberMe: boolean = false,
   ) {
     // 1. 이메일로 유저 조회하여 타입 검증
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await this.prisma.user.findUnique({
       where: { email },
     });
 
@@ -122,7 +124,7 @@ export class AuthService {
       }),
     });
 
-    const response = await auth.handler(signInReq);
+    const response = await this.authClient.handler(signInReq);
 
     if (!response.ok) {
       const errorData = await response.json(); // 에러 메시지 확인용
@@ -153,14 +155,14 @@ export class AuthService {
 
   // 로그아웃 (핸들러에서 처리하거나 API 호출)
   async signOut(headers: IncomingHttpHeaders) {
-    return await auth.api.signOut({
+    return await this.authClient.api.signOut({
       headers: headers as Record<string, string>,
     });
   }
 
   // 세션 조회
   async getSession(headers: IncomingHttpHeaders) {
-    const session = await auth.api.getSession({
+    const session = await this.authClient.api.getSession({
       headers: fromNodeHeaders(headers),
     });
 
@@ -202,7 +204,7 @@ export class AuthService {
       );
     }
 
-    return await prisma.$transaction(async (tx) => {
+    return await this.prisma.$transaction(async (tx) => {
       await this.assistantCodeRepo.markAsUsed(assistantCode.id, tx);
       return await this.assistantRepo.create(
         {

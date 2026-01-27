@@ -9,20 +9,27 @@ const config = {
     '!src/**/*.d.ts',
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
-    '!src/app.ts'
+    '!src/app.ts',
+    '!src/test/**/*.ts'
   ],
   transform: {
     '^.+\\.ts$': ['ts-jest', {
-      tsconfig: {
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true
-      }
+      tsconfig: './tsconfig.test.json'
     }]
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(better-auth|better-call)/)'
+  ],
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    // ESM .js 확장자를 .ts로 매핑
+    '^(\\.{1,2}/.*)\\.js$': '$1'
   },
-  verbose: true
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+  verbose: true,
+  // 테스트 격리
+  clearMocks: true,
+  restoreMocks: true,
 };
 
 export default config;

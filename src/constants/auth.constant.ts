@@ -14,3 +14,6 @@ export const UserTypeToModel = {
   STUDENT: 'appStudent',
   PARENT: 'appParent',
 } as const;
+
+// 인증 쿠키 이름
+export const AUTH_COOKIE_NAME = 'better-auth.session_token';
