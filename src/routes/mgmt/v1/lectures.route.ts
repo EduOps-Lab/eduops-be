@@ -7,17 +7,24 @@ import {
   lectureIdParamSchema,
   updateLectureSchema,
 } from '../../../validations/lectures.validation.js';
+import { createEnrollmentSchema } from '../../../validations/enrollments.validation.js';
 
 export const mgmtLecturesRouter = Router();
 
-const { requireAuth, requireInstructorOrAssistant, lecturesController } =
-  container;
+const {
+  requireAuth,
+  requireInstructor,
+  requireInstructorOrAssistant,
+  lecturesController,
+} = container;
+
+// 모든 라우트에 대해 강사/조교 권한 필요
+mgmtLecturesRouter.use(requireAuth);
+mgmtLecturesRouter.use(requireInstructorOrAssistant);
 
 /** GET:강의 리스트 조회 */
 mgmtLecturesRouter.get(
   '/',
-  requireAuth,
-  requireInstructorOrAssistant,
   validate(getLecturesQuerySchema, 'query'),
   lecturesController.getLectures,
 );
@@ -25,8 +32,6 @@ mgmtLecturesRouter.get(
 /** GET:강의 개별 조회 */
 mgmtLecturesRouter.get(
   '/:id',
-  requireAuth,
-  requireInstructorOrAssistant,
   validate(lectureIdParamSchema, 'params'),
   lecturesController.getLecture,
 );
@@ -34,8 +39,6 @@ mgmtLecturesRouter.get(
 /** POST:강의 생성 */
 mgmtLecturesRouter.post(
   '/',
-  requireAuth,
-  requireInstructorOrAssistant,
   validate(createLectureSchema, 'body'),
   lecturesController.createLecture,
 );
@@ -43,8 +46,6 @@ mgmtLecturesRouter.post(
 /** PATCH:강의 수정 */
 mgmtLecturesRouter.patch(
   '/:id',
-  requireAuth,
-  requireInstructorOrAssistant,
   validate(lectureIdParamSchema, 'params'),
   validate(updateLectureSchema, 'body'),
   lecturesController.updateLecture,
@@ -53,8 +54,28 @@ mgmtLecturesRouter.patch(
 /** DELETE:강의 삭제 (Soft Delete) */
 mgmtLecturesRouter.delete(
   '/:id',
-  requireAuth,
-  requireInstructorOrAssistant,
+  requireInstructor,
   validate(lectureIdParamSchema, 'params'),
   lecturesController.deleteLecture,
+);
+
+// --- Enrollments (Nested Routes) ---
+
+/**
+ * GET /api/mgmt/v1/lectures/:lectureId/enrollments
+ * 해당 강의의 수강생 목록 조회
+ */
+mgmtLecturesRouter.get(
+  '/:lectureId/enrollments',
+  container.enrollmentsController.getEnrollmentsByLecture,
+);
+
+/**
+ * POST /api/mgmt/v1/lectures/:lectureId/enrollments
+ * 해당 강의에 수강생 등록
+ */
+mgmtLecturesRouter.post(
+  '/:lectureId/enrollments',
+  validate(createEnrollmentSchema, 'body'),
+  container.enrollmentsController.createEnrollment,
 );

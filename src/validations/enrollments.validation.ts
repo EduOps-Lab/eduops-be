@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import {
+  SCHOOL_YEARS,
+  EnrollmentStatus,
+} from '../constants/enrollments.constant.js';
+import { Regex } from '../constants/regex.constant.js';
+
+// ... (other imports if any, but since I am replacing line 1-24 mainly to insert import and update schema)
 
 /**
  * Enrollment ID 파라미터 스키마
@@ -15,3 +22,64 @@ export const enrollmentIdParamSchema = z.object({
 });
 
 export type EnrollmentIdParamDto = z.infer<typeof enrollmentIdParamSchema>;
+
+/**
+ * 수강 등록 스키마
+ */
+export const createEnrollmentSchema = z.object({
+  school: z.string().trim().min(1, '학교명은 필수입니다.'),
+  schoolYear: z.enum([...SCHOOL_YEARS] as [string, ...string[]]),
+  studentName: z.string().trim().min(1, '학생 이름은 필수입니다.'),
+  studentPhone: z
+    .string()
+    .trim()
+    .regex(Regex.PHONE, '유효한 전화번호 형식이 아닙니다.'),
+  parentPhone: z
+    .string()
+    .trim()
+    .regex(Regex.PHONE, '유효한 전화번호 형식이 아닙니다.'),
+  memo: z.string().optional(),
+});
+
+export type CreateEnrollmentDto = z.infer<typeof createEnrollmentSchema>;
+
+/**
+ * 수강 정보 수정 스키마
+ */
+export const updateEnrollmentSchema = z.object({
+  school: z.string().trim().min(1, '학교명은 필수입니다.').optional(),
+  schoolYear: z.enum([...SCHOOL_YEARS] as [string, ...string[]]).optional(),
+  studentName: z.string().trim().min(1, '학생 이름은 필수입니다.').optional(),
+  studentPhone: z
+    .string()
+    .trim()
+    .regex(Regex.PHONE, '유효한 전화번호 형식이 아닙니다.')
+    .optional(),
+  parentPhone: z
+    .string()
+    .trim()
+    .regex(Regex.PHONE, '유효한 전화번호 형식이 아닙니다.')
+    .optional(),
+  memo: z.string().optional(),
+  status: z.nativeEnum(EnrollmentStatus).optional(),
+});
+
+export type UpdateEnrollmentDto = z.infer<typeof updateEnrollmentSchema>;
+
+/**
+ * 수강생 목록 조회 쿼리 스키마
+ */
+import { paginationQuerySchema } from './common.validation.js';
+
+/**
+ * 수강생 목록 조회 쿼리 스키마
+ */
+export const getEnrollmentsQuerySchema = paginationQuerySchema.extend({
+  keyword: z.string().trim().optional(), // 이름, 학교, 전화번호 검색
+  year: z.enum([...SCHOOL_YEARS] as [string, ...string[]]).optional(), // 학년 필터 (ex: 중1, 고3)
+  status: z.nativeEnum(EnrollmentStatus).optional(), // 상태 필터
+  lectureId: z.string().optional(), // 특정 강의 필터 (선택 사항)
+  includeClosed: z.coerce.boolean().optional(), // 종강된 강의 포함 여부 (true: 포함, false/undefined: 제외)
+});
+
+export type GetEnrollmentsQueryDto = z.infer<typeof getEnrollmentsQuerySchema>;

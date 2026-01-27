@@ -1,18 +1,24 @@
-import { Lecture, PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import {
   NotFoundException,
   ForbiddenException,
 } from '../err/http.exception.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
+import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import {
   CreateLectureDto,
   GetLecturesQueryDto,
   UpdateLectureDto,
 } from '../validations/lectures.validation.js';
+import type { Lecture, Enrollment } from '../generated/prisma/client.js';
+
+export type LectureWithEnrollments = Lecture & { enrollments?: Enrollment[] };
 
 export class LecturesService {
   constructor(
     private readonly lecturesRepository: LecturesRepository,
+    private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -20,18 +26,35 @@ export class LecturesService {
   async createLecture(
     instructorId: string,
     data: CreateLectureDto,
-  ): Promise<Lecture> {
+  ): Promise<LectureWithEnrollments> {
     const instructor =
       await this.lecturesRepository.findInstructorById(instructorId);
 
     if (!instructor) throw new NotFoundException('강사를 찾을 수 없습니다.');
 
     return await this.prisma.$transaction(async (tx) => {
+      // 1. 강의 생성
       const lecture = await this.lecturesRepository.create(
         { ...data, instructorId },
         tx,
       );
-      return lecture;
+
+      // 2. 수강생 생성 (있는 경우)
+      let enrollments: Enrollment[] = [];
+      if (data.enrollments && data.enrollments.length > 0) {
+        const enrollmentData = data.enrollments.map((e) => ({
+          ...e,
+          lectureId: lecture.id,
+          instructorId,
+          status: EnrollmentStatus.ACTIVE,
+        }));
+        enrollments = await this.enrollmentsRepository.createMany(
+          enrollmentData,
+          tx,
+        );
+      }
+
+      return { ...lecture, enrollments };
     });
   }
 
