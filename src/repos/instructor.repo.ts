@@ -1,5 +1,4 @@
-import { prisma } from '../config/db.config.js';
-import type { Prisma } from '../generated/prisma/client.js';
+import type { Prisma, PrismaClient } from '../generated/prisma/client.js';
 
 interface CreateInstructorData {
   userId: string;
@@ -9,23 +8,24 @@ interface CreateInstructorData {
 }
 
 export class InstructorRepository {
+  constructor(private readonly prisma: PrismaClient) {}
   async findByUserId(userId: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? prisma;
+    const client = tx ?? this.prisma;
     return client.instructor.findUnique({ where: { userId } });
   }
 
   async findById(id: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? prisma;
+    const client = tx ?? this.prisma;
     return client.instructor.findUnique({ where: { id } });
   }
 
   async findByPhoneNumber(phoneNumber: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? prisma;
+    const client = tx ?? this.prisma;
     return client.instructor.findFirst({ where: { phoneNumber } });
   }
 
   async create(data: CreateInstructorData, tx?: Prisma.TransactionClient) {
-    const client = tx ?? prisma;
+    const client = tx ?? this.prisma;
     return client.instructor.create({ data });
   }
 }
