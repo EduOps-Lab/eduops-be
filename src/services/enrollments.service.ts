@@ -1,5 +1,4 @@
 import { PrismaClient } from '../generated/prisma/client.js';
-import type { Prisma } from '../generated/prisma/client.js';
 import { UserType } from '../constants/auth.constant.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import {
@@ -10,6 +9,7 @@ import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
 import { GetEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
+import type { Prisma } from '../generated/prisma/client.js';
 
 export class EnrollmentsService {
   constructor(

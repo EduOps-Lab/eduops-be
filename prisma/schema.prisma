@@ -166,7 +166,6 @@ model Lecture {
   title       String
   description String? @db.Text
 
-  isActive  Boolean   @default(true) @map("is_active")
   status    String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED
   createdAt DateTime  @default(now()) @map("created_at")
   startAt   DateTime? @map("start_at")

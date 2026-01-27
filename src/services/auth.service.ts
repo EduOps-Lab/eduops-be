@@ -1,4 +1,6 @@
 import { IncomingHttpHeaders } from 'http';
+import { fromNodeHeaders } from 'better-auth/node';
+import { PrismaClient } from '../generated/prisma/client.js';
 import { auth } from '../config/auth.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import {
@@ -13,8 +15,6 @@ import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
 import type { SignUpData, AuthResponse } from '../types/auth.types.js';
-import { fromNodeHeaders } from 'better-auth/node';
-import { PrismaClient } from '../generated/prisma/client.js';
 
 export class AuthService {
   constructor(

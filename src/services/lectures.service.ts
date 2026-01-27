@@ -1,5 +1,4 @@
 import { PrismaClient } from '../generated/prisma/client.js';
-import type { Lecture, Enrollment } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import {
   NotFoundException,
@@ -12,6 +11,7 @@ import {
   GetLecturesQueryDto,
   UpdateLectureDto,
 } from '../validations/lectures.validation.js';
+import type { Lecture, Enrollment } from '../generated/prisma/client.js';
 
 export type LectureWithEnrollments = Lecture & { enrollments?: Enrollment[] };
 

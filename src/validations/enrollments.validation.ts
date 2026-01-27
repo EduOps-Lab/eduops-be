@@ -79,6 +79,7 @@ export const getEnrollmentsQuerySchema = paginationQuerySchema.extend({
   year: z.enum([...SCHOOL_YEARS] as [string, ...string[]]).optional(), // 학년 필터 (ex: 중1, 고3)
   status: z.nativeEnum(EnrollmentStatus).optional(), // 상태 필터
   lectureId: z.string().optional(), // 특정 강의 필터 (선택 사항)
+  includeClosed: z.coerce.boolean().optional(), // 종강된 강의 포함 여부 (true: 포함, false/undefined: 제외)
 });
 
 export type GetEnrollmentsQueryDto = z.infer<typeof getEnrollmentsQuerySchema>;

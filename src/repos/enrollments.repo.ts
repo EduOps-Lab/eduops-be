@@ -1,6 +1,7 @@
 import { PrismaClient } from '../generated/prisma/client.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
+import { LectureStatus } from '../constants/lectures.constant.js';
 import { getPagingParams } from '../utils/pagination.util.js';
 
 export class EnrollmentsRepository {
@@ -179,6 +180,7 @@ export class EnrollmentsRepository {
       keyword?: string;
       year?: string;
       status?: EnrollmentStatus;
+      includeClosed?: boolean;
     },
     tx?: Prisma.TransactionClient,
   ) {
@@ -206,6 +208,15 @@ export class EnrollmentsRepository {
         { studentPhone: { contains: keyword } },
         { parentPhone: { contains: keyword } },
       ];
+    }
+
+    // [New] 종강된 강의 제외 로직 (includeClosed가 true가 아니면 제외)
+    if (!params.includeClosed) {
+      where.lecture = {
+        status: {
+          not: LectureStatus.COMPLETED,
+        },
+      };
     }
 
     // 데이터 조회 (페이지네이션)
