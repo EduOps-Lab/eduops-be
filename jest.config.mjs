@@ -20,6 +20,9 @@ const config = {
       }
     }]
   },
+  transformIgnorePatterns: [
+    'node_modules/(?!(better-auth|better-call)/)'
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     // ESM .js 확장자를 .ts로 매핑
