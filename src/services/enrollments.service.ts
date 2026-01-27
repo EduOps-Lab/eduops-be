@@ -22,23 +22,20 @@ export class EnrollmentsService {
     userType: UserType,
     profileId: string,
   ) {
-    if (userType !== UserType.INSTRUCTOR && userType !== UserType.ASSISTANT) {
-      throw new ForbiddenException('수강 등록 권한이 없습니다.');
-    }
-
-    // 1. 강의 존재 여부 및 권한 확인
+    // 1. 강의 존재 여부 확인
     const lecture = await this.lecturesRepository.findById(lectureId);
     if (!lecture) {
       throw new NotFoundException('강의를 찾을 수 없습니다.');
     }
 
     // 2. 권한 체크 (강사 본인 또는 담당 조교)
-    await this.checkLecturePermission(lecture, userType, profileId);
+    await this.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
 
-    // 3. 중복 등록 체크 (옵션, 필요한 경우 구현)
-    // const existing = await ...
-
-    // 4. Enrollment 생성
+    // 3. Enrollment 생성
     return await this.enrollmentsRepository.create({
       ...data,
       lectureId,
@@ -59,22 +56,21 @@ export class EnrollmentsService {
       throw new NotFoundException('강의를 찾을 수 없습니다.');
     }
 
-    await this.checkLecturePermission(lecture, userType, profileId);
+    await this.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
 
     return await this.enrollmentsRepository.findManyByLectureId(lectureId);
   }
 
   /** 강사(조교 포함)별 전체 수강생 목록 조회 */
   async getEnrollmentsByInstructor(userType: UserType, profileId: string) {
-    let targetInstructorId = profileId;
-
-    if (userType === UserType.ASSISTANT) {
-      const assistant = await this.assistantRepository.findById(profileId);
-      if (!assistant) {
-        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
-      }
-      targetInstructorId = assistant.instructorId;
-    }
+    const targetInstructorId = await this.getEffectiveInstructorId(
+      userType,
+      profileId,
+    );
 
     return await this.enrollmentsRepository.findManyByInstructorId(
       targetInstructorId,
@@ -95,22 +91,11 @@ export class EnrollmentsService {
     }
 
     // 권한 체크
-    if (userType === UserType.INSTRUCTOR) {
-      if (enrollment.instructorId !== profileId) {
-        throw new ForbiddenException('접근 권한이 없습니다.');
-      }
-    } else if (userType === UserType.ASSISTANT) {
-      const assistant = await this.assistantRepository.findById(profileId);
-      if (!assistant) {
-        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
-      }
-      if (enrollment.instructorId !== assistant.instructorId) {
-        throw new ForbiddenException('접근 권한이 없습니다.');
-      }
-    } else {
-      // 학생/학부모 등 기존 로직 유지 (기존 getEnrollmentById 활용 권장)
-      throw new ForbiddenException('접근 권한이 없습니다.');
-    }
+    await this.validateInstructorAccess(
+      enrollment.instructorId,
+      userType,
+      profileId,
+    );
 
     return enrollment;
   }
@@ -127,20 +112,12 @@ export class EnrollmentsService {
       throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
     }
 
-    // 권한 체크 (간소화: 강사 본인 확인)
-    if (userType === UserType.INSTRUCTOR) {
-      if (enrollment.instructorId !== profileId) {
-        throw new ForbiddenException('접근 권한이 없습니다.');
-      }
-    } else if (userType === UserType.ASSISTANT) {
-      const assistant = await this.assistantRepository.findById(profileId);
-      if (!assistant) {
-        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
-      }
-      if (enrollment.instructorId !== assistant.instructorId) {
-        throw new ForbiddenException('접근 권한이 없습니다.');
-      }
-    }
+    // 권한 체크
+    await this.validateInstructorAccess(
+      enrollment.instructorId,
+      userType,
+      profileId,
+    );
 
     return await this.enrollmentsRepository.update(id, data);
   }
@@ -153,19 +130,11 @@ export class EnrollmentsService {
     }
 
     // 권한 체크
-    if (userType === UserType.INSTRUCTOR) {
-      if (enrollment.instructorId !== profileId) {
-        throw new ForbiddenException('접근 권한이 없습니다.');
-      }
-    } else if (userType === UserType.ASSISTANT) {
-      const assistant = await this.assistantRepository.findById(profileId);
-      if (!assistant) {
-        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
-      }
-      if (enrollment.instructorId !== assistant.instructorId) {
-        throw new ForbiddenException('접근 권한이 없습니다.');
-      }
-    }
+    await this.validateInstructorAccess(
+      enrollment.instructorId,
+      userType,
+      profileId,
+    );
 
     return await this.enrollmentsRepository.softDelete(id);
   }
@@ -224,23 +193,53 @@ export class EnrollmentsService {
 
   /** -------- Helper Functions -------- */
 
+  /** 강사 및 조교 권한 체크 */
+  private async validateInstructorAccess(
+    instructorId: string,
+    userType: UserType,
+    profileId: string,
+  ) {
+    const effectiveInstructorId = await this.getEffectiveInstructorId(
+      userType,
+      profileId,
+    );
+    if (instructorId !== effectiveInstructorId) {
+      throw new ForbiddenException('접근 권한이 없습니다.');
+    }
+  }
+
+  /** 실제 권한을 가진 강사 ID 추출 (DI 기반 리졸버) */
+  private async getEffectiveInstructorId(
+    userType: UserType,
+    profileId: string,
+  ): Promise<string> {
+    if (userType === UserType.INSTRUCTOR) {
+      return profileId;
+    }
+
+    if (userType === UserType.ASSISTANT) {
+      const assistant = await this.assistantRepository.findById(profileId);
+      if (!assistant) {
+        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
+      }
+      return assistant.instructorId;
+    }
+
+    throw new ForbiddenException('접근 권한이 없습니다.');
+  }
+
+  /** 강의별 권한 체크 (getEffectiveInstructorId 활용) */
   private async checkLecturePermission(
     lecture: { instructorId: string },
     userType: UserType,
     profileId: string,
   ) {
-    if (userType === UserType.INSTRUCTOR) {
-      if (lecture.instructorId !== profileId) {
-        throw new ForbiddenException('본인의 강의만 관리할 수 있습니다.');
-      }
-    } else if (userType === UserType.ASSISTANT) {
-      const assistant = await this.assistantRepository.findById(profileId);
-      if (!assistant) {
-        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
-      }
-      if (lecture.instructorId !== assistant.instructorId) {
-        throw new ForbiddenException('담당 강사의 강의만 관리할 수 있습니다.');
-      }
+    const effectiveInstructorId = await this.getEffectiveInstructorId(
+      userType,
+      profileId,
+    );
+    if (lecture.instructorId !== effectiveInstructorId) {
+      throw new ForbiddenException('해당 권한이 없습니다.');
     }
   }
 
