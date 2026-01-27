@@ -16,11 +16,13 @@ import {
 
 export const mgmtLecturesRouter = Router();
 
+// 모든 라우트에 대해 강사/조교 권한 필요
+mgmtLecturesRouter.use(requireAuth);
+mgmtLecturesRouter.use(requireInstructorOrAssistant);
+
 /** GET:강의 리스트 조회 */
 mgmtLecturesRouter.get(
   '/',
-  requireAuth,
-  requireInstructorOrAssistant,
   validate(getLecturesQuerySchema, 'query'),
   container.lecturesController.getLectures,
 );
@@ -28,8 +30,6 @@ mgmtLecturesRouter.get(
 /** GET:강의 개별 조회 */
 mgmtLecturesRouter.get(
   '/:id',
-  requireAuth,
-  requireInstructorOrAssistant,
   validate(lectureIdParamSchema, 'params'),
   container.lecturesController.getLecture,
 );
@@ -37,8 +37,6 @@ mgmtLecturesRouter.get(
 /** POST:강의 생성 */
 mgmtLecturesRouter.post(
   '/',
-  requireAuth,
-  requireInstructor,
   validate(createLectureSchema, 'body'),
   container.lecturesController.createLecture,
 );
@@ -46,8 +44,6 @@ mgmtLecturesRouter.post(
 /** PATCH:강의 수정 */
 mgmtLecturesRouter.patch(
   '/:id',
-  requireAuth,
-  requireInstructor,
   validate(lectureIdParamSchema, 'params'),
   validate(updateLectureSchema, 'body'),
   container.lecturesController.updateLecture,
@@ -56,7 +52,6 @@ mgmtLecturesRouter.patch(
 /** DELETE:강의 삭제 (Soft Delete) */
 mgmtLecturesRouter.delete(
   '/:id',
-  requireAuth,
   requireInstructor,
   validate(lectureIdParamSchema, 'params'),
   container.lecturesController.deleteLecture,
@@ -70,7 +65,6 @@ mgmtLecturesRouter.delete(
  */
 mgmtLecturesRouter.get(
   '/:lectureId/enrollments',
-  requireInstructorOrAssistant,
   container.enrollmentsController.getEnrollmentsByLecture,
 );
 
@@ -80,7 +74,6 @@ mgmtLecturesRouter.get(
  */
 mgmtLecturesRouter.post(
   '/:lectureId/enrollments',
-  requireInstructorOrAssistant,
   validate(createEnrollmentSchema, 'body'),
   container.enrollmentsController.createEnrollment,
 );
