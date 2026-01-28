@@ -16,7 +16,6 @@ const { requireAuth, requireStudent, enrollmentsController } = container;
 svcEnrollmentsRouter.get(
   '/',
   requireAuth,
-  requireAuth,
   requireStudent,
   validate(getSvcEnrollmentsQuerySchema, 'query'),
   enrollmentsController.getEnrollments,
