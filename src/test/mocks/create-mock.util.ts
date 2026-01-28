@@ -1,19 +1,10 @@
 /**
- * 타입 안전한 Mock 자동 생성 유틸리티
+ * Create a type-safe Jest mock object by assigning `jest.fn()` to the specified method names.
  *
- * 인터페이스의 메서드들을 자동으로 jest.fn()으로 변환합니다.
- * 수동으로 각 메서드를 나열하는 보일러플레이트를 줄여줍니다.
+ * The returned object is cast to `jest.Mocked<T>` and contains the provided keys as mocked functions.
  *
- * @example
- * // Before (수동 방식)
- * const mock = {
- *   findById: jest.fn(),
- *   create: jest.fn(),
- *   update: jest.fn(),
- * } as unknown as jest.Mocked<MyRepository>;
- *
- * // After (자동 방식)
- * const mock = createAutoMock<MyRepository>(['findById', 'create', 'update']);
+ * @param methodNames - Keys of `T` representing method names to mock
+ * @returns A `jest.Mocked<T>` with each specified method replaced by a `jest.Mock`
  */
 export function createAutoMock<T extends object>(
   methodNames: (keyof T)[],
@@ -26,12 +17,11 @@ export function createAutoMock<T extends object>(
 }
 
 /**
- * 기존 mock 객체의 모든 함수를 리셋합니다.
+ * Reset all function properties on a Jest-mocked object that expose `mockReset`.
  *
- * @example
- * afterEach(() => {
- *   resetAllMocks(mockRepository);
- * });
+ * Iterates the provided mock object's own enumerable keys and calls `mockReset()` on any property that is a function and has a `mockReset` method. This mutates the passed `mock`.
+ *
+ * @param mock - A Jest-mocked object whose mock functions should be reset
  */
 export function resetAllMocks<T extends object>(mock: jest.Mocked<T>): void {
   for (const key of Object.keys(mock)) {
