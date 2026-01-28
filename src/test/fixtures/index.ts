@@ -7,3 +7,10 @@ export {
   mockAssistantCode,
 } from './auth.fixture.js';
 export { mockProfiles } from './profile.fixture.js';
+export {
+  mockInstructor,
+  mockLectures,
+  mockEnrollments,
+  createLectureRequests,
+  updateLectureRequests,
+} from './lectures.fixture.js';
