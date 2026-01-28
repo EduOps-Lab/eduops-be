@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParentsService } from '../services/parents.service.js';
 import { UserType } from '../constants/auth.constant.js';
-import { AuthResponse } from '../types/auth.types.js';
+import type { GetSvcEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
+import { getPagingData } from '../utils/pagination.util.js';
+import { getAuthUser } from '../utils/user.util.js';
 
 export class ChildrenController {
   constructor(private readonly parentsService: ParentsService) {}
@@ -12,7 +14,7 @@ export class ChildrenController {
    */
   registerChild = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { user } = req as unknown as { user: AuthResponse['user'] };
+      const user = getAuthUser(req);
       const child = await this.parentsService.registerChild(
         user.userType as UserType,
         user.id,
@@ -31,7 +33,7 @@ export class ChildrenController {
    */
   getChildren = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { user } = req as unknown as { user: AuthResponse['user'] };
+      const user = getAuthUser(req);
       const children = await this.parentsService.getChildren(
         user.userType as UserType,
         user.id,
@@ -53,15 +55,26 @@ export class ChildrenController {
     next: NextFunction,
   ) => {
     try {
-      const { user } = req as unknown as { user: AuthResponse['user'] };
+      const user = getAuthUser(req);
       const { id } = req.params;
-      const enrollments = await this.parentsService.getChildEnrollments(
-        user.userType as UserType,
-        user.id,
-        id,
+      const query = req.query as unknown as GetSvcEnrollmentsQueryDto;
+
+      const { enrollments, totalCount } =
+        await this.parentsService.getChildEnrollments(
+          user.userType as UserType,
+          user.id,
+          id,
+          query,
+        );
+
+      const responseData = getPagingData(
+        enrollments,
+        totalCount,
+        query.page,
+        query.limit,
       );
 
-      res.status(200).json(enrollments);
+      res.status(200).json(responseData);
     } catch (error) {
       next(error);
     }
@@ -77,7 +90,7 @@ export class ChildrenController {
     next: NextFunction,
   ) => {
     try {
-      const { user } = req as unknown as { user: AuthResponse['user'] };
+      const user = getAuthUser(req);
       const { id, enrollmentId } = req.params;
       const enrollment = await this.parentsService.getChildEnrollmentDetail(
         user.userType as UserType,

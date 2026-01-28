@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { container } from '../../../config/container.config.js';
 import { validate } from '../../../middlewares/validate.middleware.js';
-import { enrollmentIdParamSchema } from '../../../validations/enrollments.validation.js';
+import {
+  enrollmentIdParamSchema,
+  getSvcEnrollmentsQuerySchema,
+} from '../../../validations/enrollments.validation.js';
 
 export const svcEnrollmentsRouter = Router();
 
@@ -13,7 +16,9 @@ const { requireAuth, requireStudent, enrollmentsController } = container;
 svcEnrollmentsRouter.get(
   '/',
   requireAuth,
+  requireAuth,
   requireStudent,
+  validate(getSvcEnrollmentsQuerySchema, 'query'),
   enrollmentsController.getEnrollments,
 );
 

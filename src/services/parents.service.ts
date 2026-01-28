@@ -8,7 +8,8 @@ import {
 import { ParentRepository } from '../repos/parent.repo.js';
 import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
-import { CreateChildDto } from '../validations/children.validation.js';
+import type { CreateChildDto } from '../validations/children.validation.js';
+import type { GetSvcEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
 
 export class ParentsService {
   constructor(
@@ -81,6 +82,7 @@ export class ParentsService {
     userType: UserType,
     profileId: string,
     childId: string,
+    query?: GetSvcEnrollmentsQueryDto,
   ) {
     // 1. 자녀 링크 검증
     const childLink = await this.validateChildAccess(
@@ -90,7 +92,15 @@ export class ParentsService {
     );
 
     // 2. 해당 링크 ID로 수강 목록 조회
-    return await this.enrollmentsRepository.findByAppParentLinkId(childLink.id);
+    const result = await this.enrollmentsRepository.findByAppParentLinkId(
+      childLink.id,
+      query,
+    );
+
+    return {
+      enrollments: result.enrollments,
+      totalCount: result.totalCount,
+    };
   }
 
   /**

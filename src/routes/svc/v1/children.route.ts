@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { container } from '../../../config/container.config.js';
 import { validate } from '../../../middlewares/validate.middleware.js';
 import { createChildSchema } from '../../../validations/children.validation.js';
+import { getSvcEnrollmentsQuerySchema } from '../../../validations/enrollments.validation.js';
 
 export const svcChildrenRouter = Router();
 
@@ -33,6 +34,7 @@ svcChildrenRouter.get('/', childrenController.getChildren);
  */
 svcChildrenRouter.get(
   '/:id/enrollments',
+  validate(getSvcEnrollmentsQuerySchema, 'query'),
   childrenController.getChildEnrollments,
 );
 

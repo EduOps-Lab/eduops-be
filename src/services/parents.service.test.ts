@@ -112,9 +112,10 @@ describe('ParentsService', () => {
         id: childLinkId,
         appParentId: parentId,
       });
-      mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue([
-        { id: 'enroll-1', status: EnrollmentStatus.ACTIVE },
-      ]);
+      mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue({
+        enrollments: [{ id: 'enroll-1', status: EnrollmentStatus.ACTIVE }],
+        totalCount: 1,
+      });
 
       // When
       const result = await parentsService.getChildEnrollments(
@@ -124,8 +125,8 @@ describe('ParentsService', () => {
       );
 
       // Then
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('enroll-1');
+      expect(result.enrollments).toHaveLength(1);
+      expect(result.enrollments[0].id).toBe('enroll-1');
     });
 
     it('should throw ForbiddenException if accessing other parent child', async () => {
