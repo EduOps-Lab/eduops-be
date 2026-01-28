@@ -3,6 +3,8 @@ import type { StudentRepository } from '../../repos/student.repo.js';
 import type { AssistantRepository } from '../../repos/assistant.repo.js';
 import type { ParentRepository } from '../../repos/parent.repo.js';
 import type { AssistantCodeRepository } from '../../repos/assistant-code.repo.js';
+import type { LecturesRepository } from '../../repos/lectures.repo.js';
+import type { EnrollmentsRepository } from '../../repos/enrollments.repo.js';
 
 /** Mock InstructorRepository 생성 */
 export const createMockInstructorRepository =
@@ -49,3 +51,34 @@ export const createMockAssistantCodeRepository =
       findValidCode: jest.fn(),
       markAsUsed: jest.fn(),
     }) as unknown as jest.Mocked<AssistantCodeRepository>;
+
+/** Mock LecturesRepository 생성 */
+export const createMockLecturesRepository =
+  (): jest.Mocked<LecturesRepository> =>
+    ({
+      create: jest.fn(),
+      findById: jest.fn(),
+      findInstructorById: jest.fn(),
+      findByIdWithRelations: jest.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+    }) as unknown as jest.Mocked<LecturesRepository>;
+
+/** Mock EnrollmentsRepository 생성 */
+export const createMockEnrollmentsRepository =
+  (): jest.Mocked<EnrollmentsRepository> =>
+    ({
+      createMany: jest.fn(),
+      create: jest.fn(),
+      findById: jest.fn(),
+      findByIdWithRelations: jest.fn(),
+      findByAppStudentId: jest.fn(),
+      findByAppParentLinkId: jest.fn(),
+      findByAppParentId: jest.fn(),
+      findManyByLectureId: jest.fn(),
+      findManyByInstructorId: jest.fn(),
+      findParentIdByParentChildLinkId: jest.fn(),
+      update: jest.fn(),
+      softDelete: jest.fn(),
+    }) as unknown as jest.Mocked<EnrollmentsRepository>;
