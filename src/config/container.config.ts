@@ -18,6 +18,9 @@ import { LecturesController } from '../controllers/lectures.controller.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { EnrollmentsService } from '../services/enrollments.service.js';
 import { EnrollmentsController } from '../controllers/enrollments.controller.js';
+import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
+import { ParentsService } from '../services/parents.service.js';
+import { ChildrenController } from '../controllers/children.controller.js';
 
 // 1. Instantiate Repositories
 const instructorRepo = new InstructorRepository(prisma);
@@ -25,6 +28,7 @@ const studentRepo = new StudentRepository(prisma);
 const assistantRepo = new AssistantRepository(prisma);
 const parentRepo = new ParentRepository(prisma);
 const assistantCodeRepo = new AssistantCodeRepository(prisma);
+const parentChildLinkRepo = new ParentChildLinkRepository(prisma);
 
 const lecturesRepo = new LecturesRepository(prisma);
 const enrollmentsRepo = new EnrollmentsRepository(prisma);
@@ -51,6 +55,14 @@ const enrollmentsService = new EnrollmentsService(
   enrollmentsRepo,
   lecturesRepo,
   assistantRepo,
+  parentChildLinkRepo,
+  prisma,
+);
+
+const parentsService = new ParentsService(
+  parentRepo,
+  parentChildLinkRepo,
+  enrollmentsRepo,
   prisma,
 );
 
@@ -58,6 +70,7 @@ const enrollmentsService = new EnrollmentsService(
 const authController = new AuthController(authService);
 const lecturesController = new LecturesController(lecturesService);
 const enrollmentsController = new EnrollmentsController(enrollmentsService);
+const childrenController = new ChildrenController(parentsService);
 
 // 4. Create Middlewares (Inject Services)
 const requireAuth = createRequireAuth(authService);
@@ -75,10 +88,12 @@ export const container = {
   authService,
   lecturesService,
   enrollmentsService,
+  parentsService,
   // Controllers
   authController,
   lecturesController,
   enrollmentsController,
+  childrenController,
   // Middlewares
   requireAuth,
   optionalAuth,
