@@ -36,6 +36,7 @@ const authService = new AuthService(
   assistantCodeRepo,
   studentRepo,
   parentRepo,
+  enrollmentsRepo,
   auth,
   prisma,
 );
@@ -43,6 +44,7 @@ const authService = new AuthService(
 const lecturesService = new LecturesService(
   lecturesRepo,
   enrollmentsRepo,
+  studentRepo,
   prisma,
 );
 const enrollmentsService = new EnrollmentsService(

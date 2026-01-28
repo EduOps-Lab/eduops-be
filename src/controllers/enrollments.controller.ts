@@ -69,11 +69,23 @@ export class EnrollmentsController {
         throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
       }
 
-      const enrollment = await this.enrollmentsService.getEnrollmentDetail(
-        enrollmentId,
-        userType,
-        profileId,
-      );
+      let enrollment;
+
+      // 강사/조교인 경우
+      if (userType === UserType.INSTRUCTOR || userType === UserType.ASSISTANT) {
+        enrollment = await this.enrollmentsService.getEnrollmentDetail(
+          enrollmentId,
+          userType,
+          profileId,
+        );
+      } else {
+        // 학생/학부모인 경우
+        enrollment = await this.enrollmentsService.getEnrollmentById(
+          enrollmentId,
+          userType,
+          profileId,
+        );
+      }
 
       res.status(200).json({
         success: true,

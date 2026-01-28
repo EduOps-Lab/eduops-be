@@ -95,6 +95,17 @@ export class EnrollmentsRepository {
             },
           },
         },
+        grades: {
+          include: {
+            exam: true,
+          },
+        },
+        clinicTargets: {
+          include: {
+            clinic: true,
+          },
+        },
+        attendances: true,
       },
     });
   }
@@ -104,17 +115,6 @@ export class EnrollmentsRepository {
     const client = tx ?? this.prisma;
     return await client.enrollment.findUnique({
       where: { id },
-    });
-  }
-
-  /** 수강 등록 (Create) */
-  async create(
-    data: Prisma.EnrollmentUncheckedCreateInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    const client = tx ?? this.prisma;
-    return await client.enrollment.create({
-      data,
     });
   }
 
@@ -293,6 +293,35 @@ export class EnrollmentsRepository {
       },
       orderBy: {
         registeredAt: 'desc',
+      },
+    });
+  }
+
+  /** 수강 등록 (관리자/강사용) */
+  async create(
+    data: Prisma.EnrollmentUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.create({
+      data,
+    });
+  }
+
+  /** 전화번호 기준 AppStudentId 업데이트 (회원가입 시 연동) */
+  async updateAppStudentIdByPhoneNumber(
+    phoneNumber: string,
+    appStudentId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.updateMany({
+      where: {
+        studentPhone: phoneNumber,
+        appStudentId: null, // 아직 연동되지 않은 건들만
+      },
+      data: {
+        appStudentId,
       },
     });
   }
