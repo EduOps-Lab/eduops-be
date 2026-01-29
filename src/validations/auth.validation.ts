@@ -59,6 +59,7 @@ export const studentSignUpSchema = z.object({
 // 회원가입 - 학부모
 export const parentSignUpSchema = z.object({
   email: emailSchema,
+  name: z.string().min(2, '이름은 최소 2자 이상이어야 합니다.'),
   password: passwordSchema,
   phoneNumber: phoneSchema,
 });
