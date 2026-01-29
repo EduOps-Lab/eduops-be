@@ -26,7 +26,7 @@ const createEnrollmentRequest = createEnrollmentRequests.basic;
 import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 
-describe('LecturesService', () => {
+describe('LecturesService - @unit #critical', () => {
   // Mock Dependencies
   let mockLecturesRepo: ReturnType<typeof createMockLecturesRepository>;
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;

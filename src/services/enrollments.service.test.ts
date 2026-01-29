@@ -36,7 +36,7 @@ type EnrollmentWithRelations = Awaited<
   ReturnType<EnrollmentsRepository['findByIdWithRelations']>
 >;
 
-describe('EnrollmentsService', () => {
+describe('EnrollmentsService - @unit #critical', () => {
   // Mock Dependencies
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
   let mockLecturesRepo: ReturnType<typeof createMockLecturesRepository>;

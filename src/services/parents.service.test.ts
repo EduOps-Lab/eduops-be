@@ -20,7 +20,7 @@ import {
 } from '../test/fixtures/index.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 
-describe('ParentsService', () => {
+describe('ParentsService - @unit #critical', () => {
   // Mock Dependencies
   let mockParentRepo: ReturnType<typeof createMockParentRepository>;
   let mockParentChildLinkRepo: ReturnType<

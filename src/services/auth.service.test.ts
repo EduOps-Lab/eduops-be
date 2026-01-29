@@ -24,7 +24,7 @@ import {
 import { PrismaClient } from '../generated/prisma/client.js';
 import type { auth } from '../config/auth.config.js';
 
-describe('AuthService', () => {
+describe('AuthService - @unit #critical', () => {
   // Mock Dependencies
   let mockInstructorRepo: ReturnType<typeof createMockInstructorRepository>;
   let mockAssistantRepo: ReturnType<typeof createMockAssistantRepository>;
