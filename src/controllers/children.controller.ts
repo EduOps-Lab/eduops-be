@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParentsService } from '../services/parents.service.js';
 import { UserType } from '../constants/auth.constant.js';
+import { UnauthorizedException } from '../err/http.exception.js';
 import type { GetSvcEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
 import { getPagingData } from '../utils/pagination.util.js';
 import { getAuthUser } from '../utils/user.util.js';
@@ -15,9 +16,15 @@ export class ChildrenController {
   registerChild = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = getAuthUser(req);
+      const profileId = req.profile?.id;
+
+      if (!profileId) {
+        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
+      }
+
       const child = await this.parentsService.registerChild(
         user.userType as UserType,
-        user.id,
+        profileId,
         req.body,
       );
 
@@ -34,9 +41,15 @@ export class ChildrenController {
   getChildren = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = getAuthUser(req);
+      const profileId = req.profile?.id;
+
+      if (!profileId) {
+        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
+      }
+
       const children = await this.parentsService.getChildren(
         user.userType as UserType,
-        user.id,
+        profileId,
       );
 
       res.status(200).json(children);
@@ -56,13 +69,19 @@ export class ChildrenController {
   ) => {
     try {
       const user = getAuthUser(req);
+      const profileId = req.profile?.id;
+
+      if (!profileId) {
+        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
+      }
+
       const { id } = req.params;
       const query = req.query as unknown as GetSvcEnrollmentsQueryDto;
 
       const { enrollments, totalCount } =
         await this.parentsService.getChildEnrollments(
           user.userType as UserType,
-          user.id,
+          profileId,
           id,
           query,
         );
@@ -91,10 +110,16 @@ export class ChildrenController {
   ) => {
     try {
       const user = getAuthUser(req);
+      const profileId = req.profile?.id;
+
+      if (!profileId) {
+        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
+      }
+
       const { id, enrollmentId } = req.params;
       const enrollment = await this.parentsService.getChildEnrollmentDetail(
         user.userType as UserType,
-        user.id,
+        profileId,
         id,
         enrollmentId,
       );
