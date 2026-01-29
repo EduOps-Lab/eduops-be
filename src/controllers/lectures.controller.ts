@@ -96,4 +96,29 @@ export class LecturesController {
       next(error);
     }
   };
+
+  /** POST: 수강생 등록 핸들러 */
+  createEnrollment = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    try {
+      const instructorId = req.profile!.id;
+      const { id: lectureId } = req.params;
+      const enrollmentData = req.body;
+
+      const enrollment = await this.lecturesService.createEnrollment(
+        instructorId,
+        lectureId,
+        enrollmentData,
+      );
+
+      res
+        .status(201)
+        .json({ success: true, data: enrollment, message: '수강생 등록 성공' });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

@@ -8,14 +8,19 @@ import {
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
-import { GetEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
+import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
 import type { Prisma } from '../generated/prisma/client.js';
+import type {
+  GetEnrollmentsQueryDto,
+  GetSvcEnrollmentsQueryDto,
+} from '../validations/enrollments.validation.js';
 
 export class EnrollmentsService {
   constructor(
     private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly lecturesRepository: LecturesRepository,
     private readonly assistantRepository: AssistantRepository,
+    private readonly parentChildLinkRepository: ParentChildLinkRepository,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -39,12 +44,23 @@ export class EnrollmentsService {
       profileId,
     );
 
+    let parentLinkId = data.appParentLinkId;
+    if (!parentLinkId && data.studentPhone) {
+      const links = await this.parentChildLinkRepository.findManyByPhoneNumber(
+        data.studentPhone,
+      );
+      if (links.length > 0) {
+        parentLinkId = links[0].id;
+      }
+    }
+
     // 3. Enrollment 생성
     return await this.enrollmentsRepository.create({
       ...data,
       lectureId,
       instructorId: lecture.instructorId, // 강의의 담당 강사로 설정
       status: EnrollmentStatus.ACTIVE,
+      appParentLinkId: parentLinkId, // 자동 연결된 ID 설정
     });
   }
 
@@ -149,21 +165,33 @@ export class EnrollmentsService {
   }
 
   /** 기존 메서드 유지 (학생/학부모용) */
-  async getEnrollments(userType: UserType, profileId: string) {
+  async getEnrollments(
+    userType: UserType,
+    profileId: string,
+    query?: GetSvcEnrollmentsQueryDto,
+  ) {
     let enrollments;
+    let totalCount = 0;
 
     if (userType === UserType.STUDENT) {
-      enrollments =
-        await this.enrollmentsRepository.findByAppStudentId(profileId);
+      const result = await this.enrollmentsRepository.findByAppStudentId(
+        profileId,
+        query,
+      );
+      enrollments = result.enrollments;
+      totalCount = result.totalCount;
     } else if (userType === UserType.PARENT) {
+      // 학부모의 경우 모든 자녀의 수강 목록 조회 (현재는 페이지네이션 미적용)
       enrollments =
         await this.enrollmentsRepository.findByAppParentId(profileId);
+      totalCount = enrollments.length;
     } else {
       throw new ForbiddenException('해당 수강 정보에 접근할 권한이 없습니다.');
     }
 
     return {
       enrollments,
+      totalCount,
     };
   }
 
