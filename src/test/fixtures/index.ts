@@ -3,3 +3,4 @@ export * from './user.fixture.js';
 export * from './auth.fixture.js';
 export * from './profile.fixture.js';
 export * from './lectures.fixture.js';
+export * from './enrollments.fixture.js';
