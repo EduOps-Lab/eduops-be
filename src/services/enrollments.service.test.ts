@@ -28,7 +28,7 @@ import {
 } from '../test/fixtures/lectures.fixture.js';
 import { UserType } from '../constants/auth.constant.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
-import { PrismaClient, Prisma } from '../generated/prisma/client.js';
+import { PrismaClient } from '../generated/prisma/client.js';
 
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 
@@ -90,7 +90,7 @@ describe('EnrollmentsService', () => {
             lectureId,
             instructorId,
             status: EnrollmentStatus.ACTIVE,
-          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
+          },
           UserType.INSTRUCTOR,
           instructorId,
         );
@@ -122,7 +122,7 @@ describe('EnrollmentsService', () => {
             lectureId,
             instructorId: mockLectures.basic.instructorId,
             status: EnrollmentStatus.ACTIVE,
-          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
+          },
           UserType.ASSISTANT,
           mockAssistants.basic.id,
         );
@@ -148,7 +148,7 @@ describe('EnrollmentsService', () => {
             lectureId,
             instructorId,
             status: EnrollmentStatus.ACTIVE,
-          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
+          },
           UserType.INSTRUCTOR,
           instructorId,
         );
@@ -174,7 +174,7 @@ describe('EnrollmentsService', () => {
             lectureId,
             instructorId,
             status: EnrollmentStatus.ACTIVE,
-          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
+          },
           UserType.INSTRUCTOR,
           instructorId,
         );
@@ -202,7 +202,7 @@ describe('EnrollmentsService', () => {
               lectureId: 'invalid-lecture-id',
               instructorId,
               status: EnrollmentStatus.ACTIVE,
-            } as unknown as Prisma.EnrollmentUncheckedCreateInput,
+            },
             UserType.INSTRUCTOR,
             instructorId,
           ),
@@ -227,7 +227,7 @@ describe('EnrollmentsService', () => {
               lectureId: mockLectures.otherInstructor.id,
               instructorId,
               status: EnrollmentStatus.ACTIVE,
-            } as unknown as Prisma.EnrollmentUncheckedCreateInput,
+            },
             UserType.INSTRUCTOR,
             instructorId,
           ),
@@ -248,7 +248,7 @@ describe('EnrollmentsService', () => {
               lectureId,
               instructorId: mockLectures.basic.instructorId,
               status: EnrollmentStatus.ACTIVE,
-            } as unknown as Prisma.EnrollmentUncheckedCreateInput,
+            },
             UserType.ASSISTANT,
             mockAssistants.otherInstructor.id,
           ),
