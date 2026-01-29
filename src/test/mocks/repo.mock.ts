@@ -5,6 +5,7 @@ import type { ParentRepository } from '../../repos/parent.repo.js';
 import type { AssistantCodeRepository } from '../../repos/assistant-code.repo.js';
 import type { LecturesRepository } from '../../repos/lectures.repo.js';
 import type { EnrollmentsRepository } from '../../repos/enrollments.repo.js';
+import type { ParentChildLinkRepository } from '../../repos/parent-child-link.repo.js';
 import { createAutoMock } from './create-mock.util.js';
 
 /** Mock InstructorRepository 생성 */
@@ -47,13 +48,21 @@ export const createMockParentRepository = () =>
 export const createMockAssistantCodeRepository = () =>
   createAutoMock<AssistantCodeRepository>(['findValidCode', 'markAsUsed']);
 
+/** Mock ParentChildLinkRepository 생성 */
+export const createMockParentChildLinkRepository = () =>
+  createAutoMock<ParentChildLinkRepository>([
+    'create',
+    'findByAppParentId',
+    'findById',
+    'findByParentIdAndPhoneNumber',
+    'findManyByPhoneNumber',
+  ]);
+
 /** Mock LecturesRepository 생성 */
 export const createMockLecturesRepository = () =>
   createAutoMock<LecturesRepository>([
     'create',
     'findById',
-    'findInstructorById',
-    'findByIdWithRelations',
     'findMany',
     'update',
     'softDelete',
@@ -68,11 +77,11 @@ export const createMockEnrollmentsRepository = () =>
     'findByIdWithRelations',
     'findByAppStudentId',
     'findByAppParentLinkId',
-    'findByAppParentId',
+    'findManyByAppParentLinkIds',
     'findManyByLectureId',
     'findManyByInstructorId',
-    'findParentIdByParentChildLinkId',
     'update',
     'softDelete',
     'updateAppStudentIdByPhoneNumber',
+    'updateAppParentLinkIdByStudentPhone',
   ]);

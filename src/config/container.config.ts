@@ -59,20 +59,22 @@ const lecturesService = new LecturesService(
   lecturesRepo,
   enrollmentsRepo,
   studentRepo,
+  instructorRepo,
   prisma,
 );
+const parentsService = new ParentsService(
+  parentRepo,
+  parentChildLinkRepo,
+  enrollmentsRepo,
+  prisma,
+);
+
 const enrollmentsService = new EnrollmentsService(
   enrollmentsRepo,
   lecturesRepo,
   assistantRepo,
   parentChildLinkRepo,
-  prisma,
-);
-
-const parentsService = new ParentsService(
-  parentRepo,
-  parentChildLinkRepo,
-  enrollmentsRepo,
+  parentsService,
   prisma,
 );
 
@@ -81,6 +83,7 @@ const attendancesService = new AttendancesService(
   enrollmentsRepo,
   lecturesRepo,
   assistantRepo,
+  parentsService,
   prisma,
 );
 

@@ -7,6 +7,7 @@ import {
   createMockLecturesRepository,
   createMockEnrollmentsRepository,
   createMockStudentRepository,
+  createMockInstructorRepository,
   createMockPrisma,
 } from '../test/mocks/index.js';
 import {
@@ -27,6 +28,7 @@ describe('LecturesService', () => {
   let mockLecturesRepo: ReturnType<typeof createMockLecturesRepository>;
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
   let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
+  let mockInstructorRepo: ReturnType<typeof createMockInstructorRepository>;
   let mockPrisma: PrismaClient;
 
   // Service under test
@@ -40,6 +42,7 @@ describe('LecturesService', () => {
     mockLecturesRepo = createMockLecturesRepository();
     mockEnrollmentsRepo = createMockEnrollmentsRepository();
     mockStudentRepo = createMockStudentRepository();
+    mockInstructorRepo = createMockInstructorRepository();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
     // Create LecturesService DI
@@ -47,6 +50,7 @@ describe('LecturesService', () => {
       mockLecturesRepo,
       mockEnrollmentsRepo,
       mockStudentRepo,
+      mockInstructorRepo,
       mockPrisma,
     );
   });
@@ -55,7 +59,7 @@ describe('LecturesService', () => {
     describe('LECTURE-01: 강의 생성 성공', () => {
       it('기본 정보만으로 강의 생성이 성공한다', async () => {
         // Arrange
-        mockLecturesRepo.findInstructorById.mockResolvedValue(mockInstructor);
+        mockInstructorRepo.findById.mockResolvedValue(mockInstructor);
         mockLecturesRepo.create.mockResolvedValue({
           ...mockLectures.basic,
           lectureTimes: [],
@@ -75,7 +79,7 @@ describe('LecturesService', () => {
         // Assert
         expect(result).toBeDefined();
         expect(result.id).toBe(mockLectures.basic.id);
-        expect(mockLecturesRepo.findInstructorById).toHaveBeenCalledWith(
+        expect(mockInstructorRepo.findById).toHaveBeenCalledWith(
           mockInstructor.id,
         );
         expect(mockLecturesRepo.create).toHaveBeenCalledWith(
@@ -88,7 +92,7 @@ describe('LecturesService', () => {
       });
 
       it('enrollments와 함께 강의 생성이 성공한다', async () => {
-        mockLecturesRepo.findInstructorById.mockResolvedValue(mockInstructor);
+        mockInstructorRepo.findById.mockResolvedValue(mockInstructor);
         mockLecturesRepo.create.mockResolvedValue({
           ...mockLectures.withEnrollments,
           lectureTimes: [],
@@ -130,7 +134,7 @@ describe('LecturesService', () => {
 
     describe('LECTURE-02: 강의 생성 실패', () => {
       it('존재하지 않는 강사 ID로 생성 시 NotFoundException 발생', async () => {
-        mockLecturesRepo.findInstructorById.mockResolvedValue(null);
+        mockInstructorRepo.findById.mockResolvedValue(null);
 
         await expect(
           lecturesService.createLecture(
@@ -329,9 +333,7 @@ describe('LecturesService', () => {
   describe('[강의 조회] getLectureById', () => {
     describe('LECTURE-07: 강의 조회 성공', () => {
       it('본인의 강의 조회가 성공한다', async () => {
-        mockLecturesRepo.findByIdWithRelations.mockResolvedValue(
-          mockLectures.basic,
-        );
+        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
 
         const result = await lecturesService.getLectureById(
           mockInstructor.id,
@@ -341,7 +343,7 @@ describe('LecturesService', () => {
         expect(result).toBeDefined();
         expect(result.id).toBe(mockLectures.basic.id);
         expect(result.instructorId).toBe(mockInstructor.id);
-        expect(mockLecturesRepo.findByIdWithRelations).toHaveBeenCalledWith(
+        expect(mockLecturesRepo.findById).toHaveBeenCalledWith(
           mockLectures.basic.id,
         );
       });
@@ -349,7 +351,7 @@ describe('LecturesService', () => {
 
     describe('LECTURE-08: 강의 조회 실패', () => {
       it('존재하지 않는 강의 조회 시 NotFoundException 발생', async () => {
-        mockLecturesRepo.findByIdWithRelations.mockResolvedValue(null);
+        mockLecturesRepo.findById.mockResolvedValue(null);
 
         await expect(
           lecturesService.getLectureById(
@@ -367,7 +369,7 @@ describe('LecturesService', () => {
       });
 
       it('다른 강사의 강의 조회 시 ForbiddenException 발생', async () => {
-        mockLecturesRepo.findByIdWithRelations.mockResolvedValue(
+        mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
 

@@ -7,6 +7,7 @@ import {
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
+import { InstructorRepository } from '../repos/instructor.repo.js';
 import {
   LectureEnrollmentDto,
   CreateLectureDto,
@@ -23,6 +24,7 @@ export class LecturesService {
     private readonly lecturesRepository: LecturesRepository,
     private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly studentRepository: StudentRepository,
+    private readonly instructorRepository: InstructorRepository,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -31,8 +33,7 @@ export class LecturesService {
     instructorId: string,
     data: CreateLectureDto,
   ): Promise<LectureWithEnrollments> {
-    const instructor =
-      await this.lecturesRepository.findInstructorById(instructorId);
+    const instructor = await this.instructorRepository.findById(instructorId);
 
     if (!instructor) throw new NotFoundException('강사를 찾을 수 없습니다.');
 
@@ -88,7 +89,7 @@ export class LecturesService {
 
   /** 강의 개별 조회 */
   async getLectureById(instructorId: string, id: string): Promise<Lecture> {
-    const lecture = await this.lecturesRepository.findByIdWithRelations(id);
+    const lecture = await this.lecturesRepository.findById(id);
 
     if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
 

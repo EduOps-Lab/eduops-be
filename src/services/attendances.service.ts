@@ -9,6 +9,7 @@ import { AttendancesRepository } from '../repos/attendances.repo.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
+import { ParentsService } from './parents.service.js';
 import type {
   CreateAttendanceDto,
   BulkAttendanceDto,
@@ -25,10 +26,11 @@ export class AttendancesService {
     private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly lecturesRepository: LecturesRepository,
     private readonly assistantRepository: AssistantRepository,
+    private readonly parentsService: ParentsService,
     private readonly prisma: PrismaClient,
   ) {}
 
-  /** 강의 내 단체 출결 등록 (Transaction + Upsert Loop) */
+  // 강의 내 단체 출결 등록 (Transaction + Upsert Loop)
   async createBulkAttendances(
     lectureId: string,
     attendances: BulkAttendanceDto[],
@@ -97,7 +99,7 @@ export class AttendancesService {
     });
   }
 
-  /** 단일 수강생 출결 등록 (Upsert) */
+  // 단일 수강생 출결 등록 (Upsert)
   async createAttendance(
     enrollmentId: string,
     data: CreateAttendanceDto,
@@ -143,7 +145,7 @@ export class AttendancesService {
     );
   }
 
-  /** 수강생 출결 조회 + 통계 */
+  // 수강생 출결 조회 + 통계
   async getAttendancesByEnrollment(
     enrollmentId: string,
     userType: UserType,
@@ -165,7 +167,7 @@ export class AttendancesService {
     return { attendances, stats };
   }
 
-  /** 출결 수정 */
+  // 출결 수정
   async updateAttendance(
     enrollmentId: string, // URL Path param 검증용
     attendanceId: string,
@@ -205,9 +207,9 @@ export class AttendancesService {
     });
   }
 
-  // --- Helper Functions ---
+  //--- Helper Functions ---
 
-  /** 날짜에서 시간 제거 (00:00:00.000) */
+  // 날짜에서 시간 제거 (00:00:00.000)
   private truncateTime(date: Date): Date {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -255,22 +257,18 @@ export class AttendancesService {
       if (!enrollment.appParentLinkId) {
         throw new ForbiddenException('연결된 자녀 정보가 없습니다.');
       }
-      const hasPermission = await this.checkParentPermission(
+      await this.parentsService.validateChildAccess(
+        userType,
         profileId,
         enrollment.appParentLinkId,
       );
-      if (!hasPermission) {
-        throw new ForbiddenException(
-          '해당 자녀의 출결 정보에 접근할 권한이 없습니다.',
-        );
-      }
       return;
     }
 
     throw new ForbiddenException('접근 권한이 없습니다.');
   }
 
-  /** 실제 권한을 가진 강사 ID 추출 */
+  // 실제 권한을 가진 강사 ID 추출
   private async getEffectiveInstructorId(
     userType: UserType,
     profileId: string,
@@ -288,17 +286,5 @@ export class AttendancesService {
     }
 
     throw new ForbiddenException('강사 또는 조교만 접근 가능합니다.');
-  }
-
-  /** 학부모 권한 체크 Helper */
-  private async checkParentPermission(
-    appParentId: string,
-    appParentLinkId: string,
-  ): Promise<boolean> {
-    const link =
-      await this.enrollmentsRepository.findParentIdByParentChildLinkId(
-        appParentLinkId,
-      );
-    return link?.appParentId === appParentId;
   }
 }

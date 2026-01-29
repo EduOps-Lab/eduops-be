@@ -9,6 +9,7 @@ import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
 import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
+import { ParentsService } from './parents.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type {
   GetEnrollmentsQueryDto,
@@ -21,10 +22,11 @@ export class EnrollmentsService {
     private readonly lecturesRepository: LecturesRepository,
     private readonly assistantRepository: AssistantRepository,
     private readonly parentChildLinkRepository: ParentChildLinkRepository,
+    private readonly parentsService: ParentsService,
     private readonly prisma: PrismaClient,
   ) {}
 
-  /** Enrollment 생성 */
+  // Enrollment 생성
   async createEnrollment(
     lectureId: string,
     data: Prisma.EnrollmentUncheckedCreateInput,
@@ -46,11 +48,11 @@ export class EnrollmentsService {
 
     let parentLinkId = data.appParentLinkId;
     if (!parentLinkId && data.studentPhone) {
-      const links = await this.parentChildLinkRepository.findManyByPhoneNumber(
+      const link = await this.parentsService.findLinkByPhoneNumber(
         data.studentPhone,
       );
-      if (links.length > 0) {
-        parentLinkId = links[0].id;
+      if (link) {
+        parentLinkId = link.id;
       }
     }
 
@@ -64,7 +66,7 @@ export class EnrollmentsService {
     });
   }
 
-  /** 강의별 수강생 목록 조회 */
+  // 강의별 수강생 목록 조회
   async getEnrollmentsByLectureId(
     lectureId: string,
     userType: UserType,
@@ -102,7 +104,7 @@ export class EnrollmentsService {
     );
   }
 
-  /** Enrollment 상세 조회 (권한 체크 포함) */
+  // Enrollment 상세 조회 (권한 체크 포함)
   async getEnrollmentDetail(
     enrollmentId: string,
     userType: UserType,
@@ -164,30 +166,20 @@ export class EnrollmentsService {
     return await this.enrollmentsRepository.softDelete(id);
   }
 
-  /** 기존 메서드 유지 (학생/학부모용) */
+  // 기존 메서드 유지 (학생/학부모용)
   async getEnrollments(
     userType: UserType,
     profileId: string,
     query?: GetSvcEnrollmentsQueryDto,
   ) {
-    let enrollments;
-    let totalCount = 0;
-
-    if (userType === UserType.STUDENT) {
-      const result = await this.enrollmentsRepository.findByAppStudentId(
-        profileId,
-        query,
+    if (userType !== UserType.STUDENT) {
+      throw new ForbiddenException(
+        '학생은 본인의 수강 목록만, 학부모는 자녀별 수강 목록 API를 각각 사용해 주세요.',
       );
-      enrollments = result.enrollments;
-      totalCount = result.totalCount;
-    } else if (userType === UserType.PARENT) {
-      // 학부모의 경우 모든 자녀의 수강 목록 조회 (현재는 페이지네이션 미적용)
-      enrollments =
-        await this.enrollmentsRepository.findByAppParentId(profileId);
-      totalCount = enrollments.length;
-    } else {
-      throw new ForbiddenException('해당 수강 정보에 접근할 권한이 없습니다.');
     }
+
+    const { enrollments, totalCount } =
+      await this.enrollmentsRepository.findByAppStudentId(profileId, query);
 
     return {
       enrollments,
@@ -195,7 +187,7 @@ export class EnrollmentsService {
     };
   }
 
-  /** 기존 메서드 유지 (학생/학부모용 상세 조회) */
+  // 기존 메서드 유지 (학생/학부모용 상세 조회)
   async getEnrollmentById(
     enrollmentId: string,
     userType: UserType,
@@ -208,29 +200,22 @@ export class EnrollmentsService {
       throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
     }
 
-    let hasPermission = false;
-
-    if (userType === UserType.STUDENT) {
-      hasPermission = enrollment.appStudentId === profileId;
-    } else if (userType === UserType.PARENT) {
-      hasPermission = enrollment.appParentLinkId
-        ? await this.checkParentPermission(
-            profileId,
-            enrollment.appParentLinkId,
-          )
-        : false;
+    if (userType !== UserType.STUDENT) {
+      throw new ForbiddenException(
+        '학생은 본인의 수강 상세만, 학부모는 자녀별 수강 상세 API를 각각 사용해 주세요.',
+      );
     }
 
-    if (!hasPermission) {
-      throw new ForbiddenException('해당 수강 정보에 접근할 권한이 없습니다.');
+    if (enrollment.appStudentId !== profileId) {
+      throw new ForbiddenException('본인의 수강 정보만 조회할 수 있습니다.');
     }
 
     return enrollment;
   }
 
-  /** -------- Helper Functions -------- */
+  //-------- Helper Functions --------
 
-  /** 강사 및 조교 권한 체크 */
+  // 강사 및 조교 권한 체크
   private async validateInstructorAccess(
     instructorId: string,
     userType: UserType,
@@ -245,7 +230,7 @@ export class EnrollmentsService {
     }
   }
 
-  /** 실제 권한을 가진 강사 ID 추출 (DI 기반 리졸버) */
+  // 실제 권한을 가진 강사 ID 추출 (DI 기반 리졸버)
   private async getEffectiveInstructorId(
     userType: UserType,
     profileId: string,
@@ -265,7 +250,7 @@ export class EnrollmentsService {
     throw new ForbiddenException('접근 권한이 없습니다.');
   }
 
-  /** 강의별 권한 체크 (getEffectiveInstructorId 활용) */
+  // 강의별 권한 체크 (getEffectiveInstructorId 활용)
   private async checkLecturePermission(
     lecture: { instructorId: string },
     userType: UserType,
@@ -278,17 +263,5 @@ export class EnrollmentsService {
     if (lecture.instructorId !== effectiveInstructorId) {
       throw new ForbiddenException('해당 권한이 없습니다.');
     }
-  }
-
-  /** 학부모 권한 체크 */
-  private async checkParentPermission(
-    appParentId: string,
-    appParentLinkId: string,
-  ): Promise<boolean> {
-    const link =
-      await this.enrollmentsRepository.findParentIdByParentChildLinkId(
-        appParentLinkId,
-      );
-    return link?.appParentId === appParentId;
   }
 }
