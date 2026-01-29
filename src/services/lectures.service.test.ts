@@ -6,14 +6,18 @@ import {
 import {
   createMockLecturesRepository,
   createMockEnrollmentsRepository,
+  createMockStudentRepository,
   createMockPrisma,
 } from '../test/mocks/index.js';
 import {
   mockInstructor,
   mockLectures,
   mockEnrollments,
+  mockStudent,
+  mockLecturesListResponse,
   createLectureRequests,
   updateLectureRequests,
+  createEnrollmentRequest,
 } from '../test/fixtures/index.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
@@ -22,6 +26,7 @@ describe('LecturesService', () => {
   // Mock Dependencies
   let mockLecturesRepo: ReturnType<typeof createMockLecturesRepository>;
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
+  let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
   let mockPrisma: PrismaClient;
 
   // Service under test
@@ -34,12 +39,14 @@ describe('LecturesService', () => {
     // Create mock dependencies
     mockLecturesRepo = createMockLecturesRepository();
     mockEnrollmentsRepo = createMockEnrollmentsRepository();
+    mockStudentRepo = createMockStudentRepository();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
     // Create LecturesService DI
     lecturesService = new LecturesService(
       mockLecturesRepo,
       mockEnrollmentsRepo,
+      mockStudentRepo,
       mockPrisma,
     );
   });
@@ -377,6 +384,149 @@ describe('LecturesService', () => {
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow('해당 강의를 조회할 권한이 없습니다.');
+      });
+    });
+  });
+
+  describe('[강의 목록 조회] getLectures', () => {
+    describe('LECTURE-09: 강의 목록 조회 성공', () => {
+      it('강의 목록과 페이지네이션 정보를 반환한다', async () => {
+        mockLecturesRepo.findMany.mockResolvedValue(mockLecturesListResponse);
+
+        const result = await lecturesService.getLectures(mockInstructor.id, {
+          page: 1,
+          limit: 4,
+        });
+
+        expect(result).toBeDefined();
+        expect(result.lectures).toHaveLength(2);
+        expect(result.pagination).toMatchObject({
+          totalCount: 2,
+          totalPage: 1,
+          currentPage: 1,
+          limit: 4,
+          hasNextPage: false,
+          hasPrevPage: false,
+        });
+        expect(mockLecturesRepo.findMany).toHaveBeenCalledWith({
+          page: 1,
+          limit: 4,
+          instructorId: mockInstructor.id,
+          search: undefined,
+        });
+      });
+
+      it('검색어로 필터링된 결과를 반환한다', async () => {
+        mockLecturesRepo.findMany.mockResolvedValue({
+          lectures: [mockLectures.basic],
+          totalCount: 1,
+        });
+
+        const result = await lecturesService.getLectures(mockInstructor.id, {
+          page: 1,
+          limit: 4,
+          search: 'Basic',
+        });
+
+        expect(result.lectures).toHaveLength(1);
+        expect(mockLecturesRepo.findMany).toHaveBeenCalledWith({
+          page: 1,
+          limit: 4,
+          instructorId: mockInstructor.id,
+          search: 'Basic',
+        });
+      });
+    });
+  });
+
+  describe('[수강 등록] createEnrollment', () => {
+    describe('LECTURE-10: 수강 등록 성공', () => {
+      it('기존 학생 연동 없이 수강 등록이 성공한다', async () => {
+        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
+        mockStudentRepo.findByPhoneNumber.mockResolvedValue(null);
+        mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments[0]);
+        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
+          fn({}),
+        );
+
+        const result = await lecturesService.createEnrollment(
+          mockInstructor.id,
+          mockLectures.basic.id,
+          createEnrollmentRequest,
+        );
+
+        expect(result).toBeDefined();
+        expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            lectureId: mockLectures.basic.id,
+            instructorId: mockInstructor.id,
+            studentName: createEnrollmentRequest.studentName,
+            appStudentId: undefined,
+          }),
+          expect.anything(),
+        );
+      });
+
+      it('기존 학생이 있으면 appStudentId가 연동된다', async () => {
+        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
+        mockStudentRepo.findByPhoneNumber.mockResolvedValue(mockStudent);
+        mockEnrollmentsRepo.create.mockResolvedValue({
+          ...mockEnrollments[0],
+          appStudentId: mockStudent.id,
+        });
+        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
+          fn({}),
+        );
+
+        const result = await lecturesService.createEnrollment(
+          mockInstructor.id,
+          mockLectures.basic.id,
+          createEnrollmentRequest,
+        );
+
+        expect(result).toBeDefined();
+        expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            appStudentId: mockStudent.id,
+          }),
+          expect.anything(),
+        );
+      });
+    });
+
+    describe('LECTURE-11: 수강 등록 실패', () => {
+      it('존재하지 않는 강의에 수강 등록 시 NotFoundException 발생', async () => {
+        mockLecturesRepo.findById.mockResolvedValue(null);
+
+        await expect(
+          lecturesService.createEnrollment(
+            mockInstructor.id,
+            'non-existent-lecture-id',
+            createEnrollmentRequest,
+          ),
+        ).rejects.toThrow(NotFoundException);
+      });
+
+      it('다른 강사의 강의에 수강 등록 시 ForbiddenException 발생', async () => {
+        mockLecturesRepo.findById.mockResolvedValue(
+          mockLectures.otherInstructor,
+        );
+
+        await expect(
+          lecturesService.createEnrollment(
+            mockInstructor.id,
+            mockLectures.otherInstructor.id,
+            createEnrollmentRequest,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          lecturesService.createEnrollment(
+            mockInstructor.id,
+            mockLectures.otherInstructor.id,
+            createEnrollmentRequest,
+          ),
+        ).rejects.toThrow('해당 강의에 접근할 권한이 없습니다.');
       });
     });
   });

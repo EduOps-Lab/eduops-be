@@ -204,3 +204,28 @@ export const updateLectureRequests = {
     title: 'Only Title Changed',
   },
 };
+
+/** Mock AppStudent 데이터 (수강 등록 연동용) */
+export const mockStudent = {
+  id: 'student-id-001',
+  userId: 'user-student-id-001',
+  phoneNumber: '010-1111-2222',
+  school: '서울고등학교',
+  schoolYear: '고1',
+  createdAt: new Date('2024-01-01'),
+};
+
+/** 수강 등록 요청 DTO */
+export const createEnrollmentRequest = {
+  studentName: '김철수',
+  school: '서울고등학교',
+  schoolYear: '고1',
+  studentPhone: '010-1111-2222',
+  parentPhone: '010-3333-4444',
+};
+
+/** 강의 목록 조회 응답 Mock */
+export const mockLecturesListResponse = {
+  lectures: [mockLectures.basic, mockLectures.withEnrollments],
+  totalCount: 2,
+};
