@@ -53,10 +53,11 @@ export class AttendancesService {
       const results = [];
       for (const item of attendances) {
         // Enrollment 유효성 체크
-        const enrollment = await this.enrollmentsRepository.findById(
-          item.enrollmentId,
-          tx,
-        );
+        const enrollment =
+          await this.enrollmentsRepository.findByIdWithRelations(
+            item.enrollmentId,
+            tx,
+          );
         if (!enrollment || enrollment.lectureId !== lectureId) {
           throw new NotFoundException(
             `수강 정보(ID: ${item.enrollmentId})를 찾을 수 없거나 해당 강의의 수강생이 아닙니다.`,
@@ -84,8 +85,8 @@ export class AttendancesService {
           },
           {
             status: item.status,
-            enterTime: item.enterTime ? new Date(item.enterTime) : null,
-            leaveTime: item.leaveTime ? new Date(item.leaveTime) : null,
+            enterTime: item.enterTime ? new Date(item.enterTime) : undefined,
+            leaveTime: item.leaveTime ? new Date(item.leaveTime) : undefined,
             memo: item.memo,
           },
           tx,
@@ -135,8 +136,8 @@ export class AttendancesService {
       },
       {
         status: data.status,
-        enterTime: data.enterTime ? new Date(data.enterTime) : null,
-        leaveTime: data.leaveTime ? new Date(data.leaveTime) : null,
+        enterTime: data.enterTime ? new Date(data.enterTime) : undefined,
+        leaveTime: data.leaveTime ? new Date(data.leaveTime) : undefined,
         memo: data.memo,
       },
     );
@@ -183,7 +184,7 @@ export class AttendancesService {
       );
     }
 
-    const enrollment = await this.enrollmentsRepository.findById(
+    const enrollment = await this.enrollmentsRepository.findByIdWithRelations(
       attendance.enrollmentId,
     );
     if (!enrollment) {
