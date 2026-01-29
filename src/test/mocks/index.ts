@@ -5,6 +5,7 @@ export {
   createMockAssistantRepository,
   createMockParentRepository,
   createMockAssistantCodeRepository,
+  createMockEnrollmentsRepository,
 } from './repo.mock.js';
 
 // Service Mocks

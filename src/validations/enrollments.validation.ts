@@ -3,6 +3,7 @@ import {
   SCHOOL_YEARS,
   EnrollmentStatus,
 } from '../constants/enrollments.constant.js';
+import { PaginationDefaults } from '../constants/common.constant.js';
 import { Regex } from '../constants/regex.constant.js';
 
 // ... (other imports if any, but since I am replacing line 1-24 mainly to insert import and update schema)
@@ -83,3 +84,20 @@ export const getEnrollmentsQuerySchema = paginationQuerySchema.extend({
 });
 
 export type GetEnrollmentsQueryDto = z.infer<typeof getEnrollmentsQuerySchema>;
+
+/**
+ * 학생/학부모용 수강 내역 조회 쿼리 스키마 (Lectures API와 동일)
+ */
+export const getSvcEnrollmentsQuerySchema = z.object({
+  page: z.coerce.number().min(1).default(PaginationDefaults.PAGE),
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(PaginationDefaults.MAX_LIMIT)
+    .default(PaginationDefaults.LIMIT),
+  keyword: z.string().trim().optional(),
+});
+
+export type GetSvcEnrollmentsQueryDto = z.infer<
+  typeof getSvcEnrollmentsQuerySchema
+>;

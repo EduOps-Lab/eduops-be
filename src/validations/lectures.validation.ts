@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { createEnrollmentSchema } from './enrollments.validation.js';
 import { Regex } from '../constants/regex.constant.js';
 import {
   LectureLimits,
@@ -27,6 +26,56 @@ export const lectureTimeItemSchema = z.object({
 });
 
 export type LectureTimeItemDto = z.infer<typeof lectureTimeItemSchema>;
+
+/**
+ * 강의 생성 요청 DTO 스키마 (frontend에서 요청하는 데이터 형식)
+ *  변경 사항 발생 시 여기서 수정
+ * @example
+ * {
+ *   "title": "강의 제목",
+ *   "subject": "강의 과목",
+ *   "description": "강의 설명",
+ *   "startAt": "2026-01-22T10:00:00.000Z",
+ *   "endAt": "2026-01-22T10:00:00.000Z",
+ *   "lectureTimes": [
+ *     { "day": "월", "startTime": "14:00", "endTime": "16:00" }
+ *   ],
+ *   "enrollments": [
+ *     { "school": "서울고", "schoolYear": "고1", "studentName": "홍길동", "studentPhone": "010-1234-5678", "parentPhone": "010-9876-5432" }
+ *   ]
+ * }
+ */
+export const lectureEnrollmentSchema = z.object({
+  school: z
+    .string()
+    .min(1, { message: '학교명은 필수입니다.' })
+    .max(50, { message: '학교명은 50자를 초과할 수 없습니다.' })
+    .trim(),
+
+  schoolYear: z.string().min(1, { message: '학년은 필수입니다.' }).trim(),
+
+  studentName: z
+    .string()
+    .min(1, { message: '학생 이름은 필수입니다.' })
+    .max(50, { message: '학생 이름은 50자를 초과할 수 없습니다.' })
+    .trim(),
+
+  studentPhone: z
+    .string()
+    .regex(/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/, {
+      message: '유효한 전화번호 형식이 아닙니다.',
+    })
+    .transform((val) => val.replace(/-/g, '')), // 하이픈 제거
+
+  parentPhone: z
+    .string()
+    .regex(/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/, {
+      message: '유효한 전화번호 형식이 아닙니다.',
+    })
+    .transform((val) => val.replace(/-/g, '')), // 하이픈 제거
+});
+
+export type LectureEnrollmentDto = z.infer<typeof lectureEnrollmentSchema>;
 
 /**
  * 강의 생성 요청 DTO 스키마 (frontend에서 요청하는 데이터 형식)
@@ -90,7 +139,7 @@ export const createLectureSchema = z.object({
 
   lectureTimes: z.array(lectureTimeItemSchema).optional(),
 
-  enrollments: z.array(createEnrollmentSchema).optional(),
+  enrollments: z.array(lectureEnrollmentSchema).optional(),
 });
 
 export type CreateLectureDto = z.infer<typeof createLectureSchema>;
