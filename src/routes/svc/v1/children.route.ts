@@ -12,36 +12,24 @@ const { requireAuth, requireParent, childrenController } = container;
 svcChildrenRouter.use(requireAuth);
 svcChildrenRouter.use(requireParent);
 
-/**
- * POST /api/svc/v1/children
- * 자녀 등록 (전화번호 연동)
- */
+// 자녀 등록 (전화번호 연동)
 svcChildrenRouter.post(
   '/',
   validate(createChildSchema, 'body'),
   childrenController.registerChild,
 );
 
-/**
- * GET /api/svc/v1/children
- * 자녀 목록 조회
- */
+// 자녀 목록 조회
 svcChildrenRouter.get('/', childrenController.getChildren);
 
-/**
- * GET /api/svc/v1/children/:id/enrollments
- * 자녀 수강 목록 조회
- */
+// 자녀 수강 목록 조회
 svcChildrenRouter.get(
   '/:id/enrollments',
   validate(getSvcEnrollmentsQuerySchema, 'query'),
   childrenController.getChildEnrollments,
 );
 
-/**
- * GET /api/svc/v1/children/:id/enrollments/:enrollmentId
- * 자녀 수강 상세 조회
- */
+// 자녀 수강 상세 조회
 svcChildrenRouter.get(
   '/:id/enrollments/:enrollmentId',
   childrenController.getChildEnrollmentDetail,
