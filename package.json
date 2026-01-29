@@ -17,6 +17,8 @@
     "start": "node dist/app.js",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
+    "test:unit": "jest -t '@unit'",
+    "test:critical": "jest -t '#critical'",
     "format": "prettier --write .",
     "prepare": "husky"
   },
