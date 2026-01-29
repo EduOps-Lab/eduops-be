@@ -3,69 +3,76 @@ import type { StudentRepository } from '../../repos/student.repo.js';
 import type { AssistantRepository } from '../../repos/assistant.repo.js';
 import type { ParentRepository } from '../../repos/parent.repo.js';
 import type { AssistantCodeRepository } from '../../repos/assistant-code.repo.js';
+import type { LecturesRepository } from '../../repos/lectures.repo.js';
 import type { EnrollmentsRepository } from '../../repos/enrollments.repo.js';
+import { createAutoMock } from './create-mock.util.js';
 
 /** Mock InstructorRepository 생성 */
-export const createMockInstructorRepository =
-  (): jest.Mocked<InstructorRepository> =>
-    ({
-      findByUserId: jest.fn(),
-      findById: jest.fn(),
-      findByPhoneNumber: jest.fn(),
-      create: jest.fn(),
-    }) as unknown as jest.Mocked<InstructorRepository>;
+export const createMockInstructorRepository = () =>
+  createAutoMock<InstructorRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock StudentRepository 생성 */
-export const createMockStudentRepository = (): jest.Mocked<StudentRepository> =>
-  ({
-    findByUserId: jest.fn(),
-    findById: jest.fn(),
-    findByPhoneNumber: jest.fn(),
-    create: jest.fn(),
-  }) as unknown as jest.Mocked<StudentRepository>;
+export const createMockStudentRepository = () =>
+  createAutoMock<StudentRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock AssistantRepository 생성 */
-export const createMockAssistantRepository =
-  (): jest.Mocked<AssistantRepository> =>
-    ({
-      findByUserId: jest.fn(),
-      findById: jest.fn(),
-      findByPhoneNumber: jest.fn(),
-      create: jest.fn(),
-    }) as unknown as jest.Mocked<AssistantRepository>;
+export const createMockAssistantRepository = () =>
+  createAutoMock<AssistantRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock ParentRepository 생성 */
-export const createMockParentRepository = (): jest.Mocked<ParentRepository> =>
-  ({
-    findByUserId: jest.fn(),
-    findById: jest.fn(),
-    findByPhoneNumber: jest.fn(),
-    create: jest.fn(),
-  }) as unknown as jest.Mocked<ParentRepository>;
+export const createMockParentRepository = () =>
+  createAutoMock<ParentRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock AssistantCodeRepository 생성 */
-export const createMockAssistantCodeRepository =
-  (): jest.Mocked<AssistantCodeRepository> =>
-    ({
-      findValidCode: jest.fn(),
-      markAsUsed: jest.fn(),
-    }) as unknown as jest.Mocked<AssistantCodeRepository>;
+export const createMockAssistantCodeRepository = () =>
+  createAutoMock<AssistantCodeRepository>(['findValidCode', 'markAsUsed']);
+
+/** Mock LecturesRepository 생성 */
+export const createMockLecturesRepository = () =>
+  createAutoMock<LecturesRepository>([
+    'create',
+    'findById',
+    'findInstructorById',
+    'findByIdWithRelations',
+    'findMany',
+    'update',
+    'softDelete',
+  ]);
 
 /** Mock EnrollmentsRepository 생성 */
-export const createMockEnrollmentsRepository =
-  (): jest.Mocked<EnrollmentsRepository> =>
-    ({
-      findByAppStudentId: jest.fn(),
-      findByAppParentLinkId: jest.fn(),
-      findByIdWithRelations: jest.fn(),
-      findById: jest.fn(),
-      createMany: jest.fn(),
-      update: jest.fn(),
-      softDelete: jest.fn(),
-      findManyByLectureId: jest.fn(),
-      findManyByInstructorId: jest.fn(),
-      findParentIdByParentChildLinkId: jest.fn(),
-      findByAppParentId: jest.fn(),
-      create: jest.fn(),
-      updateAppStudentIdByPhoneNumber: jest.fn(),
-    }) as unknown as jest.Mocked<EnrollmentsRepository>;
+export const createMockEnrollmentsRepository = () =>
+  createAutoMock<EnrollmentsRepository>([
+    'createMany',
+    'create',
+    'findById',
+    'findByIdWithRelations',
+    'findByAppStudentId',
+    'findByAppParentLinkId',
+    'findByAppParentId',
+    'findManyByLectureId',
+    'findManyByInstructorId',
+    'findParentIdByParentChildLinkId',
+    'update',
+    'softDelete',
+    'updateAppStudentIdByPhoneNumber',
+  ]);
