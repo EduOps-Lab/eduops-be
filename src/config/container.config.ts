@@ -1,10 +1,12 @@
 import { prisma } from './db.config.js';
 import { auth } from './auth.config.js';
+
 import { InstructorRepository } from '../repos/instructor.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
 import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
+
 import { AuthService } from '../services/auth.service.js';
 import { AuthController } from '../controllers/auth.controller.js';
 import {
@@ -12,15 +14,22 @@ import {
   createOptionalAuth,
   createRoleMiddlewares,
 } from '../middlewares/auth.middleware.js';
+
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { LecturesService } from '../services/lectures.service.js';
 import { LecturesController } from '../controllers/lectures.controller.js';
+
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { EnrollmentsService } from '../services/enrollments.service.js';
 import { EnrollmentsController } from '../controllers/enrollments.controller.js';
+
 import { AttendancesRepository } from '../repos/attendances.repo.js';
 import { AttendancesService } from '../services/attendances.service.js';
 import { AttendancesController } from '../controllers/attendances.controller.js';
+
+import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
+import { ParentsService } from '../services/parents.service.js';
+import { ChildrenController } from '../controllers/children.controller.js';
 
 // 1. Instantiate Repositories
 const instructorRepo = new InstructorRepository(prisma);
@@ -28,6 +37,7 @@ const studentRepo = new StudentRepository(prisma);
 const assistantRepo = new AssistantRepository(prisma);
 const parentRepo = new ParentRepository(prisma);
 const assistantCodeRepo = new AssistantCodeRepository(prisma);
+const parentChildLinkRepo = new ParentChildLinkRepository(prisma);
 
 const lecturesRepo = new LecturesRepository(prisma);
 const enrollmentsRepo = new EnrollmentsRepository(prisma);
@@ -40,6 +50,7 @@ const authService = new AuthService(
   assistantCodeRepo,
   studentRepo,
   parentRepo,
+  enrollmentsRepo,
   auth,
   prisma,
 );
@@ -47,12 +58,21 @@ const authService = new AuthService(
 const lecturesService = new LecturesService(
   lecturesRepo,
   enrollmentsRepo,
+  studentRepo,
   prisma,
 );
 const enrollmentsService = new EnrollmentsService(
   enrollmentsRepo,
   lecturesRepo,
   assistantRepo,
+  parentChildLinkRepo,
+  prisma,
+);
+
+const parentsService = new ParentsService(
+  parentRepo,
+  parentChildLinkRepo,
+  enrollmentsRepo,
   prisma,
 );
 
@@ -69,6 +89,7 @@ const authController = new AuthController(authService);
 const lecturesController = new LecturesController(lecturesService);
 const enrollmentsController = new EnrollmentsController(enrollmentsService);
 const attendancesController = new AttendancesController(attendancesService);
+const childrenController = new ChildrenController(parentsService);
 
 // 4. Create Middlewares (Inject Services)
 const requireAuth = createRequireAuth(authService);
@@ -87,11 +108,13 @@ export const container = {
   lecturesService,
   enrollmentsService,
   attendancesService,
+  parentsService,
   // Controllers
   authController,
   lecturesController,
   enrollmentsController,
   attendancesController,
+  childrenController,
   // Middlewares
   requireAuth,
   optionalAuth,

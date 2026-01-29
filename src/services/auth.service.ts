@@ -14,7 +14,8 @@ import { AssistantRepository } from '../repos/assistant.repo.js';
 import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
-import type { SignUpData, AuthResponse } from '../types/auth.types.js';
+import { SignUpData, AuthResponse } from '../types/auth.types.js';
+import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 
 export class AuthService {
   constructor(
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly assistantCodeRepo: AssistantCodeRepository,
     private readonly studentRepo: StudentRepository,
     private readonly parentRepo: ParentRepository,
+    private readonly enrollmentsRepo: EnrollmentsRepository,
     private readonly authClient: typeof auth,
     private readonly prisma: PrismaClient,
   ) {}
@@ -220,12 +222,20 @@ export class AuthService {
 
   // 학생 프로필 생성
   private async createStudent(userId: string, data: SignUpData) {
-    return await this.studentRepo.create({
+    const student = await this.studentRepo.create({
       userId,
       phoneNumber: data.phoneNumber,
       school: data.school,
       schoolYear: data.schoolYear,
     });
+
+    // 전화번호로 기존 수강 내역 자동 연동
+    await this.enrollmentsRepo.updateAppStudentIdByPhoneNumber(
+      data.phoneNumber,
+      student.id,
+    );
+
+    return student;
   }
 
   // 학부모 프로필 생성

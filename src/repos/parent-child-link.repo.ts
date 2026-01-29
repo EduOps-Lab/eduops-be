@@ -1,0 +1,73 @@
+import { PrismaClient } from '../generated/prisma/client.js';
+import { Prisma } from '../generated/prisma/client.js';
+
+export class ParentChildLinkRepository {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  /**
+   * 자녀 링크 생성
+   */
+  async create(
+    data: Prisma.ParentChildLinkUncheckedCreateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx || this.prisma;
+    return await client.parentChildLink.create({
+      data,
+    });
+  }
+
+  /**
+   * 학부모 ID로 자녀 목록 조회
+   */
+  async findByAppParentId(appParentId: string) {
+    return await this.prisma.parentChildLink.findMany({
+      where: { appParentId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * ID로 자녀 링크 조회
+   */
+  async findById(id: string) {
+    return await this.prisma.parentChildLink.findUnique({
+      where: { id },
+    });
+  }
+
+  /**
+   * ID로 자녀 링크 조회 (with Parent)
+   */
+  async findByIdWithParent(id: string) {
+    return await this.prisma.parentChildLink.findUnique({
+      where: { id },
+      include: {
+        parent: true,
+      },
+    });
+  }
+
+  /**
+   * 학부모 ID와 학생 전화번호로 링크 조회
+   */
+  async findByParentIdAndPhoneNumber(appParentId: string, phoneNumber: string) {
+    return await this.prisma.parentChildLink.findUnique({
+      where: {
+        appParentId_phoneNumber: {
+          appParentId,
+          phoneNumber,
+        },
+      },
+    });
+  }
+
+  /**
+   * 전화번호로 링크 조회 (학부모가 달라도 학생 번호가 같으면 조회 - 보통은 유니크하지 않을 수 있지만, 여기선 특정 학생에 대한 링크들을 찾을 때 사용)
+   */
+  async findManyByPhoneNumber(phoneNumber: string) {
+    return await this.prisma.parentChildLink.findMany({
+      where: { phoneNumber },
+    });
+  }
+}
