@@ -76,6 +76,7 @@ export const createMockEnrollmentsRepository = () =>
     'update',
     'softDelete',
     'updateAppStudentIdByPhoneNumber',
+    'updateAppParentLinkIdByStudentPhone',
   ]);
 
 /** Mock ParentChildLinkRepository 생성 */
