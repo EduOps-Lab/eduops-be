@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-// @ts-nocheck
 import { EnrollmentsService } from './enrollments.service.js';
 import {
   NotFoundException,
@@ -31,7 +28,13 @@ import {
 } from '../test/fixtures/lectures.fixture.js';
 import { UserType } from '../constants/auth.constant.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaClient, Prisma } from '../generated/prisma/client.js';
+
+import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
+
+type EnrollmentWithRelations = Awaited<
+  ReturnType<EnrollmentsRepository['findByIdWithRelations']>
+>;
 
 describe('EnrollmentsService', () => {
   // Mock Dependencies
@@ -82,7 +85,12 @@ describe('EnrollmentsService', () => {
         // Act
         const result = await enrollmentsService.createEnrollment(
           lectureId,
-          createEnrollmentRequests.basic as any,
+          {
+            ...createEnrollmentRequests.basic,
+            lectureId,
+            instructorId,
+            status: EnrollmentStatus.ACTIVE,
+          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
           UserType.INSTRUCTOR,
           instructorId,
         );
@@ -109,7 +117,12 @@ describe('EnrollmentsService', () => {
 
         const result = await enrollmentsService.createEnrollment(
           lectureId,
-          createEnrollmentRequests.basic as any,
+          {
+            ...createEnrollmentRequests.basic,
+            lectureId,
+            instructorId: mockLectures.basic.instructorId,
+            status: EnrollmentStatus.ACTIVE,
+          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
           UserType.ASSISTANT,
           mockAssistants.basic.id,
         );
@@ -130,7 +143,12 @@ describe('EnrollmentsService', () => {
 
         await enrollmentsService.createEnrollment(
           lectureId,
-          createEnrollmentRequests.basic as any,
+          {
+            ...createEnrollmentRequests.basic,
+            lectureId,
+            instructorId,
+            status: EnrollmentStatus.ACTIVE,
+          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
           UserType.INSTRUCTOR,
           instructorId,
         );
@@ -151,7 +169,12 @@ describe('EnrollmentsService', () => {
 
         await enrollmentsService.createEnrollment(
           lectureId,
-          createEnrollmentRequests.withParentLink,
+          {
+            ...createEnrollmentRequests.withParentLink,
+            lectureId,
+            instructorId,
+            status: EnrollmentStatus.ACTIVE,
+          } as unknown as Prisma.EnrollmentUncheckedCreateInput,
           UserType.INSTRUCTOR,
           instructorId,
         );
@@ -174,7 +197,12 @@ describe('EnrollmentsService', () => {
         await expect(
           enrollmentsService.createEnrollment(
             'invalid-lecture-id',
-            createEnrollmentRequests.basic as any,
+            {
+              ...createEnrollmentRequests.basic,
+              lectureId: 'invalid-lecture-id',
+              instructorId,
+              status: EnrollmentStatus.ACTIVE,
+            } as unknown as Prisma.EnrollmentUncheckedCreateInput,
             UserType.INSTRUCTOR,
             instructorId,
           ),
@@ -194,7 +222,12 @@ describe('EnrollmentsService', () => {
         await expect(
           enrollmentsService.createEnrollment(
             mockLectures.otherInstructor.id,
-            createEnrollmentRequests.basic,
+            {
+              ...createEnrollmentRequests.basic,
+              lectureId: mockLectures.otherInstructor.id,
+              instructorId,
+              status: EnrollmentStatus.ACTIVE,
+            } as unknown as Prisma.EnrollmentUncheckedCreateInput,
             UserType.INSTRUCTOR,
             instructorId,
           ),
@@ -210,7 +243,12 @@ describe('EnrollmentsService', () => {
         await expect(
           enrollmentsService.createEnrollment(
             lectureId,
-            createEnrollmentRequests.basic as any,
+            {
+              ...createEnrollmentRequests.basic,
+              lectureId,
+              instructorId: mockLectures.basic.instructorId,
+              status: EnrollmentStatus.ACTIVE,
+            } as unknown as Prisma.EnrollmentUncheckedCreateInput,
             UserType.ASSISTANT,
             mockAssistants.otherInstructor.id,
           ),
@@ -228,7 +266,9 @@ describe('EnrollmentsService', () => {
       it('강사가 자신의 강의 수강생 목록을 조회할 수 있다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockEnrollmentsRepo.findManyByLectureId.mockResolvedValue(
-          mockEnrollmentsList,
+          mockEnrollmentsList as unknown as Awaited<
+            ReturnType<EnrollmentsRepository['findManyByLectureId']>
+          >,
         );
 
         const result = await enrollmentsService.getEnrollmentsByLectureId(
@@ -248,7 +288,9 @@ describe('EnrollmentsService', () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockAssistantRepo.findById.mockResolvedValue(mockAssistants.basic);
         mockEnrollmentsRepo.findManyByLectureId.mockResolvedValue(
-          mockEnrollmentsList,
+          mockEnrollmentsList as unknown as Awaited<
+            ReturnType<EnrollmentsRepository['findManyByLectureId']>
+          >,
         );
 
         const result = await enrollmentsService.getEnrollmentsByLectureId(
@@ -299,9 +341,12 @@ describe('EnrollmentsService', () => {
 
     describe('ENR-06: 강사별 전체 수강생 목록 조회 성공', () => {
       it('강사가 자신의 모든 수강생을 조회할 수 있다', async () => {
-        mockEnrollmentsRepo.findManyByInstructorId.mockResolvedValue(
-          mockEnrollmentsList,
-        );
+        mockEnrollmentsRepo.findManyByInstructorId.mockResolvedValue({
+          enrollments: mockEnrollmentsList as unknown as Awaited<
+            ReturnType<EnrollmentsRepository['findManyByInstructorId']>
+          >['enrollments'],
+          totalCount: mockEnrollmentsList.length,
+        });
 
         const result = await enrollmentsService.getEnrollmentsByInstructor(
           UserType.INSTRUCTOR,
@@ -309,7 +354,10 @@ describe('EnrollmentsService', () => {
           mockEnrollmentQueries.withPagination,
         );
 
-        expect(result).toEqual(mockEnrollmentsList);
+        expect(result).toEqual({
+          enrollments: mockEnrollmentsList,
+          totalCount: mockEnrollmentsList.length,
+        });
         expect(mockEnrollmentsRepo.findManyByInstructorId).toHaveBeenCalledWith(
           instructorId,
           mockEnrollmentQueries.withPagination,
@@ -318,9 +366,12 @@ describe('EnrollmentsService', () => {
 
       it('조교가 담당 강사의 모든 수강생을 조회할 수 있다', async () => {
         mockAssistantRepo.findById.mockResolvedValue(mockAssistants.basic);
-        mockEnrollmentsRepo.findManyByInstructorId.mockResolvedValue(
-          mockEnrollmentsList,
-        );
+        mockEnrollmentsRepo.findManyByInstructorId.mockResolvedValue({
+          enrollments: mockEnrollmentsList as unknown as Awaited<
+            ReturnType<EnrollmentsRepository['findManyByInstructorId']>
+          >['enrollments'],
+          totalCount: mockEnrollmentsList.length,
+        });
 
         const result = await enrollmentsService.getEnrollmentsByInstructor(
           UserType.ASSISTANT,
@@ -328,7 +379,10 @@ describe('EnrollmentsService', () => {
           mockEnrollmentQueries.withPagination,
         );
 
-        expect(result).toEqual(mockEnrollmentsList);
+        expect(result).toEqual({
+          enrollments: mockEnrollmentsList,
+          totalCount: mockEnrollmentsList.length,
+        });
         expect(mockAssistantRepo.findById).toHaveBeenCalledWith(
           mockAssistants.basic.id,
         );
@@ -348,7 +402,7 @@ describe('EnrollmentsService', () => {
     describe('ENR-07: 수강 상세 조회 성공', () => {
       it('강사가 자신의 수강생 상세 정보를 조회할 수 있다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollmentWithRelations,
+          mockEnrollmentWithRelations as unknown as EnrollmentWithRelations,
         );
 
         const result = await enrollmentsService.getEnrollmentDetail(
@@ -365,7 +419,7 @@ describe('EnrollmentsService', () => {
 
       it('조교가 담당 강사의 수강생 상세 정보를 조회할 수 있다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollmentWithRelations,
+          mockEnrollmentWithRelations as unknown as EnrollmentWithRelations,
         );
         mockAssistantRepo.findById.mockResolvedValue(mockAssistants.basic);
 
@@ -394,7 +448,7 @@ describe('EnrollmentsService', () => {
 
       it('다른 강사의 수강생 조회 시 ForbiddenException을 던진다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.otherInstructor as any,
+          mockEnrollments.otherInstructor as unknown as EnrollmentWithRelations,
         );
 
         await expect(
@@ -416,7 +470,7 @@ describe('EnrollmentsService', () => {
     describe('ENR-09: 수강 정보 수정 성공', () => {
       it('강사가 수강 정보를 전체 수정할 수 있다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
         const updatedEnrollment = {
           ...mockEnrollments.active,
@@ -440,7 +494,7 @@ describe('EnrollmentsService', () => {
 
       it('강사가 수강 정보를 부분 수정할 수 있다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
         const updatedEnrollment = {
           ...mockEnrollments.active,
@@ -464,7 +518,7 @@ describe('EnrollmentsService', () => {
 
       it('조교가 담당 강사의 수강생 정보를 수정할 수 있다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
         mockAssistantRepo.findById.mockResolvedValue(mockAssistants.basic);
         const updatedEnrollment = {
@@ -524,7 +578,7 @@ describe('EnrollmentsService', () => {
     describe('ENR-11: 수강 정보 삭제 성공', () => {
       it('강사가 수강 정보를 Soft Delete 할 수 있다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
         const deletedEnrollment = {
           ...mockEnrollments.active,
@@ -546,7 +600,7 @@ describe('EnrollmentsService', () => {
 
       it('조교가 담당 강사의 수강생을 삭제할 수 있다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
         mockAssistantRepo.findById.mockResolvedValue(mockAssistants.basic);
         const deletedEnrollment = {
@@ -600,7 +654,9 @@ describe('EnrollmentsService', () => {
       it('학생이 자신의 수강 목록을 조회할 수 있다', async () => {
         const studentId = mockStudents.basic.id;
         mockEnrollmentsRepo.findByAppStudentId.mockResolvedValue({
-          enrollments: [mockEnrollments.active],
+          enrollments: [mockEnrollments.active] as unknown as Awaited<
+            ReturnType<EnrollmentsRepository['findByAppStudentId']>
+          >['enrollments'],
           totalCount: 1,
         });
 
@@ -625,7 +681,9 @@ describe('EnrollmentsService', () => {
         mockEnrollmentsRepo.findByAppParentId.mockResolvedValue([
           mockEnrollments.active,
           mockEnrollments.withoutParentLink,
-        ]);
+        ] as unknown as Awaited<
+          ReturnType<EnrollmentsRepository['findByAppParentId']>
+        >);
 
         const result = await enrollmentsService.getEnrollments(
           UserType.PARENT,
@@ -660,7 +718,7 @@ describe('EnrollmentsService', () => {
       it('학생이 자신의 수강 정보를 조회할 수 있다', async () => {
         const studentId = mockStudents.basic.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
 
         const result = await enrollmentsService.getEnrollmentById(
@@ -678,7 +736,7 @@ describe('EnrollmentsService', () => {
       it('다른 학생의 수강 정보 조회 시 ForbiddenException을 던진다', async () => {
         const anotherStudentId = mockStudents.another.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
 
         await expect(
@@ -695,7 +753,7 @@ describe('EnrollmentsService', () => {
       it('학부모가 자녀의 수강 정보를 조회할 수 있다', async () => {
         const parentId = mockParents.basic.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
         mockEnrollmentsRepo.findParentIdByParentChildLinkId.mockResolvedValue({
           appParentId: parentId,
@@ -713,7 +771,7 @@ describe('EnrollmentsService', () => {
       it('다른 학부모가 조회 시 ForbiddenException을 던진다', async () => {
         const anotherParentId = mockParents.another.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.active as any,
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
         mockEnrollmentsRepo.findParentIdByParentChildLinkId.mockResolvedValue({
           appParentId: mockParents.basic.id,
@@ -731,7 +789,7 @@ describe('EnrollmentsService', () => {
       it('ParentLink가 없는 경우 ForbiddenException을 던진다', async () => {
         const parentId = mockParents.basic.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.withoutParentLink,
+          mockEnrollments.withoutParentLink as unknown as EnrollmentWithRelations,
         );
 
         await expect(
@@ -759,7 +817,7 @@ describe('EnrollmentsService', () => {
 
       it('삭제된 수강 정보 조회 시 NotFoundException을 던진다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.deleted as any,
+          mockEnrollments.deleted as unknown as EnrollmentWithRelations,
         );
 
         await expect(
@@ -779,7 +837,10 @@ describe('EnrollmentsService', () => {
       it('조교는 담당 강사 ID로 변환된다', async () => {
         mockAssistantRepo.findById.mockResolvedValue(mockAssistants.basic);
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
-        mockEnrollmentsRepo.findManyByInstructorId.mockResolvedValue([] as any);
+        mockEnrollmentsRepo.findManyByInstructorId.mockResolvedValue({
+          enrollments: [],
+          totalCount: 0,
+        });
 
         await enrollmentsService.getEnrollmentsByInstructor(
           UserType.ASSISTANT,
