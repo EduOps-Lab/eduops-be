@@ -8,6 +8,7 @@ import {
   updateLectureSchema,
 } from '../../../validations/lectures.validation.js';
 import { createEnrollmentSchema } from '../../../validations/enrollments.validation.js';
+import { createBulkAttendancesSchema } from '../../../validations/attendances.validation.js';
 
 export const mgmtLecturesRouter = Router();
 
@@ -78,4 +79,14 @@ mgmtLecturesRouter.post(
   '/:lectureId/enrollments',
   validate(createEnrollmentSchema, 'body'),
   container.enrollmentsController.createEnrollment,
+);
+
+/**
+ * POST /api/mgmt/v1/lectures/:lectureId/enrollments/attendances
+ * 해당 강의 수강생 단체 출결 등록
+ */
+mgmtLecturesRouter.post(
+  '/:lectureId/enrollments/attendances',
+  validate(createBulkAttendancesSchema, 'body'),
+  container.attendancesController.createBulkAttendances,
 );
