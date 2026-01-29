@@ -246,11 +246,51 @@ export const mockEnrollmentWithRelations = {
     id: 'lecture-id-002',
     title: 'Advanced Mathematics',
     subject: 'Math',
+    description: 'Advanced math course',
+    startAt: new Date('2024-03-01'),
+    endAt: new Date('2024-12-31'),
+    status: 'SCHEDULED',
+    createdAt: new Date('2024-01-01'),
+    deletedAt: null,
+    instructorId: 'instructor-id-123',
+    instructor: {
+      id: 'instructor-id-123',
+      phoneNumber: '010-1234-5678',
+      subject: 'Mathematics',
+      academy: 'Test Academy',
+      user: {
+        name: '홍길동',
+      },
+    },
   },
-  instructor: {
-    id: 'instructor-id-123',
-    phoneNumber: '010-1234-5678',
-    subject: 'Mathematics',
+  grades: [],
+  clinicTargets: [],
+  attendances: [],
+};
+
+/** Enrollment with Relations (학부모용 - 간소화된 관계) */
+export const mockEnrollmentWithRelationsForParent = {
+  ...mockEnrollments.active,
+  lecture: {
+    id: 'lecture-id-002',
+    title: 'Advanced Mathematics',
+    subject: 'Math',
+    description: 'Advanced math course',
+    startAt: new Date('2024-03-01'),
+    endAt: new Date('2024-12-31'),
+    status: 'SCHEDULED',
+    createdAt: new Date('2024-01-01'),
+    deletedAt: null,
+    instructorId: 'instructor-id-123',
+    instructor: {
+      id: 'instructor-id-123',
+      phoneNumber: '010-1234-5678',
+      subject: 'Mathematics',
+      academy: 'Test Academy',
+      user: {
+        name: '홍길동',
+      },
+    },
   },
 };
 
