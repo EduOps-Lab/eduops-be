@@ -10,6 +10,7 @@ import {
   createMockAssistantRepository,
   createMockParentRepository,
   createMockAssistantCodeRepository,
+  createMockEnrollmentsRepository,
   createMockBetterAuth,
   createMockPrisma,
 } from '../test/mocks/index.js';
@@ -32,6 +33,7 @@ describe('AuthService', () => {
   >;
   let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
   let mockParentRepo: ReturnType<typeof createMockParentRepository>;
+  let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
   let mockBetterAuth: ReturnType<typeof createMockBetterAuth>;
   let mockPrisma: PrismaClient;
 
@@ -48,6 +50,7 @@ describe('AuthService', () => {
     mockAssistantCodeRepo = createMockAssistantCodeRepository();
     mockStudentRepo = createMockStudentRepository();
     mockParentRepo = createMockParentRepository();
+    mockEnrollmentsRepo = createMockEnrollmentsRepository();
     mockBetterAuth = createMockBetterAuth();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
@@ -58,6 +61,7 @@ describe('AuthService', () => {
       mockAssistantCodeRepo,
       mockStudentRepo,
       mockParentRepo,
+      mockEnrollmentsRepo,
       mockBetterAuth as unknown as typeof auth,
       mockPrisma,
     );

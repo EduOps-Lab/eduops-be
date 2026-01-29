@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { EnrollmentsService } from '../services/enrollments.service.js';
-import { GetEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
+import {
+  GetEnrollmentsQueryDto,
+  GetSvcEnrollmentsQueryDto,
+} from '../validations/enrollments.validation.js';
 import { getPagingData } from '../utils/pagination.util.js';
 import { UserType } from '../constants/auth.constant.js';
 import { UnauthorizedException } from '../err/http.exception.js';
@@ -32,7 +35,7 @@ export class EnrollmentsController {
           enrollments,
           totalCount,
           query.page,
-          query.pageSize,
+          query.limit,
         );
 
         res.status(200).json({
@@ -43,14 +46,24 @@ export class EnrollmentsController {
       }
 
       // 학생/학부모인 경우
-      const { enrollments } = await this.enrollmentsService.getEnrollments(
-        userType,
-        profileId,
+      const query = req.query as unknown as GetSvcEnrollmentsQueryDto;
+      const { enrollments, totalCount } =
+        await this.enrollmentsService.getEnrollments(
+          userType,
+          profileId,
+          query,
+        );
+
+      const responseData = getPagingData(
+        enrollments,
+        totalCount,
+        query.page,
+        query.limit,
       );
 
       res.status(200).json({
-        success: true,
-        data: { enrollments },
+        success: true, // Existing format used success: true. Instructor used status: 'success'. Keeping consistency with existing block.
+        data: responseData,
         message: '수강 목록 조회 성공',
       });
     } catch (error) {
@@ -69,11 +82,23 @@ export class EnrollmentsController {
         throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
       }
 
-      const enrollment = await this.enrollmentsService.getEnrollmentDetail(
-        enrollmentId,
-        userType,
-        profileId,
-      );
+      let enrollment;
+
+      // 강사/조교인 경우
+      if (userType === UserType.INSTRUCTOR || userType === UserType.ASSISTANT) {
+        enrollment = await this.enrollmentsService.getEnrollmentDetail(
+          enrollmentId,
+          userType,
+          profileId,
+        );
+      } else {
+        // 학생/학부모인 경우
+        enrollment = await this.enrollmentsService.getEnrollmentById(
+          enrollmentId,
+          userType,
+          profileId,
+        );
+      }
 
       res.status(200).json({
         success: true,
