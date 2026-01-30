@@ -8,9 +8,8 @@ import {
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
-import { AssistantRepository } from '../repos/assistant.repo.js';
-import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
 import { ParentsService } from './parents.service.js';
+import { PermissionService } from './permission.service.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import type {
   GetEnrollmentsQueryDto,
@@ -21,10 +20,9 @@ export class EnrollmentsService {
   constructor(
     private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly lecturesRepository: LecturesRepository,
-    private readonly assistantRepository: AssistantRepository,
-    private readonly parentChildLinkRepository: ParentChildLinkRepository,
     private readonly studentRepository: StudentRepository,
     private readonly parentsService: ParentsService,
+    private readonly permissionService: PermissionService,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -42,7 +40,7 @@ export class EnrollmentsService {
     }
 
     // 2. 권한 체크 (강사 본인 또는 담당 조교)
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       lecture.instructorId,
       userType,
       profileId,
@@ -91,7 +89,7 @@ export class EnrollmentsService {
       throw new NotFoundException('강의를 찾을 수 없습니다.');
     }
 
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       lecture.instructorId,
       userType,
       profileId,
@@ -106,10 +104,11 @@ export class EnrollmentsService {
     profileId: string,
     query: GetEnrollmentsQueryDto,
   ) {
-    const targetInstructorId = await this.getEffectiveInstructorId(
-      userType,
-      profileId,
-    );
+    const targetInstructorId =
+      await this.permissionService.getEffectiveInstructorId(
+        userType,
+        profileId,
+      );
 
     return await this.enrollmentsRepository.findManyByInstructorId(
       targetInstructorId,
@@ -131,7 +130,7 @@ export class EnrollmentsService {
     }
 
     // 권한 체크
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       enrollment.instructorId,
       userType,
       profileId,
@@ -153,7 +152,7 @@ export class EnrollmentsService {
     }
 
     // 권한 체크
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       enrollment.instructorId,
       userType,
       profileId,
@@ -170,7 +169,7 @@ export class EnrollmentsService {
     }
 
     // 권한 체크
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       enrollment.instructorId,
       userType,
       profileId,
@@ -213,68 +212,13 @@ export class EnrollmentsService {
       throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
     }
 
-    if (userType !== UserType.STUDENT) {
-      throw new ForbiddenException(
-        '학생은 본인의 수강 상세만, 학부모는 자녀별 수강 상세 API를 각각 사용해 주세요.',
-      );
-    }
-
-    if (enrollment.appStudentId !== profileId) {
-      throw new ForbiddenException('본인의 수강 정보만 조회할 수 있습니다.');
-    }
+    // 권한 체크 (학생/학부모 조회 권한)
+    await this.permissionService.validateEnrollmentReadAccess(
+      enrollment,
+      userType,
+      profileId,
+    );
 
     return enrollment;
-  }
-
-  //-------- Helper Functions --------
-
-  // 강사 및 조교 권한 체크
-  private async validateInstructorAccess(
-    instructorId: string,
-    userType: UserType,
-    profileId: string,
-  ) {
-    const effectiveInstructorId = await this.getEffectiveInstructorId(
-      userType,
-      profileId,
-    );
-    if (instructorId !== effectiveInstructorId) {
-      throw new ForbiddenException('접근 권한이 없습니다.');
-    }
-  }
-
-  // 실제 권한을 가진 강사 ID 추출 (DI 기반 리졸버)
-  private async getEffectiveInstructorId(
-    userType: UserType,
-    profileId: string,
-  ): Promise<string> {
-    if (userType === UserType.INSTRUCTOR) {
-      return profileId;
-    }
-
-    if (userType === UserType.ASSISTANT) {
-      const assistant = await this.assistantRepository.findById(profileId);
-      if (!assistant) {
-        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
-      }
-      return assistant.instructorId;
-    }
-
-    throw new ForbiddenException('접근 권한이 없습니다.');
-  }
-
-  // 강의별 권한 체크 (getEffectiveInstructorId 활용)
-  private async checkLecturePermission(
-    lecture: { instructorId: string },
-    userType: UserType,
-    profileId: string,
-  ) {
-    const effectiveInstructorId = await this.getEffectiveInstructorId(
-      userType,
-      profileId,
-    );
-    if (lecture.instructorId !== effectiveInstructorId) {
-      throw new ForbiddenException('해당 권한이 없습니다.');
-    }
   }
 }

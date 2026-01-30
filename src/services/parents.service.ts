@@ -8,6 +8,7 @@ import {
 import { ParentRepository } from '../repos/parent.repo.js';
 import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
+import { PermissionService } from './permission.service.js';
 import type { CreateChildDto } from '../validations/children.validation.js';
 import type { GetSvcEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
 
@@ -16,6 +17,7 @@ export class ParentsService {
     private readonly parentRepository: ParentRepository,
     private readonly parentChildLinkRepository: ParentChildLinkRepository,
     private readonly enrollmentsRepository: EnrollmentsRepository,
+    private readonly permissionService: PermissionService,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -79,7 +81,7 @@ export class ParentsService {
     query?: GetSvcEnrollmentsQueryDto,
   ) {
     // 1. 자녀 링크 검증
-    const childLink = await this.validateChildAccess(
+    const childLink = await this.permissionService.validateChildAccess(
       userType,
       profileId,
       childId,
@@ -105,7 +107,7 @@ export class ParentsService {
     enrollmentId: string,
   ) {
     // 1. 자녀 링크 검증
-    const childLink = await this.validateChildAccess(
+    const childLink = await this.permissionService.validateChildAccess(
       userType,
       profileId,
       childId,
@@ -120,7 +122,6 @@ export class ParentsService {
     }
 
     // 3. 해당 수강 정보가 내 자녀의 것이 맞는지 확인
-    // (enrollment.appParentLinkId가 childLink.id와 일치해야 함)
     if (enrollment.appParentLinkId !== childLink.id) {
       throw new ForbiddenException(
         '해당 자녀의 수강 정보가 아니거나 접근 권한이 없습니다.',
@@ -135,27 +136,5 @@ export class ParentsService {
     const links =
       await this.parentChildLinkRepository.findManyByPhoneNumber(phoneNumber);
     return links.length > 0 ? links[0] : null;
-  }
-
-  // 자녀 접근 권한 검증 (Helper)
-  async validateChildAccess(
-    userType: UserType,
-    profileId: string,
-    childId: string,
-  ) {
-    if (userType !== UserType.PARENT) {
-      throw new ForbiddenException('접근 권한이 없습니다.');
-    }
-
-    const childLink = await this.parentChildLinkRepository.findById(childId);
-    if (!childLink) {
-      throw new NotFoundException('자녀 정보를 찾을 수 없습니다.');
-    }
-
-    if (childLink.appParentId !== profileId) {
-      throw new ForbiddenException('본인의 자녀만 조회할 수 있습니다.');
-    }
-
-    return childLink;
   }
 }
