@@ -17,6 +17,52 @@ export class ExamsService {
     private readonly prisma: PrismaClient,
   ) {}
 
+  /** 강의별 시험 목록 조회 (questions 제외) */
+  async getExamsByLectureId(
+    lectureId: string,
+    userType: UserType,
+    profileId: string,
+  ) {
+    // 1. 강의 확인
+    const lecture = await this.lecturesRepo.findById(lectureId);
+    if (!lecture) {
+      throw new NotFoundException('강의를 찾을 수 없습니다.');
+    }
+
+    // 2. 권한 확인
+    await this.permissionService.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
+
+    // 3. 시험 목록 조회
+    return await this.examsRepo.findByLectureId(lectureId);
+  }
+
+  /** 시험 상세 조회 (questions 포함) */
+  async getExamById(examId: string, userType: UserType, profileId: string) {
+    // 1. Exam 조회
+    const exam = await this.examsRepo.findByIdWithQuestions(examId);
+    if (!exam) {
+      throw new NotFoundException('시험을 찾을 수 없습니다.');
+    }
+
+    // 2. 권한 확인 (강의 담당자 체크)
+    const lecture = await this.lecturesRepo.findById(exam.lectureId);
+    if (!lecture) {
+      throw new NotFoundException('관련 강의를 찾을 수 없습니다.');
+    }
+
+    await this.permissionService.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
+
+    return exam;
+  }
+
   /** 시험 및 문항 생성 (Transaction) */
   async createExam(
     lectureId: string,

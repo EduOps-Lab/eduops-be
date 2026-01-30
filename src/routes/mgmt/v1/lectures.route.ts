@@ -10,7 +10,10 @@ import {
 } from '../../../validations/lectures.validation.js';
 import { createEnrollmentSchema } from '../../../validations/enrollments.validation.js';
 import { createBulkAttendancesSchema } from '../../../validations/attendances.validation.js';
-import { createExamSchema } from '../../../validations/exams.validation.js';
+import {
+  createExamSchema,
+  lectureIdExamParamSchema,
+} from '../../../validations/exams.validation.js';
 
 export const mgmtLecturesRouter = Router();
 
@@ -60,6 +63,13 @@ mgmtLecturesRouter.delete(
   requireInstructor,
   validate(lectureParamSchema, 'params'),
   lecturesController.deleteLecture,
+);
+
+/** 강의별 시험 목록 조회 (questions 제외) */
+mgmtLecturesRouter.get(
+  '/:lectureId/exams',
+  validate(lectureIdExamParamSchema, 'params'),
+  container.examsController.getExamsByLecture,
 );
 
 /** 시험 생성 */

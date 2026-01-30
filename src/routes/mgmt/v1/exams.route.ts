@@ -15,6 +15,13 @@ const { requireAuth, requireInstructorOrAssistant, examsController } =
 mgmtExamsRouter.use(requireAuth);
 mgmtExamsRouter.use(requireInstructorOrAssistant);
 
+/** 시험 상세 조회 (questions 포함) */
+mgmtExamsRouter.get(
+  '/:examId',
+  validate(examIdParamSchema, 'params'),
+  examsController.getExam,
+);
+
 /** 시험 수정 (문항 Upsert 포함) */
 mgmtExamsRouter.patch(
   '/:examId',

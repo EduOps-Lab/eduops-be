@@ -48,6 +48,18 @@ export class ExamsRepository {
     });
   }
 
+  /** 강의별 시험 목록 조회 (questions 제외 - 성능 최적화) */
+  async findByLectureId(
+    lectureId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Exam[]> {
+    const client = tx ?? this.prisma;
+    return await client.exam.findMany({
+      where: { lectureId },
+      orderBy: { title: 'asc' },
+    });
+  }
+
   /** Exam 조회 (ID) */
   async findById(
     id: string,

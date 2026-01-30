@@ -47,3 +47,7 @@ export type UpdateExamDto = z.infer<typeof updateExamSchema>;
 export const examIdParamSchema = z.object({
   examId: z.string().min(1),
 });
+
+export const lectureIdExamParamSchema = z.object({
+  lectureId: z.string().min(1),
+});
