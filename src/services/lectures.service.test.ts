@@ -7,6 +7,8 @@ import {
   createMockLecturesRepository,
   createMockEnrollmentsRepository,
   createMockStudentRepository,
+  createMockInstructorRepository,
+  createMockPermissionService,
   createMockPrisma,
 } from '../test/mocks/index.js';
 import {
@@ -16,21 +18,21 @@ import {
   createLectureRequests,
   updateLectureRequests,
   mockEnrollments,
-  mockStudents,
-  createEnrollmentRequests,
 } from '../test/fixtures/index.js';
 
 // Aliases for backward compatibility
-const mockStudent = mockStudents.basic;
-const createEnrollmentRequest = createEnrollmentRequests.basic;
+
 import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
+import { UserType } from '../constants/auth.constant.js';
 
 describe('LecturesService', () => {
   // Mock Dependencies
   let mockLecturesRepo: ReturnType<typeof createMockLecturesRepository>;
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
   let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
+  let mockInstructorRepo: ReturnType<typeof createMockInstructorRepository>;
+  let mockPermissionService: ReturnType<typeof createMockPermissionService>;
   let mockPrisma: PrismaClient;
 
   // Service under test
@@ -44,6 +46,8 @@ describe('LecturesService', () => {
     mockLecturesRepo = createMockLecturesRepository();
     mockEnrollmentsRepo = createMockEnrollmentsRepository();
     mockStudentRepo = createMockStudentRepository();
+    mockInstructorRepo = createMockInstructorRepository();
+    mockPermissionService = createMockPermissionService();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
     // Create LecturesService DI
@@ -51,6 +55,8 @@ describe('LecturesService', () => {
       mockLecturesRepo,
       mockEnrollmentsRepo,
       mockStudentRepo,
+      mockInstructorRepo,
+      mockPermissionService,
       mockPrisma,
     );
   });
@@ -59,7 +65,7 @@ describe('LecturesService', () => {
     describe('LECTURE-01: 강의 생성 성공', () => {
       it('기본 정보만으로 강의 생성이 성공한다', async () => {
         // Arrange
-        mockLecturesRepo.findInstructorById.mockResolvedValue(mockInstructor);
+        mockInstructorRepo.findById.mockResolvedValue(mockInstructor);
         mockLecturesRepo.create.mockResolvedValue({
           ...mockLectures.basic,
           lectureTimes: [],
@@ -79,7 +85,7 @@ describe('LecturesService', () => {
         // Assert
         expect(result).toBeDefined();
         expect(result.id).toBe(mockLectures.basic.id);
-        expect(mockLecturesRepo.findInstructorById).toHaveBeenCalledWith(
+        expect(mockInstructorRepo.findById).toHaveBeenCalledWith(
           mockInstructor.id,
         );
         expect(mockLecturesRepo.create).toHaveBeenCalledWith(
@@ -92,7 +98,7 @@ describe('LecturesService', () => {
       });
 
       it('enrollments와 함께 강의 생성이 성공한다', async () => {
-        mockLecturesRepo.findInstructorById.mockResolvedValue(mockInstructor);
+        mockInstructorRepo.findById.mockResolvedValue(mockInstructor);
         mockLecturesRepo.create.mockResolvedValue({
           ...mockLectures.withEnrollments,
           lectureTimes: [],
@@ -137,7 +143,7 @@ describe('LecturesService', () => {
 
     describe('LECTURE-02: 강의 생성 실패', () => {
       it('존재하지 않는 강사 ID로 생성 시 NotFoundException 발생', async () => {
-        mockLecturesRepo.findInstructorById.mockResolvedValue(null);
+        mockInstructorRepo.findById.mockResolvedValue(null);
 
         await expect(
           lecturesService.createLecture(
@@ -175,6 +181,7 @@ describe('LecturesService', () => {
 
         const result = await lecturesService.updateLecture(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
           updateLectureRequests.full,
         );
@@ -202,6 +209,7 @@ describe('LecturesService', () => {
 
         const result = await lecturesService.updateLecture(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
           updateLectureRequests.partial,
         );
@@ -226,6 +234,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
             updateLectureRequests.full,
           ),
@@ -234,6 +243,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
             updateLectureRequests.full,
           ),
@@ -246,10 +256,14 @@ describe('LecturesService', () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
+        mockPermissionService.validateInstructorAccess.mockRejectedValue(
+          new ForbiddenException('해당 강의를 수정할 권한이 없습니다.'),
+        );
 
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
             updateLectureRequests.full,
           ),
@@ -258,6 +272,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
             updateLectureRequests.full,
           ),
@@ -276,6 +291,7 @@ describe('LecturesService', () => {
 
         await lecturesService.deleteLecture(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
         );
 
@@ -295,6 +311,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow(NotFoundException);
@@ -302,6 +319,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow('강의를 찾을 수 없습니다.');
@@ -313,10 +331,14 @@ describe('LecturesService', () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
+        mockPermissionService.validateInstructorAccess.mockRejectedValue(
+          new ForbiddenException('해당 강의를 삭제할 권한이 없습니다.'),
+        );
 
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -324,6 +346,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow('해당 강의를 삭제할 권한이 없습니다.');
@@ -336,19 +359,18 @@ describe('LecturesService', () => {
   describe('[강의 조회] getLectureById', () => {
     describe('LECTURE-07: 강의 조회 성공', () => {
       it('본인의 강의 조회가 성공한다', async () => {
-        mockLecturesRepo.findByIdWithRelations.mockResolvedValue(
-          mockLectures.basic,
-        );
+        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
 
         const result = await lecturesService.getLectureById(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
         );
 
         expect(result).toBeDefined();
         expect(result.id).toBe(mockLectures.basic.id);
         expect(result.instructorId).toBe(mockInstructor.id);
-        expect(mockLecturesRepo.findByIdWithRelations).toHaveBeenCalledWith(
+        expect(mockLecturesRepo.findById).toHaveBeenCalledWith(
           mockLectures.basic.id,
         );
       });
@@ -356,11 +378,12 @@ describe('LecturesService', () => {
 
     describe('LECTURE-08: 강의 조회 실패', () => {
       it('존재하지 않는 강의 조회 시 NotFoundException 발생', async () => {
-        mockLecturesRepo.findByIdWithRelations.mockResolvedValue(null);
+        mockLecturesRepo.findById.mockResolvedValue(null);
 
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow(NotFoundException);
@@ -368,19 +391,24 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow('강의를 찾을 수 없습니다.');
       });
 
       it('다른 강사의 강의 조회 시 ForbiddenException 발생', async () => {
-        mockLecturesRepo.findByIdWithRelations.mockResolvedValue(
+        mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
+        );
+        mockPermissionService.validateInstructorAccess.mockRejectedValue(
+          new ForbiddenException('해당 강의를 조회할 권한이 없습니다.'),
         );
 
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -388,6 +416,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow('해당 강의를 조회할 권한이 없습니다.');
@@ -442,98 +471,6 @@ describe('LecturesService', () => {
           instructorId: mockInstructor.id,
           search: 'Basic',
         });
-      });
-    });
-  });
-
-  describe('[수강 등록] createEnrollment', () => {
-    describe('LECTURE-10: 수강 등록 성공', () => {
-      it('기존 학생 연동 없이 수강 등록이 성공한다', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
-        mockStudentRepo.findByPhoneNumber.mockResolvedValue(null);
-        mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments.active);
-        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
-          fn({}),
-        );
-
-        const result = await lecturesService.createEnrollment(
-          mockInstructor.id,
-          mockLectures.basic.id,
-          createEnrollmentRequest,
-        );
-
-        expect(result).toBeDefined();
-        expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
-          expect.objectContaining({
-            lectureId: mockLectures.basic.id,
-            instructorId: mockInstructor.id,
-            studentName: createEnrollmentRequest.studentName,
-            appStudentId: undefined,
-          }),
-          expect.anything(),
-        );
-      });
-
-      it('기존 학생이 있으면 appStudentId가 연동된다', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
-        mockStudentRepo.findByPhoneNumber.mockResolvedValue(mockStudent);
-        mockEnrollmentsRepo.create.mockResolvedValue({
-          ...mockEnrollments.active,
-          appStudentId: mockStudent.id,
-        });
-        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
-          fn({}),
-        );
-
-        const result = await lecturesService.createEnrollment(
-          mockInstructor.id,
-          mockLectures.basic.id,
-          createEnrollmentRequest,
-        );
-
-        expect(result).toBeDefined();
-        expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
-          expect.objectContaining({
-            appStudentId: mockStudent.id,
-          }),
-          expect.anything(),
-        );
-      });
-    });
-
-    describe('LECTURE-11: 수강 등록 실패', () => {
-      it('존재하지 않는 강의에 수강 등록 시 NotFoundException 발생', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(null);
-
-        await expect(
-          lecturesService.createEnrollment(
-            mockInstructor.id,
-            'non-existent-lecture-id',
-            createEnrollmentRequest,
-          ),
-        ).rejects.toThrow(NotFoundException);
-      });
-
-      it('다른 강사의 강의에 수강 등록 시 ForbiddenException 발생', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(
-          mockLectures.otherInstructor,
-        );
-
-        await expect(
-          lecturesService.createEnrollment(
-            mockInstructor.id,
-            mockLectures.otherInstructor.id,
-            createEnrollmentRequest,
-          ),
-        ).rejects.toThrow(ForbiddenException);
-
-        await expect(
-          lecturesService.createEnrollment(
-            mockInstructor.id,
-            mockLectures.otherInstructor.id,
-            createEnrollmentRequest,
-          ),
-        ).rejects.toThrow('해당 강의에 접근할 권한이 없습니다.');
       });
     });
   });

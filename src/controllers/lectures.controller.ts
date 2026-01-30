@@ -1,13 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { LecturesService } from '../services/lectures.service.js';
+import { successResponse } from '../utils/response.util.js';
+import { getAuthUser, getProfileIdOrThrow } from '../utils/user.util.js';
+import { UserType } from '../constants/auth.constant.js';
 
 export class LecturesController {
   constructor(private readonly lecturesService: LecturesService) {}
 
-  /** POST:강의 생성 핸들러 */
+  /** 강의 생성 핸들러 */
   createLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const instructorId = req.profile!.id;
+      const instructorId = getProfileIdOrThrow(req);
       const lectureData = req.body;
 
       const lecture = await this.lecturesService.createLecture(
@@ -15,19 +18,21 @@ export class LecturesController {
         lectureData,
       );
 
-      res
-        .status(201)
-        .json({ success: true, data: lecture, message: '강의 생성 성공' });
+      return successResponse(res, {
+        statusCode: 201,
+        data: lecture,
+        message: '강의 생성 성공',
+      });
     } catch (error) {
       next(error);
     }
   };
 
-  /** GET:강의 리스트 조회 핸들러 */
+  /** 강의 리스트 조회 핸들러 */
   getLectures = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { page, limit, search } = req.query;
-      const instructorId = req.profile!.id;
+      const instructorId = getProfileIdOrThrow(req);
 
       //  타입변환
       const result = await this.lecturesService.getLectures(instructorId, {
@@ -36,8 +41,7 @@ export class LecturesController {
         search: search ? String(search) : undefined,
       });
 
-      res.status(200).json({
-        success: true,
+      return successResponse(res, {
         data: result,
         message: '강의 리스트 조회 성공',
       });
@@ -46,77 +50,68 @@ export class LecturesController {
     }
   };
 
-  /** GET:강의 개별 조회 핸들러 */
+  /** 강의 개별 조회 핸들러 */
   getLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const instructorId = req.profile!.id;
+      const profileId = getProfileIdOrThrow(req);
+      const user = getAuthUser(req);
+      const userType = user.userType as UserType;
       const { id } = req.params;
+
       const lecture = await this.lecturesService.getLectureById(
-        instructorId,
+        profileId,
+        userType,
         id,
       );
 
-      res
-        .status(200)
-        .json({ success: true, data: lecture, message: '강의 개별 조회 성공' });
+      return successResponse(res, {
+        data: lecture,
+        message: '강의 개별 조회 성공',
+      });
     } catch (error) {
       next(error);
     }
   };
 
-  /** PATCH:강의 수정 핸들러 */
+  /** 강의 수정 핸들러 */
   updateLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const instructorId = req.profile!.id;
+      const profileId = getProfileIdOrThrow(req);
+      const user = getAuthUser(req);
+      const userType = user.userType as UserType;
       const updateData = req.body;
+
       const lecture = await this.lecturesService.updateLecture(
-        instructorId,
+        profileId,
+        userType,
         id,
         updateData,
       );
 
-      res
-        .status(200)
-        .json({ success: true, data: lecture, message: '강의 수정 성공' });
+      return successResponse(res, {
+        data: lecture,
+        message: '강의 수정 성공',
+      });
     } catch (error) {
       next(error);
     }
   };
 
-  /** DELETE:강의 삭제 핸들러 (Soft Delete) */
+  /** 강의 삭제 핸들러 (Soft Delete) */
   deleteLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const instructorId = req.profile!.id;
+      const profileId = getProfileIdOrThrow(req);
+      const user = getAuthUser(req);
+      const userType = user.userType as UserType;
       const { id } = req.params;
-      await this.lecturesService.deleteLecture(instructorId, id);
 
-      res.status(204).send();
-    } catch (error) {
-      next(error);
-    }
-  };
+      await this.lecturesService.deleteLecture(profileId, userType, id);
 
-  /** POST: 수강생 등록 핸들러 */
-  createEnrollment = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      const instructorId = req.profile!.id;
-      const { id: lectureId } = req.params;
-      const enrollmentData = req.body;
-
-      const enrollment = await this.lecturesService.createEnrollment(
-        instructorId,
-        lectureId,
-        enrollmentData,
-      );
-
-      res
-        .status(201)
-        .json({ success: true, data: enrollment, message: '수강생 등록 성공' });
+      return successResponse(res, {
+        statusCode: 204,
+        message: '강의 삭제 성공',
+      });
     } catch (error) {
       next(error);
     }

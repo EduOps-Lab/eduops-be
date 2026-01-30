@@ -29,7 +29,7 @@ export class AuthService {
     private readonly prisma: PrismaClient,
   ) {}
 
-  // 회원가입
+  /** 회원가입 */
   async signUp(userType: UserType, data: SignUpData) {
     const existingProfile = await this.findProfileByPhoneNumber(
       userType,
@@ -95,7 +95,7 @@ export class AuthService {
     return { user, session: finalSession, profile, setCookie };
   }
 
-  // 로그인
+  /** 로그인 */
   async signIn(
     email: string,
     password: string,
@@ -155,14 +155,14 @@ export class AuthService {
     };
   }
 
-  // 로그아웃 (핸들러에서 처리하거나 API 호출)
+  /** 로그아웃 (핸들러에서 처리하거나 API 호출) */
   async signOut(headers: IncomingHttpHeaders) {
     return await this.authClient.api.signOut({
       headers: headers as Record<string, string>,
     });
   }
 
-  // 세션 조회
+  /** 세션 조회 */
   async getSession(headers: IncomingHttpHeaders) {
     const session = await this.authClient.api.getSession({
       headers: fromNodeHeaders(headers),
@@ -181,7 +181,7 @@ export class AuthService {
     };
   }
 
-  // 강사 프로필 생성
+  /** 강사 프로필 생성 */
   private async createInstructor(userId: string, data: SignUpData) {
     return await this.instructorRepo.create({
       userId,
@@ -191,7 +191,7 @@ export class AuthService {
     });
   }
 
-  // 조교 프로필 생성
+  /** 조교 프로필 생성 */
   private async createAssistant(userId: string, data: SignUpData) {
     if (!data.signupCode) {
       throw new BadRequestException('조교가입코드가 필요합니다.');
@@ -220,7 +220,7 @@ export class AuthService {
     });
   }
 
-  // 학생 프로필 생성
+  /** 학생 프로필 생성 */
   private async createStudent(userId: string, data: SignUpData) {
     const student = await this.studentRepo.create({
       userId,
@@ -238,7 +238,7 @@ export class AuthService {
     return student;
   }
 
-  // 학부모 프로필 생성
+  /** 학부모 프로필 생성 */
   private async createParent(userId: string, data: SignUpData) {
     return await this.parentRepo.create({
       userId,
@@ -246,7 +246,7 @@ export class AuthService {
     });
   }
 
-  // ID로 프로필 조회
+  /** ID로 프로필 조회 */
   private async findProfileByUserId(userType: UserType, userId: string) {
     switch (userType) {
       case UserType.INSTRUCTOR:
@@ -260,7 +260,7 @@ export class AuthService {
     }
   }
 
-  // 전화번호로 프로필 조회
+  /** 전화번호로 프로필 조회 */
   private async findProfileByPhoneNumber(
     userType: UserType,
     phoneNumber: string,

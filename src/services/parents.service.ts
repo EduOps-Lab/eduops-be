@@ -8,6 +8,7 @@ import {
 import { ParentRepository } from '../repos/parent.repo.js';
 import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
+import { PermissionService } from './permission.service.js';
 import type { CreateChildDto } from '../validations/children.validation.js';
 import type { GetSvcEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
 
@@ -16,12 +17,11 @@ export class ParentsService {
     private readonly parentRepository: ParentRepository,
     private readonly parentChildLinkRepository: ParentChildLinkRepository,
     private readonly enrollmentsRepository: EnrollmentsRepository,
+    private readonly permissionService: PermissionService,
     private readonly prisma: PrismaClient,
   ) {}
 
-  /**
-   * 자녀 등록 (및 기존 수강 내역 자동 연결)
-   */
+  /** 자녀 등록 (및 기존 수강 내역 자동 연결) */
   async registerChild(
     userType: UserType,
     profileId: string,
@@ -64,9 +64,7 @@ export class ParentsService {
     });
   }
 
-  /**
-   * 내 자녀 목록 조회
-   */
+  /** 내 자녀 목록 조회 */
   async getChildren(userType: UserType, profileId: string) {
     if (userType !== UserType.PARENT) {
       throw new ForbiddenException('학부모만 자녀 목록을 조회할 수 있습니다.');
@@ -75,9 +73,7 @@ export class ParentsService {
     return await this.parentChildLinkRepository.findByAppParentId(profileId);
   }
 
-  /**
-   * 자녀의 수강 목록 조회
-   */
+  /** 자녀의 수강 목록 조회 */
   async getChildEnrollments(
     userType: UserType,
     profileId: string,
@@ -85,7 +81,7 @@ export class ParentsService {
     query?: GetSvcEnrollmentsQueryDto,
   ) {
     // 1. 자녀 링크 검증
-    const childLink = await this.validateChildAccess(
+    const childLink = await this.permissionService.validateChildAccess(
       userType,
       profileId,
       childId,
@@ -103,9 +99,7 @@ export class ParentsService {
     };
   }
 
-  /**
-   * 자녀의 수강 상세 조회
-   */
+  /** 자녀의 수강 상세 조회 */
   async getChildEnrollmentDetail(
     userType: UserType,
     profileId: string,
@@ -113,7 +107,7 @@ export class ParentsService {
     enrollmentId: string,
   ) {
     // 1. 자녀 링크 검증
-    const childLink = await this.validateChildAccess(
+    const childLink = await this.permissionService.validateChildAccess(
       userType,
       profileId,
       childId,
@@ -128,7 +122,6 @@ export class ParentsService {
     }
 
     // 3. 해당 수강 정보가 내 자녀의 것이 맞는지 확인
-    // (enrollment.appParentLinkId가 childLink.id와 일치해야 함)
     if (enrollment.appParentLinkId !== childLink.id) {
       throw new ForbiddenException(
         '해당 자녀의 수강 정보가 아니거나 접근 권한이 없습니다.',
@@ -138,27 +131,10 @@ export class ParentsService {
     return enrollment;
   }
 
-  /**
-   * 자녀 접근 권한 검증 (Helper)
-   */
-  private async validateChildAccess(
-    userType: UserType,
-    profileId: string,
-    childId: string,
-  ) {
-    if (userType !== UserType.PARENT) {
-      throw new ForbiddenException('접근 권한이 없습니다.');
-    }
-
-    const childLink = await this.parentChildLinkRepository.findById(childId);
-    if (!childLink) {
-      throw new NotFoundException('자녀 정보를 찾을 수 없습니다.');
-    }
-
-    if (childLink.appParentId !== profileId) {
-      throw new ForbiddenException('본인의 자녀만 조회할 수 있습니다.');
-    }
-
-    return childLink;
+  /** 학부모 자녀 정보를 전화번호로 조회 (가장 최근 것 하나) */
+  async findLinkByPhoneNumber(phoneNumber: string) {
+    const links =
+      await this.parentChildLinkRepository.findManyByPhoneNumber(phoneNumber);
+    return links.length > 0 ? links[0] : null;
   }
 }

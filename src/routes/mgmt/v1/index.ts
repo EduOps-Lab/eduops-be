@@ -5,11 +5,11 @@ import { mgmtEnrollmentsRouter } from './enrollments.route.js';
 
 export const mgmtV1Router = Router();
 
-// 인증 라우트
+/** 인증 라우트 */
 mgmtV1Router.use('/auth', mgmtAuthRouter);
 
-// 강의 라우트
+/** 강의 라우트 */
 mgmtV1Router.use('/lectures', mgmtLecturesRouter);
 
-// 수강 라우트
+/** 수강 라우트 */
 mgmtV1Router.use('/enrollments', mgmtEnrollmentsRouter);

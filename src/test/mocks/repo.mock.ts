@@ -48,13 +48,21 @@ export const createMockParentRepository = () =>
 export const createMockAssistantCodeRepository = () =>
   createAutoMock<AssistantCodeRepository>(['findValidCode', 'markAsUsed']);
 
+/** Mock ParentChildLinkRepository 생성 */
+export const createMockParentChildLinkRepository = () =>
+  createAutoMock<ParentChildLinkRepository>([
+    'create',
+    'findByAppParentId',
+    'findById',
+    'findByParentIdAndPhoneNumber',
+    'findManyByPhoneNumber',
+  ]);
+
 /** Mock LecturesRepository 생성 */
 export const createMockLecturesRepository = () =>
   createAutoMock<LecturesRepository>([
     'create',
     'findById',
-    'findInstructorById',
-    'findByIdWithRelations',
     'findMany',
     'update',
     'softDelete',
@@ -69,23 +77,11 @@ export const createMockEnrollmentsRepository = () =>
     'findByIdWithRelations',
     'findByAppStudentId',
     'findByAppParentLinkId',
-    'findByAppParentId',
+    'findByAppParentLinkId',
     'findManyByLectureId',
     'findManyByInstructorId',
-    'findParentIdByParentChildLinkId',
     'update',
     'softDelete',
     'updateAppStudentIdByPhoneNumber',
     'updateAppParentLinkIdByStudentPhone',
-  ]);
-
-/** Mock ParentChildLinkRepository 생성 */
-export const createMockParentChildLinkRepository = () =>
-  createAutoMock<ParentChildLinkRepository>([
-    'create',
-    'findByAppParentId',
-    'findById',
-    'findByIdWithParent',
-    'findByParentIdAndPhoneNumber',
-    'findManyByPhoneNumber',
   ]);

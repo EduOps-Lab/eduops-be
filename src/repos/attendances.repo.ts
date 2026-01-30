@@ -38,7 +38,7 @@ export class AttendancesRepository {
     });
   }
 
-  /** 수강생별 출결 목록 조회 (날짜 내림차순) */
+  // 수강생별 출결 목록 조회 (날짜 내림차순)
   async findByEnrollmentId(
     enrollmentId: string,
     tx?: Prisma.TransactionClient,
@@ -54,7 +54,7 @@ export class AttendancesRepository {
     });
   }
 
-  /** 출결 수정 */
+  // 출결 수정
   async update(
     id: string,
     data: Prisma.AttendanceUpdateInput,

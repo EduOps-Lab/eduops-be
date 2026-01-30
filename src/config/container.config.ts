@@ -29,6 +29,7 @@ import { AttendancesController } from '../controllers/attendances.controller.js'
 
 import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
 import { ParentsService } from '../services/parents.service.js';
+import { PermissionService } from '../services/permission.service.js';
 import { ChildrenController } from '../controllers/children.controller.js';
 
 // 1. Instantiate Repositories
@@ -55,24 +56,33 @@ const authService = new AuthService(
   prisma,
 );
 
+const permissionService = new PermissionService(
+  assistantRepo,
+  parentChildLinkRepo,
+);
+
 const lecturesService = new LecturesService(
   lecturesRepo,
   enrollmentsRepo,
   studentRepo,
+  instructorRepo,
+  permissionService,
   prisma,
 );
-const enrollmentsService = new EnrollmentsService(
-  enrollmentsRepo,
-  lecturesRepo,
-  assistantRepo,
-  parentChildLinkRepo,
-  prisma,
-);
-
 const parentsService = new ParentsService(
   parentRepo,
   parentChildLinkRepo,
   enrollmentsRepo,
+  permissionService,
+  prisma,
+);
+
+const enrollmentsService = new EnrollmentsService(
+  enrollmentsRepo,
+  lecturesRepo,
+  studentRepo,
+  parentsService,
+  permissionService,
   prisma,
 );
 
@@ -81,6 +91,8 @@ const attendancesService = new AttendancesService(
   enrollmentsRepo,
   lecturesRepo,
   assistantRepo,
+  parentsService,
+  permissionService,
   prisma,
 );
 

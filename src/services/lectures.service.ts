@@ -1,14 +1,13 @@
 import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
-import {
-  NotFoundException,
-  ForbiddenException,
-} from '../err/http.exception.js';
+import { NotFoundException } from '../err/http.exception.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
+import { InstructorRepository } from '../repos/instructor.repo.js';
+import { PermissionService } from './permission.service.js';
+import { UserType } from '../constants/auth.constant.js';
 import {
-  LectureEnrollmentDto,
   CreateLectureDto,
   GetLecturesQueryDto,
   UpdateLectureDto,
@@ -23,6 +22,8 @@ export class LecturesService {
     private readonly lecturesRepository: LecturesRepository,
     private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly studentRepository: StudentRepository,
+    private readonly instructorRepository: InstructorRepository,
+    private readonly permissionService: PermissionService,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -31,8 +32,7 @@ export class LecturesService {
     instructorId: string,
     data: CreateLectureDto,
   ): Promise<LectureWithEnrollments> {
-    const instructor =
-      await this.lecturesRepository.findInstructorById(instructorId);
+    const instructor = await this.instructorRepository.findById(instructorId);
 
     if (!instructor) throw new NotFoundException('강사를 찾을 수 없습니다.');
 
@@ -87,29 +87,40 @@ export class LecturesService {
   }
 
   /** 강의 개별 조회 */
-  async getLectureById(instructorId: string, id: string): Promise<Lecture> {
-    const lecture = await this.lecturesRepository.findByIdWithRelations(id);
+  async getLectureById(
+    profileId: string,
+    userType: UserType,
+    id: string,
+  ): Promise<Lecture> {
+    const lecture = await this.lecturesRepository.findById(id);
 
     if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
 
-    if (lecture.instructorId !== instructorId) {
-      throw new ForbiddenException('해당 강의를 조회할 권한이 없습니다.');
-    }
+    await this.permissionService.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
 
     return lecture;
   }
 
   /** 강의 수정 */
   async updateLecture(
-    instructorId: string,
+    profileId: string,
+    userType: UserType,
     id: string,
     data: UpdateLectureDto,
   ): Promise<Lecture> {
     const lecture = await this.lecturesRepository.findById(id);
 
     if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
-    if (lecture.instructorId !== instructorId)
-      throw new ForbiddenException('해당 강의를 수정할 권한이 없습니다.');
+
+    await this.permissionService.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
 
     // undefined를 제외한 필드만 추출
     const updatePayload = Object.fromEntries(
@@ -120,49 +131,21 @@ export class LecturesService {
   }
 
   /** 강의 삭제 (Soft Delete) */
-  async deleteLecture(instructorId: string, id: string): Promise<void> {
+  async deleteLecture(
+    profileId: string,
+    userType: UserType,
+    id: string,
+  ): Promise<void> {
     const lecture = await this.lecturesRepository.findById(id);
 
     if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
 
-    if (lecture.instructorId !== instructorId)
-      throw new ForbiddenException('해당 강의를 삭제할 권한이 없습니다.');
-
-    await this.lecturesRepository.softDelete(id);
-  }
-
-  /** 수강 등록 */
-  async createEnrollment(
-    instructorId: string,
-    lectureId: string,
-    data: LectureEnrollmentDto,
-  ) {
-    const lecture = await this.lecturesRepository.findById(lectureId);
-
-    if (!lecture) throw new NotFoundException('강의를 찾을 수 없습니다.');
-    if (lecture.instructorId !== instructorId) {
-      throw new ForbiddenException('해당 강의에 접근할 권한이 없습니다.');
-    }
-
-    // 학생이 이미 가입되어 있는지 확인 (전화번호 기준)
-    const student = await this.studentRepository.findByPhoneNumber(
-      data.studentPhone,
+    await this.permissionService.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
     );
 
-    return await this.prisma.$transaction(async (tx) => {
-      return await this.enrollmentsRepository.create(
-        {
-          lectureId,
-          instructorId,
-          school: data.school,
-          schoolYear: data.schoolYear,
-          studentName: data.studentName,
-          studentPhone: data.studentPhone,
-          parentPhone: data.parentPhone,
-          appStudentId: student?.id, // 연동된 학생이 있으면 ID 저장
-        },
-        tx,
-      );
-    });
+    await this.lecturesRepository.softDelete(id);
   }
 }
