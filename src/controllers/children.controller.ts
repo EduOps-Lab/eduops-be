@@ -9,10 +9,7 @@ import { getAuthUser } from '../utils/user.util.js';
 export class ChildrenController {
   constructor(private readonly parentsService: ParentsService) {}
 
-  /**
-   * POST /api/svc/v1/children
-   * 자녀 등록
-   */
+  // 자녀 등록
   registerChild = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = getAuthUser(req);
@@ -34,10 +31,7 @@ export class ChildrenController {
     }
   };
 
-  /**
-   * GET /api/svc/v1/children
-   * 자녀 목록 조회
-   */
+  // 자녀 목록 조회
   getChildren = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = getAuthUser(req);
@@ -58,10 +52,7 @@ export class ChildrenController {
     }
   };
 
-  /**
-   * GET /api/svc/v1/children/:id/enrollments
-   * 자녀 수강 목록 조회
-   */
+  // 자녀 수강 목록 조회
   getChildEnrollments = async (
     req: Request,
     res: Response,
@@ -99,10 +90,7 @@ export class ChildrenController {
     }
   };
 
-  /**
-   * GET /api/svc/v1/children/:id/enrollments/:enrollmentId
-   * 자녀 수강 상세 조회
-   */
+  // 자녀 수강 상세 조회
   getChildEnrollmentDetail = async (
     req: Request,
     res: Response,

@@ -11,7 +11,7 @@ import { UnauthorizedException } from '../err/http.exception.js';
 export class EnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) {}
 
-  /** GET: 수강 목록 조회 핸들러 */
+  // 수강 목록 조회 핸들러
   getEnrollments = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const userType = req.user?.userType;
@@ -71,7 +71,7 @@ export class EnrollmentsController {
     }
   };
 
-  /** GET: 수강 상세 조회 핸들러 */
+  // 수강 상세 조회 핸들러
   getEnrollment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { enrollmentId } = req.params;
@@ -110,7 +110,7 @@ export class EnrollmentsController {
     }
   };
 
-  /** [NEW] Enrollment 생성 */
+  // Enrollment 생성
   createEnrollment = async (
     req: Request,
     res: Response,
@@ -139,7 +139,7 @@ export class EnrollmentsController {
     }
   };
 
-  /** [NEW] 강의별 Enrollment 목록 조회 */
+  // 강의별 Enrollment 목록 조회
   getEnrollmentsByLecture = async (
     req: Request,
     res: Response,
@@ -167,7 +167,7 @@ export class EnrollmentsController {
     }
   };
 
-  /** [NEW] Enrollment 수정 */
+  // Enrollment 수정
   updateEnrollment = async (
     req: Request,
     res: Response,
@@ -196,7 +196,7 @@ export class EnrollmentsController {
     }
   };
 
-  /** [NEW] Enrollment 삭제 (Soft Delete) */
+  // Enrollment 삭제 (Soft Delete)
   deleteEnrollment = async (
     req: Request,
     res: Response,

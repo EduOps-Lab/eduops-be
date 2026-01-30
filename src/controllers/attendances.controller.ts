@@ -10,7 +10,7 @@ import {
 export class AttendancesController {
   constructor(private readonly attendancesService: AttendancesService) {}
 
-  /** [POST] 강의 내 단체 출결 등록 */
+  // 강의 내 단체 출결 등록
   createBulkAttendances = async (
     req: Request,
     res: Response,
@@ -46,7 +46,7 @@ export class AttendancesController {
     }
   };
 
-  /** [POST] 수강생 출결 등록 (단일) */
+  // 수강생 출결 등록 (단일)
   createAttendance = async (
     req: Request,
     res: Response,
@@ -79,7 +79,7 @@ export class AttendancesController {
     }
   };
 
-  /** [GET] 수강생 출결 조회 + 통계 */
+  // 수강생 출결 조회 + 통계
   getAttendances = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { enrollmentId } = req.params;
@@ -109,7 +109,7 @@ export class AttendancesController {
     }
   };
 
-  /** [PATCH] 출결 수정 */
+  // 출결 수정
   updateAttendance = async (
     req: Request,
     res: Response,

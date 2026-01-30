@@ -74,6 +74,7 @@ const enrollmentsService = new EnrollmentsService(
   lecturesRepo,
   assistantRepo,
   parentChildLinkRepo,
+  studentRepo,
   parentsService,
   prisma,
 );

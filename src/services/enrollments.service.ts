@@ -7,6 +7,7 @@ import {
 } from '../err/http.exception.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
+import { StudentRepository } from '../repos/student.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
 import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
 import { ParentsService } from './parents.service.js';
@@ -22,6 +23,7 @@ export class EnrollmentsService {
     private readonly lecturesRepository: LecturesRepository,
     private readonly assistantRepository: AssistantRepository,
     private readonly parentChildLinkRepository: ParentChildLinkRepository,
+    private readonly studentRepository: StudentRepository,
     private readonly parentsService: ParentsService,
     private readonly prisma: PrismaClient,
   ) {}
@@ -56,6 +58,16 @@ export class EnrollmentsService {
       }
     }
 
+    let studentId = data.appStudentId;
+    if (!studentId && data.studentPhone) {
+      const student = await this.studentRepository.findByPhoneNumber(
+        data.studentPhone,
+      );
+      if (student) {
+        studentId = student.id;
+      }
+    }
+
     // 3. Enrollment 생성
     return await this.enrollmentsRepository.create({
       ...data,
@@ -63,6 +75,7 @@ export class EnrollmentsService {
       instructorId: lecture.instructorId, // 강의의 담당 강사로 설정
       status: EnrollmentStatus.ACTIVE,
       appParentLinkId: parentLinkId, // 자동 연결된 ID 설정
+      appStudentId: studentId, // 자동 연결된 ID 설정
     });
   }
 

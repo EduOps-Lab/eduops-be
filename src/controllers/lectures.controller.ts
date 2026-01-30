@@ -4,7 +4,7 @@ import { LecturesService } from '../services/lectures.service.js';
 export class LecturesController {
   constructor(private readonly lecturesService: LecturesService) {}
 
-  /** POST:강의 생성 핸들러 */
+  // 강의 생성 핸들러
   createLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const instructorId = req.profile!.id;
@@ -23,7 +23,7 @@ export class LecturesController {
     }
   };
 
-  /** GET:강의 리스트 조회 핸들러 */
+  // 강의 리스트 조회 핸들러
   getLectures = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { page, limit, search } = req.query;
@@ -46,7 +46,7 @@ export class LecturesController {
     }
   };
 
-  /** GET:강의 개별 조회 핸들러 */
+  // 강의 개별 조회 핸들러
   getLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const instructorId = req.profile!.id;
@@ -64,7 +64,7 @@ export class LecturesController {
     }
   };
 
-  /** PATCH:강의 수정 핸들러 */
+  // 강의 수정 핸들러
   updateLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
@@ -84,7 +84,7 @@ export class LecturesController {
     }
   };
 
-  /** DELETE:강의 삭제 핸들러 (Soft Delete) */
+  // 강의 삭제 핸들러 (Soft Delete)
   deleteLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const instructorId = req.profile!.id;
@@ -92,31 +92,6 @@ export class LecturesController {
       await this.lecturesService.deleteLecture(instructorId, id);
 
       res.status(204).send();
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  /** POST: 수강생 등록 핸들러 */
-  createEnrollment = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ) => {
-    try {
-      const instructorId = req.profile!.id;
-      const { id: lectureId } = req.params;
-      const enrollmentData = req.body;
-
-      const enrollment = await this.lecturesService.createEnrollment(
-        instructorId,
-        lectureId,
-        enrollmentData,
-      );
-
-      res
-        .status(201)
-        .json({ success: true, data: enrollment, message: '수강생 등록 성공' });
     } catch (error) {
       next(error);
     }
