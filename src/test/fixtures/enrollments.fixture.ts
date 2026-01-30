@@ -3,7 +3,6 @@ import type {
   Enrollment,
   AppStudent,
   AppParent,
-  ParentChildLink,
   Assistant,
 } from '../../generated/prisma/client.js';
 import { EnrollmentStatus } from '../../constants/enrollments.constant.js';
@@ -74,7 +73,13 @@ export const mockParentLinks = {
     phoneNumber: mockStudents.basic.phoneNumber,
     name: mockStudents.basic.schoolYear + ' ' + faker.person.fullName(),
     createdAt: new Date('2024-01-01'),
-  } as ParentChildLink,
+    parent: {
+      id: 'parent-id-001',
+      userId: 'user-parent-id-001',
+      phoneNumber: '010-3333-4444',
+      createdAt: new Date('2024-01-01'),
+    },
+  },
 
   another: {
     id: faker.string.uuid(),
@@ -83,7 +88,13 @@ export const mockParentLinks = {
     name:
       mockStudents.withParentLink.schoolYear + ' ' + faker.person.fullName(),
     createdAt: new Date('2024-01-01'),
-  } as ParentChildLink,
+    parent: {
+      id: 'parent-id-002',
+      userId: 'user-parent-id-002',
+      phoneNumber: '010-7777-8888',
+      createdAt: new Date('2024-01-01'),
+    },
+  },
 };
 
 /** Mock Assistant 데이터 */

@@ -6,15 +6,7 @@ import {
 } from '../constants/lectures.constant.js';
 import { PaginationDefaults } from '../constants/common.constant.js';
 
-/**
- * LectureTime 단일 항목 스키마
- * @example
- * {
- *   "day": "월",
- *   "startTime": "14:00",
- *   "endTime": "16:00"
- * }
- */
+/** LectureTime 단일 항목 스키마 */
 export const lectureTimeItemSchema = z.object({
   day: z.string().min(1, { message: '요일은 최소 1개 이상이어야 합니다.' }),
   startTime: z.string().regex(Regex.TIME_HHMM, {
@@ -27,24 +19,7 @@ export const lectureTimeItemSchema = z.object({
 
 export type LectureTimeItemDto = z.infer<typeof lectureTimeItemSchema>;
 
-/**
- * 강의 생성 요청 DTO 스키마 (frontend에서 요청하는 데이터 형식)
- *  변경 사항 발생 시 여기서 수정
- * @example
- * {
- *   "title": "강의 제목",
- *   "subject": "강의 과목",
- *   "description": "강의 설명",
- *   "startAt": "2026-01-22T10:00:00.000Z",
- *   "endAt": "2026-01-22T10:00:00.000Z",
- *   "lectureTimes": [
- *     { "day": "월", "startTime": "14:00", "endTime": "16:00" }
- *   ],
- *   "enrollments": [
- *     { "school": "서울고", "schoolYear": "고1", "studentName": "홍길동", "studentPhone": "010-1234-5678", "parentPhone": "010-9876-5432" }
- *   ]
- * }
- */
+/** 강의 생성 요청 DTO 스키마 (frontend에서 요청하는 데이터 형식) */
 export const lectureEnrollmentSchema = z.object({
   school: z
     .string()
@@ -77,24 +52,7 @@ export const lectureEnrollmentSchema = z.object({
 
 export type LectureEnrollmentDto = z.infer<typeof lectureEnrollmentSchema>;
 
-/**
- * 강의 생성 요청 DTO 스키마 (frontend에서 요청하는 데이터 형식)
- *  변경 사항 발생 시 여기서 수정
- * @example
- * {
- *   "title": "강의 제목",
- *   "subject": "강의 과목",
- *   "description": "강의 설명",
- *   "startAt": "2026-01-22T10:00:00.000Z",
- *   "endAt": "2026-01-22T10:00:00.000Z",
- *   "lectureTimes": [
- *     { "day": "월", "startTime": "14:00", "endTime": "16:00" }
- *   ],
- *   "enrollments": [
- *     { "school": "서울고", "schoolYear": "고1", "studentName": "홍길동", "studentPhone": "010-1234-5678", "parentPhone": "010-9876-5432" }
- *   ]
- * }
- */
+/** 강의 생성 요청 DTO 스키마 (frontend에서 요청하는 데이터 형식) */
 export const createLectureSchema = z.object({
   title: z
     .string()
@@ -147,15 +105,7 @@ export type CreateLectureWithInstructorIdDto = CreateLectureDto & {
   instructorId: string;
 };
 
-/**
- * 강의 리스트 조회 쿼리 파라미터 스키마
- * @example
- * {
- *   "page": 1,
- *   "limit": 20,
- *   "search": "수학"
- * }
- */
+/** 강의 리스트 조회 쿼리 파라미터 스키마 */
 export const getLecturesQuerySchema = z.object({
   page: z.coerce.number().min(1).default(PaginationDefaults.PAGE),
   limit: z.coerce
@@ -168,31 +118,14 @@ export const getLecturesQuerySchema = z.object({
 
 export type GetLecturesQueryDto = z.infer<typeof getLecturesQuerySchema>;
 
-/**
- * 강의 ID 파라미터 스키마
- * @example
- * {
- *   "id": "cm5abc123"
- * }
- */
+/** 강의 ID 파라미터 스키마 */
 export const lectureIdParamSchema = z.object({
   id: z.string().min(1, { message: '강의 ID는 필수입니다.' }),
 });
 
 export type LectureIdParamDto = z.infer<typeof lectureIdParamSchema>;
 
-/**
- * 강의 수정 요청 스키마
- * @example
- * {
- *   "instructorId": "abc1234",
- *   "title": "고등수학 심화반 (수정)",
- *   "subject": "수학",
- *   "description": "업데이트된 설명",
- *   "endAt": "2026-12-31T23:59:59.000Z",
- *   "isActive": false
- * }
- */
+/** 강의 수정 요청 스키마 */
 export const updateLectureSchema = z.object({
   title: z
     .string()
@@ -236,9 +169,7 @@ export const updateLectureSchema = z.object({
 
 export type UpdateLectureDto = z.infer<typeof updateLectureSchema>;
 
-/**
- * 강의 삭제 요청 스키마
- */
+/** 강의 삭제 요청 스키마 */
 export const deleteLectureSchema = z.object({});
 
 export type DeleteLectureDto = z.infer<typeof deleteLectureSchema>;

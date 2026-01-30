@@ -1,14 +1,13 @@
 import { PrismaClient } from '../generated/prisma/client.js';
 import type { Attendance, Enrollment } from '../generated/prisma/client.js';
 import { UserType } from '../constants/auth.constant.js';
-import {
-  NotFoundException,
-  ForbiddenException,
-} from '../err/http.exception.js';
+import { NotFoundException } from '../err/http.exception.js';
 import { AttendancesRepository } from '../repos/attendances.repo.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { AssistantRepository } from '../repos/assistant.repo.js';
+import { ParentsService } from './parents.service.js';
+import { PermissionService } from './permission.service.js';
 import type {
   CreateAttendanceDto,
   BulkAttendanceDto,
@@ -25,6 +24,8 @@ export class AttendancesService {
     private readonly enrollmentsRepository: EnrollmentsRepository,
     private readonly lecturesRepository: LecturesRepository,
     private readonly assistantRepository: AssistantRepository,
+    private readonly parentsService: ParentsService,
+    private readonly permissionService: PermissionService,
     private readonly prisma: PrismaClient,
   ) {}
 
@@ -42,7 +43,7 @@ export class AttendancesService {
     }
 
     // 2. 권한 확인 (강사/조교)
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       lecture.instructorId,
       userType,
       profileId,
@@ -111,7 +112,7 @@ export class AttendancesService {
     }
 
     // 권한 확인
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       enrollment.instructorId,
       userType,
       profileId,
@@ -192,7 +193,7 @@ export class AttendancesService {
     }
 
     // 권한 확인 (수정은 강사/조교만)
-    await this.validateInstructorAccess(
+    await this.permissionService.validateInstructorAccess(
       enrollment.instructorId,
       userType,
       profileId,
@@ -205,7 +206,7 @@ export class AttendancesService {
     });
   }
 
-  // --- Helper Functions ---
+  /** Helper Functions */
 
   /** 날짜에서 시간 제거 (00:00:00.000) */
   private truncateTime(date: Date): Date {
@@ -214,91 +215,16 @@ export class AttendancesService {
     return d;
   }
 
-  /** 강사/조교 쓰기 권한 체크 */
-  private async validateInstructorAccess(
-    instructorId: string,
-    userType: UserType,
-    profileId: string,
-  ) {
-    const effectiveInstructorId = await this.getEffectiveInstructorId(
-      userType,
-      profileId,
-    );
-    if (instructorId !== effectiveInstructorId) {
-      throw new ForbiddenException('접근 권한이 없습니다.');
-    }
-  }
-
   /** 조회 권한 체크 (강사/조교/학생/학부모) */
   private async validateReadAccess(
     enrollment: Enrollment,
     userType: UserType,
     profileId: string,
   ) {
-    if (userType === UserType.INSTRUCTOR || userType === UserType.ASSISTANT) {
-      await this.validateInstructorAccess(
-        enrollment.instructorId,
-        userType,
-        profileId,
-      );
-      return;
-    }
-
-    if (userType === UserType.STUDENT) {
-      if (enrollment.appStudentId !== profileId) {
-        throw new ForbiddenException('본인의 출결 정보만 조회할 수 있습니다.');
-      }
-      return;
-    }
-
-    if (userType === UserType.PARENT) {
-      if (!enrollment.appParentLinkId) {
-        throw new ForbiddenException('연결된 자녀 정보가 없습니다.');
-      }
-      const hasPermission = await this.checkParentPermission(
-        profileId,
-        enrollment.appParentLinkId,
-      );
-      if (!hasPermission) {
-        throw new ForbiddenException(
-          '해당 자녀의 출결 정보에 접근할 권한이 없습니다.',
-        );
-      }
-      return;
-    }
-
-    throw new ForbiddenException('접근 권한이 없습니다.');
-  }
-
-  /** 실제 권한을 가진 강사 ID 추출 */
-  private async getEffectiveInstructorId(
-    userType: UserType,
-    profileId: string,
-  ): Promise<string> {
-    if (userType === UserType.INSTRUCTOR) {
-      return profileId;
-    }
-
-    if (userType === UserType.ASSISTANT) {
-      const assistant = await this.assistantRepository.findById(profileId);
-      if (!assistant) {
-        throw new NotFoundException('조교 정보를 찾을 수 없습니다.');
-      }
-      return assistant.instructorId;
-    }
-
-    throw new ForbiddenException('강사 또는 조교만 접근 가능합니다.');
-  }
-
-  /** 학부모 권한 체크 Helper */
-  private async checkParentPermission(
-    appParentId: string,
-    appParentLinkId: string,
-  ): Promise<boolean> {
-    const link =
-      await this.enrollmentsRepository.findParentIdByParentChildLinkId(
-        appParentLinkId,
-      );
-    return link?.appParentId === appParentId;
+    await this.permissionService.validateEnrollmentReadAccess(
+      enrollment,
+      userType,
+      profileId,
+    );
   }
 }

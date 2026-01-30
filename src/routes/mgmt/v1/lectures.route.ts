@@ -19,32 +19,32 @@ const {
   lecturesController,
 } = container;
 
-// 모든 라우트에 대해 강사/조교 권한 필요
+/** 모든 라우트에 대해 강사/조교 권한 필요 */
 mgmtLecturesRouter.use(requireAuth);
 mgmtLecturesRouter.use(requireInstructorOrAssistant);
 
-/** GET:강의 리스트 조회 */
+/** 강의 리스트 조회 */
 mgmtLecturesRouter.get(
   '/',
   validate(getLecturesQuerySchema, 'query'),
   lecturesController.getLectures,
 );
 
-/** GET:강의 개별 조회 */
+/** 강의 개별 조회 */
 mgmtLecturesRouter.get(
   '/:id',
   validate(lectureIdParamSchema, 'params'),
   lecturesController.getLecture,
 );
 
-/** POST:강의 생성 */
+/** 강의 생성 */
 mgmtLecturesRouter.post(
   '/',
   validate(createLectureSchema, 'body'),
   lecturesController.createLecture,
 );
 
-/** PATCH:강의 수정 */
+/** 강의 수정 */
 mgmtLecturesRouter.patch(
   '/:id',
   validate(lectureIdParamSchema, 'params'),
@@ -52,7 +52,7 @@ mgmtLecturesRouter.patch(
   lecturesController.updateLecture,
 );
 
-/** DELETE:강의 삭제 (Soft Delete) */
+/** 강의 삭제 (Soft Delete) */
 mgmtLecturesRouter.delete(
   '/:id',
   requireInstructor,
@@ -60,31 +60,22 @@ mgmtLecturesRouter.delete(
   lecturesController.deleteLecture,
 );
 
-// --- Enrollments (Nested Routes) ---
+/** --- 수강생 (Nested Routes) --- */
 
-/**
- * GET /api/mgmt/v1/lectures/:lectureId/enrollments
- * 해당 강의의 수강생 목록 조회
- */
+/** 해당 강의의 수강생 목록 조회 */
 mgmtLecturesRouter.get(
   '/:lectureId/enrollments',
   container.enrollmentsController.getEnrollmentsByLecture,
 );
 
-/**
- * POST /api/mgmt/v1/lectures/:lectureId/enrollments
- * 해당 강의에 수강생 등록
- */
+/** 해당 강의에 수강생 등록 */
 mgmtLecturesRouter.post(
   '/:lectureId/enrollments',
   validate(createEnrollmentSchema, 'body'),
   container.enrollmentsController.createEnrollment,
 );
 
-/**
- * POST /api/mgmt/v1/lectures/:lectureId/enrollments/attendances
- * 해당 강의 수강생 단체 출결 등록
- */
+/** 해당 강의 수강생 단체 출결 등록 */
 mgmtLecturesRouter.post(
   '/:lectureId/enrollments/attendances',
   validate(createBulkAttendancesSchema, 'body'),

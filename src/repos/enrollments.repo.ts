@@ -9,78 +9,19 @@ import { QueryMode } from '../generated/prisma/internal/prismaNamespace.js';
 export class EnrollmentsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
+  /** --- 조회 --- */
+
   /** 학생 ID로 수강 목록 조회 (Lecture, Instructor 포함) */
   async findByAppStudentId(
     appStudentId: string,
     query: Partial<GetSvcEnrollmentsQueryDto> = {},
     tx?: Prisma.TransactionClient,
   ) {
-    const client = tx ?? this.prisma;
-    const { page = 1, limit = 20, keyword } = query;
-    const skip = (page - 1) * limit;
-
-    const where: Prisma.EnrollmentWhereInput = {
-      appStudentId,
-      deletedAt: null,
-      status: EnrollmentStatus.ACTIVE,
-    };
-
-    if (keyword) {
-      where.AND = [
-        {
-          OR: [
-            {
-              lecture: {
-                title: { contains: keyword, mode: QueryMode.insensitive },
-              },
-            },
-            {
-              lecture: {
-                subject: { contains: keyword, mode: QueryMode.insensitive },
-              },
-            },
-            {
-              lecture: {
-                instructor: {
-                  user: {
-                    name: { contains: keyword, mode: QueryMode.insensitive },
-                  },
-                },
-              },
-            },
-          ],
-        },
-      ];
-    }
-
-    const [enrollments, totalCount] = await Promise.all([
-      client.enrollment.findMany({
-        where,
-        include: {
-          lecture: {
-            include: {
-              instructor: {
-                select: {
-                  id: true,
-                  subject: true,
-                  phoneNumber: true,
-                  academy: true,
-                  user: { select: { name: true } }, // 강사 이름 검색을 위해 필요할 수 있음 (검색 조건은 where절에서 처리되지만, 결과에 포함 여부는 선택)
-                },
-              },
-            },
-          },
-        },
-        orderBy: {
-          registeredAt: 'desc',
-        },
-        skip,
-        take: limit,
-      }),
-      client.enrollment.count({ where }),
-    ]);
-
-    return { enrollments, totalCount };
+    return this.findManyWithPagination(
+      { appStudentId, status: EnrollmentStatus.ACTIVE },
+      query,
+      tx,
+    );
   }
 
   /** 학부모-자녀 연결 ID로 수강 목록 조회 (Lecture, Instructor 포함) */
@@ -89,14 +30,26 @@ export class EnrollmentsRepository {
     query: Partial<GetSvcEnrollmentsQueryDto> = {},
     tx?: Prisma.TransactionClient,
   ) {
+    return this.findManyWithPagination(
+      { appParentLinkId, status: EnrollmentStatus.ACTIVE },
+      query,
+      tx,
+    );
+  }
+
+  /** 공통 페이징 조회 헬퍼 (Internal) */
+  private async findManyWithPagination(
+    baseWhere: Prisma.EnrollmentWhereInput,
+    query: Partial<GetSvcEnrollmentsQueryDto>,
+    tx?: Prisma.TransactionClient,
+  ) {
     const client = tx ?? this.prisma;
     const { page = 1, limit = 20, keyword } = query;
-    const skip = (page - 1) * limit;
+    const { skip, take } = getPagingParams(page, limit);
 
     const where: Prisma.EnrollmentWhereInput = {
-      appParentLinkId,
+      ...baseWhere,
       deletedAt: null,
-      status: EnrollmentStatus.ACTIVE,
     };
 
     if (keyword) {
@@ -149,7 +102,7 @@ export class EnrollmentsRepository {
           registeredAt: 'desc',
         },
         skip,
-        take: limit,
+        take,
       }),
       client.enrollment.count({ where }),
     ]);
@@ -201,42 +154,6 @@ export class EnrollmentsRepository {
     const client = tx ?? this.prisma;
     return await client.enrollment.findUnique({
       where: { id },
-    });
-  }
-
-  /** 다수의 수강생 일괄 등록 */
-  async createMany(
-    dataList: Prisma.EnrollmentUncheckedCreateInput[],
-    tx?: Prisma.TransactionClient,
-  ) {
-    const client = tx ?? this.prisma;
-    return await client.enrollment.createManyAndReturn({
-      data: dataList,
-    });
-  }
-
-  /** 수강 정보 수정 (Update) */
-  async update(
-    id: string,
-    data: Prisma.EnrollmentUpdateInput,
-    tx?: Prisma.TransactionClient,
-  ) {
-    const client = tx ?? this.prisma;
-    return await client.enrollment.update({
-      where: { id },
-      data,
-    });
-  }
-
-  /** Soft Delete */
-  async softDelete(id: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? this.prisma;
-    return await client.enrollment.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        status: EnrollmentStatus.DROPPED, // 삭제 시 상태도 변경하는 것이 안전
-      },
     });
   }
 
@@ -296,7 +213,7 @@ export class EnrollmentsRepository {
       ];
     }
 
-    // [New] 종강된 강의 제외 로직 (includeClosed가 true가 아니면 제외)
+    // 종강된 강의 제외 로직 (includeClosed가 true가 아니면 제외)
     if (!params.includeClosed) {
       where.lecture = {
         status: {
@@ -307,26 +224,26 @@ export class EnrollmentsRepository {
 
     // 데이터 조회 (페이지네이션)
     const { skip, take } = getPagingParams(page, limit);
-    const enrollments = await client.enrollment.findMany({
-      where,
-      include: {
-        lecture: {
-          select: {
-            id: true,
-            title: true,
+    const [enrollments, totalCount] = await Promise.all([
+      client.enrollment.findMany({
+        where,
+        include: {
+          lecture: {
+            select: {
+              id: true,
+              title: true,
+            },
           },
+          appStudent: true,
         },
-        appStudent: true,
-      },
-      orderBy: {
-        registeredAt: 'desc', // 최신 등록순
-      },
-      skip,
-      take,
-    });
-
-    // 전체 개수 조회 (페이지네이션 메타데이터용)
-    const totalCount = await client.enrollment.count({ where });
+        orderBy: {
+          registeredAt: 'desc', // 최신 등록순
+        },
+        skip,
+        take,
+      }),
+      client.enrollment.count({ where }),
+    ]);
 
     return {
       enrollments,
@@ -334,56 +251,20 @@ export class EnrollmentsRepository {
     };
   }
 
-  /** ParentChildLink ID로 Parent ID 조회 */
-  async findParentIdByParentChildLinkId(
-    id: string,
+  /** --- 생성 --- */
+
+  /** 수강생 일괄 등록 */
+  async createMany(
+    dataList: Prisma.EnrollmentUncheckedCreateInput[],
     tx?: Prisma.TransactionClient,
   ) {
     const client = tx ?? this.prisma;
-    return await client.parentChildLink.findUnique({
-      where: { id },
-      select: { appParentId: true },
+    return await client.enrollment.createManyAndReturn({
+      data: dataList,
     });
   }
 
-  /** 학부모 ID로 수강 목록 조회 (ParentChildLink를 통해) */
-  async findByAppParentId(appParentId: string, tx?: Prisma.TransactionClient) {
-    const client = tx ?? this.prisma;
-
-    // 1. 학부모의 모든 자녀 연결 조회
-    const links = await client.parentChildLink.findMany({
-      where: { appParentId },
-    });
-
-    const linkIds = links.map((link) => link.id);
-
-    // 2. 모든 자녀의 수강 정보 조회
-    return await client.enrollment.findMany({
-      where: {
-        appParentLinkId: { in: linkIds },
-        deletedAt: null,
-      },
-      include: {
-        lecture: {
-          include: {
-            instructor: {
-              select: {
-                id: true,
-                subject: true,
-                phoneNumber: true,
-                academy: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        registeredAt: 'desc',
-      },
-    });
-  }
-
-  /** 수강 등록 (관리자/강사용) */
+  /** 수강생 개별 등록 */
   async create(
     data: Prisma.EnrollmentUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
@@ -393,6 +274,37 @@ export class EnrollmentsRepository {
       data,
     });
   }
+
+  /** --- 수정 --- */
+
+  /** 수강 정보 수정 */
+  async update(
+    id: string,
+    data: Prisma.EnrollmentUpdateInput,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /** --- 삭제 --- */
+
+  /** Soft Delete */
+  async softDelete(id: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return await client.enrollment.update({
+      where: { id },
+      data: {
+        deletedAt: new Date(),
+        status: EnrollmentStatus.DROPPED, // 삭제 시 상태도 변경하는 것이 안전
+      },
+    });
+  }
+
+  /** --- 연동 --- */
 
   /** 전화번호 기준 AppStudentId 업데이트 (회원가입 시 연동) */
   async updateAppStudentIdByPhoneNumber(
@@ -404,7 +316,7 @@ export class EnrollmentsRepository {
     return await client.enrollment.updateMany({
       where: {
         studentPhone: phoneNumber,
-        appStudentId: null, // 아직 연동되지 않은 건들만
+        appStudentId: null, // 아직 연동되지 않은 건들이만
       },
       data: {
         appStudentId,
@@ -422,7 +334,7 @@ export class EnrollmentsRepository {
     return await client.enrollment.updateMany({
       where: {
         studentPhone: studentPhone,
-        appParentLinkId: null, // 아직 연동되지 않은 건들만
+        appParentLinkId: null, // 아직 연동되지 않은 건들이만
       },
       data: {
         appParentLinkId,

@@ -6,20 +6,18 @@ import {
 } from '../validations/enrollments.validation.js';
 import { getPagingData } from '../utils/pagination.util.js';
 import { UserType } from '../constants/auth.constant.js';
-import { UnauthorizedException } from '../err/http.exception.js';
+import { successResponse } from '../utils/response.util.js';
+import { getAuthUser, getProfileIdOrThrow } from '../utils/user.util.js';
 
 export class EnrollmentsController {
   constructor(private readonly enrollmentsService: EnrollmentsService) {}
 
-  /** GET: 수강 목록 조회 핸들러 */
+  /** 수강 목록 조회 핸들러 */
   getEnrollments = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
 
       // 강사/조교인 경우 (관리자 페이지 등에서 호출 시)
       if (userType === UserType.INSTRUCTOR || userType === UserType.ASSISTANT) {
@@ -38,11 +36,10 @@ export class EnrollmentsController {
           query.limit,
         );
 
-        res.status(200).json({
-          status: 'success',
+        return successResponse(res, {
           data: responseData,
+          message: '수강 목록 조회 성공',
         });
-        return;
       }
 
       // 학생/학부모인 경우
@@ -61,8 +58,7 @@ export class EnrollmentsController {
         query.limit,
       );
 
-      res.status(200).json({
-        success: true, // Existing format used success: true. Instructor used status: 'success'. Keeping consistency with existing block.
+      return successResponse(res, {
         data: responseData,
         message: '수강 목록 조회 성공',
       });
@@ -71,16 +67,13 @@ export class EnrollmentsController {
     }
   };
 
-  /** GET: 수강 상세 조회 핸들러 */
+  /**  수강 상세 조회 핸들러 */
   getEnrollment = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { enrollmentId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
 
       let enrollment;
 
@@ -100,8 +93,7 @@ export class EnrollmentsController {
         );
       }
 
-      res.status(200).json({
-        success: true,
+      return successResponse(res, {
         data: { enrollment },
         message: '수강 상세 조회 성공',
       });
@@ -110,7 +102,7 @@ export class EnrollmentsController {
     }
   };
 
-  /** [NEW] Enrollment 생성 */
+  // Enrollment 생성
   createEnrollment = async (
     req: Request,
     res: Response,
@@ -118,13 +110,10 @@ export class EnrollmentsController {
   ) => {
     try {
       const { lectureId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
       const body = req.body;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
 
       const enrollment = await this.enrollmentsService.createEnrollment(
         lectureId,
@@ -133,13 +122,17 @@ export class EnrollmentsController {
         profileId,
       );
 
-      res.status(201).json({ status: 'success', data: { enrollment } });
+      return successResponse(res, {
+        statusCode: 201,
+        data: { enrollment },
+        message: '수강 등록 성공',
+      });
     } catch (error) {
       next(error);
     }
   };
 
-  /** [NEW] 강의별 Enrollment 목록 조회 */
+  /** 강의별 Enrollment 목록 조회 */
   getEnrollmentsByLecture = async (
     req: Request,
     res: Response,
@@ -147,12 +140,9 @@ export class EnrollmentsController {
   ) => {
     try {
       const { lectureId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
 
       const enrollments =
         await this.enrollmentsService.getEnrollmentsByLectureId(
@@ -161,13 +151,16 @@ export class EnrollmentsController {
           profileId,
         );
 
-      res.status(200).json({ status: 'success', data: { enrollments } });
+      return successResponse(res, {
+        data: { enrollments },
+        message: '강의별 수강생 목록 조회 성공',
+      });
     } catch (error) {
       next(error);
     }
   };
 
-  /** [NEW] Enrollment 수정 */
+  /** Enrollment 수정 */
   updateEnrollment = async (
     req: Request,
     res: Response,
@@ -175,13 +168,10 @@ export class EnrollmentsController {
   ) => {
     try {
       const { enrollmentId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
       const body = req.body;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
 
       const enrollment = await this.enrollmentsService.updateEnrollment(
         enrollmentId,
@@ -190,13 +180,16 @@ export class EnrollmentsController {
         profileId,
       );
 
-      res.status(200).json({ status: 'success', data: { enrollment } });
+      return successResponse(res, {
+        data: { enrollment },
+        message: '수강 정보 수정 성공',
+      });
     } catch (error) {
       next(error);
     }
   };
 
-  /** [NEW] Enrollment 삭제 (Soft Delete) */
+  /** Enrollment 삭제 (Soft Delete) */
   deleteEnrollment = async (
     req: Request,
     res: Response,
@@ -204,12 +197,9 @@ export class EnrollmentsController {
   ) => {
     try {
       const { enrollmentId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
 
       await this.enrollmentsService.deleteEnrollment(
         enrollmentId,
@@ -217,9 +207,10 @@ export class EnrollmentsController {
         profileId,
       );
 
-      res
-        .status(200)
-        .json({ status: 'success', message: '수강 정보가 삭제되었습니다.' });
+      return successResponse(res, {
+        statusCode: 204,
+        message: '수강 정보가 삭제되었습니다.',
+      });
     } catch (error) {
       next(error);
     }

@@ -244,6 +244,12 @@ describe('AuthService - @unit #critical', () => {
         // Assert
         expect(result.user.userType).toBe(UserType.STUDENT);
         expect(mockStudentRepo.create).toHaveBeenCalled();
+        expect(
+          mockEnrollmentsRepo.updateAppStudentIdByPhoneNumber,
+        ).toHaveBeenCalledWith(
+          signUpRequests.student.phoneNumber,
+          mockProfiles.student.id,
+        );
       });
     });
 
