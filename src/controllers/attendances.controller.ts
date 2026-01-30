@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { AttendancesService } from '../services/attendances.service.js';
-import { UnauthorizedException } from '../err/http.exception.js';
 import {
   CreateBulkAttendancesDto,
   CreateAttendanceDto,
   UpdateAttendanceDto,
 } from '../validations/attendances.validation.js';
+import { successResponse } from '../utils/response.util.js';
+import { getAuthUser, getProfileIdOrThrow } from '../utils/user.util.js';
+import { UserType } from '../constants/auth.constant.js';
 
 export class AttendancesController {
   constructor(private readonly attendancesService: AttendancesService) {}
@@ -18,13 +20,10 @@ export class AttendancesController {
   ) => {
     try {
       const { lectureId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
       const body = req.body as CreateBulkAttendancesDto;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
 
       const results = await this.attendancesService.createBulkAttendances(
         lectureId,
@@ -33,8 +32,8 @@ export class AttendancesController {
         profileId,
       );
 
-      res.status(201).json({
-        status: 'success',
+      return successResponse(res, {
+        statusCode: 201,
         data: {
           count: results.length,
           attendances: results,
@@ -54,13 +53,10 @@ export class AttendancesController {
   ) => {
     try {
       const { enrollmentId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
       const body = req.body as CreateAttendanceDto;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
 
       const attendance = await this.attendancesService.createAttendance(
         enrollmentId,
@@ -69,8 +65,8 @@ export class AttendancesController {
         profileId,
       );
 
-      res.status(201).json({
-        status: 'success',
+      return successResponse(res, {
+        statusCode: 201,
         data: { attendance },
         message: '출결이 등록되었습니다.',
       });
@@ -83,12 +79,9 @@ export class AttendancesController {
   getAttendances = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { enrollmentId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
 
       const { attendances, stats } =
         await this.attendancesService.getAttendancesByEnrollment(
@@ -97,12 +90,12 @@ export class AttendancesController {
           profileId,
         );
 
-      res.status(200).json({
-        status: 'success',
+      return successResponse(res, {
         data: {
           stats,
           attendances,
         },
+        message: '출결 목록 조회 성공',
       });
     } catch (error) {
       next(error);
@@ -118,13 +111,10 @@ export class AttendancesController {
     try {
       // route: /:enrollmentId/attendances/:attendanceId
       const { enrollmentId, attendanceId } = req.params;
-      const userType = req.user?.userType;
-      const profileId = req.profile?.id;
+      const user = getAuthUser(req);
+      const profileId = getProfileIdOrThrow(req);
+      const userType = user.userType as UserType;
       const body = req.body as UpdateAttendanceDto;
-
-      if (!profileId || !userType) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
 
       const attendance = await this.attendancesService.updateAttendance(
         enrollmentId,
@@ -134,8 +124,7 @@ export class AttendancesController {
         profileId,
       );
 
-      res.status(200).json({
-        status: 'success',
+      return successResponse(res, {
         data: { attendance },
         message: '출결 정보가 수정되었습니다.',
       });

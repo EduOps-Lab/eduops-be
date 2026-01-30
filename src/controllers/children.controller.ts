@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { ParentsService } from '../services/parents.service.js';
 import { UserType } from '../constants/auth.constant.js';
-import { UnauthorizedException } from '../err/http.exception.js';
 import type { GetSvcEnrollmentsQueryDto } from '../validations/enrollments.validation.js';
 import { getPagingData } from '../utils/pagination.util.js';
-import { getAuthUser } from '../utils/user.util.js';
+import { getAuthUser, getProfileIdOrThrow } from '../utils/user.util.js';
+import { successResponse } from '../utils/response.util.js';
 
 export class ChildrenController {
   constructor(private readonly parentsService: ParentsService) {}
@@ -13,11 +13,7 @@ export class ChildrenController {
   registerChild = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = getAuthUser(req);
-      const profileId = req.profile?.id;
-
-      if (!profileId) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const profileId = getProfileIdOrThrow(req);
 
       const child = await this.parentsService.registerChild(
         user.userType as UserType,
@@ -25,7 +21,11 @@ export class ChildrenController {
         req.body,
       );
 
-      res.status(201).json(child);
+      return successResponse(res, {
+        statusCode: 201,
+        data: child,
+        message: '자녀 등록 성공',
+      });
     } catch (error) {
       next(error);
     }
@@ -35,18 +35,17 @@ export class ChildrenController {
   getChildren = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = getAuthUser(req);
-      const profileId = req.profile?.id;
-
-      if (!profileId) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const profileId = getProfileIdOrThrow(req);
 
       const children = await this.parentsService.getChildren(
         user.userType as UserType,
         profileId,
       );
 
-      res.status(200).json(children);
+      return successResponse(res, {
+        data: children,
+        message: '자녀 목록 조회 성공',
+      });
     } catch (error) {
       next(error);
     }
@@ -60,11 +59,7 @@ export class ChildrenController {
   ) => {
     try {
       const user = getAuthUser(req);
-      const profileId = req.profile?.id;
-
-      if (!profileId) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const profileId = getProfileIdOrThrow(req);
 
       const { id } = req.params;
       const query = req.query as unknown as GetSvcEnrollmentsQueryDto;
@@ -84,7 +79,10 @@ export class ChildrenController {
         query.limit,
       );
 
-      res.status(200).json(responseData);
+      return successResponse(res, {
+        data: responseData,
+        message: '자녀 수강 목록 조회 성공',
+      });
     } catch (error) {
       next(error);
     }
@@ -98,11 +96,7 @@ export class ChildrenController {
   ) => {
     try {
       const user = getAuthUser(req);
-      const profileId = req.profile?.id;
-
-      if (!profileId) {
-        throw new UnauthorizedException('사용자 프로필을 찾을 수 없습니다.');
-      }
+      const profileId = getProfileIdOrThrow(req);
 
       const { id, enrollmentId } = req.params;
       const enrollment = await this.parentsService.getChildEnrollmentDetail(
@@ -112,7 +106,10 @@ export class ChildrenController {
         enrollmentId,
       );
 
-      res.status(200).json(enrollment);
+      return successResponse(res, {
+        data: enrollment,
+        message: '자녀 수강 상세 조회 성공',
+      });
     } catch (error) {
       next(error);
     }
