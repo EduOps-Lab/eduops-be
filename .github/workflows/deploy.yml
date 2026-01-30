@@ -18,7 +18,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,6 +40,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
+            type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -57,7 +58,7 @@ jobs:
     name: Deploy to EC2
     needs: build-and-push
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -69,8 +70,8 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
-          source: "deploy.sh,docker-compose.yml,nginx/"
-          target: "/home/${{ secrets.EC2_USER }}/app"
+          source: 'deploy.sh,docker-compose.yml,nginx/'
+          target: '/home/${{ secrets.EC2_USER }}/app'
 
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -82,25 +83,29 @@ jobs:
           script: |
             # 작업 디렉토리로 이동
             cd /home/ec2-user/app
-            
+
+            # 0. 환경 변수 파일 생성
+            echo "${{ secrets.ENV_CONTENTS }}" > .env
+
             # 1. 디스크 공간 확보 (중요: t3.micro 용량 부족 방지)
+
             echo "디스크 공간 정리 중..."
             docker system prune -af --volumes || true
-            
+
             # 2. 리포지토리 이름을 소문자로 변환
             IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-            
+
             # 3. GitHub Container Registry 로그인
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
-            
+
             # 4. 최신 이미지 pull
             docker pull ghcr.io/$IMAGE_NAME:latest
-            
+
             # 5. 무중단 배포 스크립트 실행
             export GITHUB_REPOSITORY="$IMAGE_NAME"
             chmod +x deploy.sh
             ./deploy.sh
-            
+
             # 사용하지 않는 이미지 정리
             docker image prune -af
 
@@ -109,7 +114,7 @@ jobs:
     needs: [build-and-push, deploy]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Send notification
         run: |
