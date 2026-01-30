@@ -13,3 +13,7 @@ mgmtV1Router.use('/lectures', mgmtLecturesRouter);
 
 /** 수강 라우트 */
 mgmtV1Router.use('/enrollments', mgmtEnrollmentsRouter);
+
+/** 시험 라우트 */
+import { mgmtExamsRouter } from './exams.route.js';
+mgmtV1Router.use('/exams', mgmtExamsRouter);
