@@ -9,9 +9,9 @@ import { QueryMode } from '../generated/prisma/internal/prismaNamespace.js';
 export class EnrollmentsRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  //--- 조회 ---
+  /** --- 조회 --- */
 
-  // 학생 ID로 수강 목록 조회 (Lecture, Instructor 포함)
+  /** 학생 ID로 수강 목록 조회 (Lecture, Instructor 포함) */
   async findByAppStudentId(
     appStudentId: string,
     query: Partial<GetSvcEnrollmentsQueryDto> = {},
@@ -24,7 +24,7 @@ export class EnrollmentsRepository {
     );
   }
 
-  // 학부모-자녀 연결 ID로 수강 목록 조회 (Lecture, Instructor 포함)
+  /** 학부모-자녀 연결 ID로 수강 목록 조회 (Lecture, Instructor 포함) */
   async findByAppParentLinkId(
     appParentLinkId: string,
     query: Partial<GetSvcEnrollmentsQueryDto> = {},
@@ -37,7 +37,7 @@ export class EnrollmentsRepository {
     );
   }
 
-  // 공통 페이징 조회 헬퍼 (Internal)
+  /** 공통 페이징 조회 헬퍼 (Internal) */
   private async findManyWithPagination(
     baseWhere: Prisma.EnrollmentWhereInput,
     query: Partial<GetSvcEnrollmentsQueryDto>,
@@ -110,7 +110,7 @@ export class EnrollmentsRepository {
     return { enrollments, totalCount };
   }
 
-  // Enrollment ID로 상세 조회 (관계 포함)
+  /** Enrollment ID로 상세 조회 (관계 포함) */
   async findByIdWithRelations(
     enrollmentId: string,
     tx?: Prisma.TransactionClient,
@@ -149,7 +149,7 @@ export class EnrollmentsRepository {
     });
   }
 
-  // ID로 간단 조회 (권한 체크 및 기본 정보 확인용)
+  /** ID로 간단 조회 (권한 체크 및 기본 정보 확인용) */
   async findById(id: string, tx?: Prisma.TransactionClient) {
     const client = tx ?? this.prisma;
     return await client.enrollment.findUnique({
@@ -157,7 +157,7 @@ export class EnrollmentsRepository {
     });
   }
 
-  // 강의별 수강생 목록 조회
+  /** 강의별 수강생 목록 조회 */
   async findManyByLectureId(lectureId: string, tx?: Prisma.TransactionClient) {
     const client = tx ?? this.prisma;
     return await client.enrollment.findMany({
@@ -174,7 +174,7 @@ export class EnrollmentsRepository {
     });
   }
 
-  // 강사별 전체 수강생 목록 조회 (검색/필터/페이지네이션)
+  /** 강사별 전체 수강생 목록 조회 (검색/필터/페이지네이션) */
   async findManyByInstructorId(
     instructorId: string,
     params: {
@@ -213,7 +213,7 @@ export class EnrollmentsRepository {
       ];
     }
 
-    // [New] 종강된 강의 제외 로직 (includeClosed가 true가 아니면 제외)
+    // 종강된 강의 제외 로직 (includeClosed가 true가 아니면 제외)
     if (!params.includeClosed) {
       where.lecture = {
         status: {
@@ -251,9 +251,9 @@ export class EnrollmentsRepository {
     };
   }
 
-  //--- 생성 ---
+  /** --- 생성 --- */
 
-  // 수강생 일괄 등록
+  /** 수강생 일괄 등록 */
   async createMany(
     dataList: Prisma.EnrollmentUncheckedCreateInput[],
     tx?: Prisma.TransactionClient,
@@ -264,7 +264,7 @@ export class EnrollmentsRepository {
     });
   }
 
-  // 수강생 개별 등록
+  /** 수강생 개별 등록 */
   async create(
     data: Prisma.EnrollmentUncheckedCreateInput,
     tx?: Prisma.TransactionClient,
@@ -275,9 +275,9 @@ export class EnrollmentsRepository {
     });
   }
 
-  //--- 수정 ---
+  /** --- 수정 --- */
 
-  // 수강 정보 수정
+  /** 수강 정보 수정 */
   async update(
     id: string,
     data: Prisma.EnrollmentUpdateInput,
@@ -290,9 +290,9 @@ export class EnrollmentsRepository {
     });
   }
 
-  //--- 삭제 ---
+  /** --- 삭제 --- */
 
-  // Soft Delete
+  /** Soft Delete */
   async softDelete(id: string, tx?: Prisma.TransactionClient) {
     const client = tx ?? this.prisma;
     return await client.enrollment.update({
@@ -304,9 +304,9 @@ export class EnrollmentsRepository {
     });
   }
 
-  //--- 연동 ---
+  /** --- 연동 --- */
 
-  // 전화번호 기준 AppStudentId 업데이트 (회원가입 시 연동)
+  /** 전화번호 기준 AppStudentId 업데이트 (회원가입 시 연동) */
   async updateAppStudentIdByPhoneNumber(
     phoneNumber: string,
     appStudentId: string,
@@ -324,7 +324,7 @@ export class EnrollmentsRepository {
     });
   }
 
-  // 학생 전화번호 기준 AppParentLinkId 업데이트 (자녀 등록 시 연동)
+  /** 학생 전화번호 기준 AppParentLinkId 업데이트 (자녀 등록 시 연동) */
   async updateAppParentLinkIdByStudentPhone(
     studentPhone: string,
     appParentLinkId: string,

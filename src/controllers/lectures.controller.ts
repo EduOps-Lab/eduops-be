@@ -7,7 +7,7 @@ import { UserType } from '../constants/auth.constant.js';
 export class LecturesController {
   constructor(private readonly lecturesService: LecturesService) {}
 
-  // 강의 생성 핸들러
+  /** 강의 생성 핸들러 */
   createLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const instructorId = getProfileIdOrThrow(req);
@@ -28,7 +28,7 @@ export class LecturesController {
     }
   };
 
-  // 강의 리스트 조회 핸들러
+  /** 강의 리스트 조회 핸들러 */
   getLectures = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { page, limit, search } = req.query;
@@ -50,7 +50,7 @@ export class LecturesController {
     }
   };
 
-  // 강의 개별 조회 핸들러
+  /** 강의 개별 조회 핸들러 */
   getLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const profileId = getProfileIdOrThrow(req);
@@ -73,7 +73,7 @@ export class LecturesController {
     }
   };
 
-  // 강의 수정 핸들러
+  /** 강의 수정 핸들러 */
   updateLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
@@ -98,7 +98,7 @@ export class LecturesController {
     }
   };
 
-  // 강의 삭제 핸들러 (Soft Delete)
+  /** 강의 삭제 핸들러 (Soft Delete) */
   deleteLecture = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const profileId = getProfileIdOrThrow(req);

@@ -29,7 +29,7 @@ export class AttendancesService {
     private readonly prisma: PrismaClient,
   ) {}
 
-  // 강의 내 단체 출결 등록 (Transaction + Upsert Loop)
+  /** 강의 내 단체 출결 등록 (Transaction + Upsert Loop) */
   async createBulkAttendances(
     lectureId: string,
     attendances: BulkAttendanceDto[],
@@ -98,7 +98,7 @@ export class AttendancesService {
     });
   }
 
-  // 단일 수강생 출결 등록 (Upsert)
+  /** 단일 수강생 출결 등록 (Upsert) */
   async createAttendance(
     enrollmentId: string,
     data: CreateAttendanceDto,
@@ -144,7 +144,7 @@ export class AttendancesService {
     );
   }
 
-  // 수강생 출결 조회 + 통계
+  /** 수강생 출결 조회 + 통계 */
   async getAttendancesByEnrollment(
     enrollmentId: string,
     userType: UserType,
@@ -166,7 +166,7 @@ export class AttendancesService {
     return { attendances, stats };
   }
 
-  // 출결 수정
+  /** 출결 수정 */
   async updateAttendance(
     enrollmentId: string, // URL Path param 검증용
     attendanceId: string,
@@ -206,9 +206,9 @@ export class AttendancesService {
     });
   }
 
-  //--- Helper Functions ---
+  /** Helper Functions */
 
-  // 날짜에서 시간 제거 (00:00:00.000)
+  /** 날짜에서 시간 제거 (00:00:00.000) */
   private truncateTime(date: Date): Date {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);

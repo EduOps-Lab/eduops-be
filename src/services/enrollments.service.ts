@@ -26,7 +26,7 @@ export class EnrollmentsService {
     private readonly prisma: PrismaClient,
   ) {}
 
-  // Enrollment 생성
+  /** Enrollment 생성 */
   async createEnrollment(
     lectureId: string,
     data: Prisma.EnrollmentUncheckedCreateInput,
@@ -77,7 +77,7 @@ export class EnrollmentsService {
     });
   }
 
-  // 강의별 수강생 목록 조회
+  /** 강의별 수강생 목록 조회 */
   async getEnrollmentsByLectureId(
     lectureId: string,
     userType: UserType,
@@ -116,7 +116,7 @@ export class EnrollmentsService {
     );
   }
 
-  // Enrollment 상세 조회 (권한 체크 포함)
+  /** Enrollment 상세 조회 (권한 체크 포함) */
   async getEnrollmentDetail(
     enrollmentId: string,
     userType: UserType,
@@ -178,7 +178,7 @@ export class EnrollmentsService {
     return await this.enrollmentsRepository.softDelete(id);
   }
 
-  // 기존 메서드 유지 (학생/학부모용)
+  /** 학생/학부모용 수강 목록 조회 */
   async getEnrollments(
     userType: UserType,
     profileId: string,
@@ -199,7 +199,7 @@ export class EnrollmentsService {
     };
   }
 
-  // 기존 메서드 유지 (학생/학부모용 상세 조회)
+  /** 학생/학부모용 수강 상세 조회 */
   async getEnrollmentById(
     enrollmentId: string,
     userType: UserType,

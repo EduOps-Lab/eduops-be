@@ -21,7 +21,7 @@ export class ParentsService {
     private readonly prisma: PrismaClient,
   ) {}
 
-  // 자녀 등록 (및 기존 수강 내역 자동 연결)
+  /** 자녀 등록 (및 기존 수강 내역 자동 연결) */
   async registerChild(
     userType: UserType,
     profileId: string,
@@ -64,7 +64,7 @@ export class ParentsService {
     });
   }
 
-  // 내 자녀 목록 조회
+  /** 내 자녀 목록 조회 */
   async getChildren(userType: UserType, profileId: string) {
     if (userType !== UserType.PARENT) {
       throw new ForbiddenException('학부모만 자녀 목록을 조회할 수 있습니다.');
@@ -73,7 +73,7 @@ export class ParentsService {
     return await this.parentChildLinkRepository.findByAppParentId(profileId);
   }
 
-  // 자녀의 수강 목록 조회
+  /** 자녀의 수강 목록 조회 */
   async getChildEnrollments(
     userType: UserType,
     profileId: string,
@@ -99,7 +99,7 @@ export class ParentsService {
     };
   }
 
-  // 자녀의 수강 상세 조회
+  /** 자녀의 수강 상세 조회 */
   async getChildEnrollmentDetail(
     userType: UserType,
     profileId: string,
@@ -131,7 +131,7 @@ export class ParentsService {
     return enrollment;
   }
 
-  // 자녀 정보를 전화번호로 조회 (가장 최근 것 하나)
+  /** 학부모 자녀 정보를 전화번호로 조회 (가장 최근 것 하나) */
   async findLinkByPhoneNumber(phoneNumber: string) {
     const links =
       await this.parentChildLinkRepository.findManyByPhoneNumber(phoneNumber);

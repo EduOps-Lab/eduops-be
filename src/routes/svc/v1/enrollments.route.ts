@@ -10,18 +10,18 @@ export const svcEnrollmentsRouter = Router();
 
 const { requireAuth, requireStudent, enrollmentsController } = container;
 
-// ---------- 로그인한 사용자 ----------
+/** ---------- 로그인한 사용자 ---------- */
 svcEnrollmentsRouter.use(requireAuth);
 svcEnrollmentsRouter.use(requireStudent);
 
-// 수강 목록 조회
+/** 수강 목록 조회 */
 svcEnrollmentsRouter.get(
   '/',
   validate(getSvcEnrollmentsQuerySchema, 'query'),
   enrollmentsController.getEnrollments,
 );
 
-// 수강 상세 조회
+/** 수강 상세 조회 */
 svcEnrollmentsRouter.get(
   '/:enrollmentId',
   validate(enrollmentIdParamSchema, 'params'),

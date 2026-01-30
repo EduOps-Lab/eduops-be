@@ -29,7 +29,7 @@ export class AuthController {
     });
   };
 
-  // 강사 회원가입
+  /** 강사 회원가입 */
   instructorSignUp = async (
     req: Request,
     res: Response,
@@ -46,7 +46,7 @@ export class AuthController {
     }
   };
 
-  // 조교 회원가입
+  /** 조교 회원가입 */
   assistantSignUp = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await this.authService.signUp(
@@ -59,7 +59,7 @@ export class AuthController {
     }
   };
 
-  // 학생 회원가입
+  /** 학생 회원가입 */
   studentSignUp = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await this.authService.signUp(UserType.STUDENT, req.body);
@@ -69,7 +69,7 @@ export class AuthController {
     }
   };
 
-  // 학부모 회원가입
+  /** 학부모 회원가입 */
   parentSignUp = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await this.authService.signUp(UserType.PARENT, req.body);
@@ -79,7 +79,7 @@ export class AuthController {
     }
   };
 
-  // 통합 로그인
+  /** 통합 로그인 */
   signIn = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password, userType, rememberMe } = req.body;
@@ -97,7 +97,7 @@ export class AuthController {
     }
   };
 
-  // 로그아웃
+  /** 로그아웃 */
   signOut = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Better Auth는 헤더에서 세션을 파싱하므로 req.headers를 전달
@@ -108,7 +108,7 @@ export class AuthController {
     }
   };
 
-  // 세션 조회
+  /** 세션 조회 */
   getSession = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const session = await this.authService.getSession(req.headers);
