@@ -1,147 +1,573 @@
-import { ParentsService } from '../../src/services/parents.service.js';
-import { UserType } from '../../src/constants/auth.constant.js';
-import { EnrollmentStatus } from '../../src/constants/enrollments.constant.js';
-import { ParentRepository } from '../../src/repos/parent.repo.js';
-import { ParentChildLinkRepository } from '../../src/repos/parent-child-link.repo.js';
-import { EnrollmentsRepository } from '../../src/repos/enrollments.repo.js';
-import { PrismaClient } from '../../src/generated/prisma/client.js';
-
-// Mock dependencies
-const mockParentRepo = {
-  create: jest.fn(),
-  findByUserId: jest.fn(),
-  findByPhoneNumber: jest.fn(),
-};
-const mockParentChildLinkRepo = {
-  create: jest.fn(),
-  findByAppParentId: jest.fn(),
-  findById: jest.fn(),
-  findByParentIdAndPhoneNumber: jest.fn(),
-  findManyByPhoneNumber: jest.fn(),
-};
-const mockEnrollmentsRepo = {
-  updateAppParentLinkIdByStudentPhone: jest.fn(),
-  findByAppParentLinkId: jest.fn(),
-  findByIdWithRelations: jest.fn(),
-  updateAppStudentIdByPhoneNumber: jest.fn(),
-};
-
-const mockPrisma = {
-  $transaction: jest.fn((callback: (tx: PrismaClient) => Promise<unknown>) =>
-    callback(mockPrisma),
-  ),
-} as unknown as PrismaClient;
+import { ParentsService } from './parents.service.js';
+import { UserType } from '../constants/auth.constant.js';
+import {
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '../err/http.exception.js';
+import {
+  createMockParentRepository,
+  createMockParentChildLinkRepository,
+  createMockEnrollmentsRepository,
+  createMockPrisma,
+} from '../test/mocks/index.js';
+import {
+  mockParents,
+  mockParentLinks,
+  mockEnrollments,
+  mockEnrollmentWithRelations,
+  mockEnrollmentWithRelationsForParent,
+} from '../test/fixtures/index.js';
+import { PrismaClient } from '../generated/prisma/client.js';
 
 describe('ParentsService', () => {
+  // Mock Dependencies
+  let mockParentRepo: ReturnType<typeof createMockParentRepository>;
+  let mockParentChildLinkRepo: ReturnType<
+    typeof createMockParentChildLinkRepository
+  >;
+  let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
+  let mockPrisma: PrismaClient;
+
+  // Service under test
   let parentsService: ParentsService;
 
   beforeEach(() => {
+    // Reset all mocks
     jest.clearAllMocks();
+
+    // Create mock dependencies
+    mockParentRepo = createMockParentRepository();
+    mockParentChildLinkRepo = createMockParentChildLinkRepository();
+    mockEnrollmentsRepo = createMockEnrollmentsRepository();
+    mockPrisma = createMockPrisma() as unknown as PrismaClient;
+
+    // Create ParentsService DI
     parentsService = new ParentsService(
-      mockParentRepo as unknown as ParentRepository,
-      mockParentChildLinkRepo as unknown as ParentChildLinkRepository,
-      mockEnrollmentsRepo as unknown as EnrollmentsRepository,
-      mockPrisma as unknown as PrismaClient,
+      mockParentRepo,
+      mockParentChildLinkRepo,
+      mockEnrollmentsRepo,
+      mockPrisma,
     );
   });
 
-  describe('registerChild', () => {
-    const parentId = 'parent-123';
+  /** [자녀 등록] registerChild 테스트 케이스 */
+  describe('[자녀 등록] registerChild', () => {
+    const parentId = mockParents.basic.id;
     const childData = {
-      name: 'Son',
-      phoneNumber: '010-1234-5678',
+      name: '김철수',
+      phoneNumber: '010-1111-2222',
     };
 
-    it('should register a new child and link existing enrollments', async () => {
-      // Given
-      mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue(
-        null,
-      );
-      mockParentChildLinkRepo.create.mockResolvedValue({
-        id: 'link-123',
-        ...childData,
-      });
+    describe('PAR-01: 자녀 등록 성공', () => {
+      it('신규 자녀를 등록하고 기존 수강 내역을 자동으로 연결한다', async () => {
+        // Arrange
+        mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue(
+          null,
+        );
+        mockParentChildLinkRepo.create.mockResolvedValue(
+          mockParentLinks.active,
+        );
+        mockEnrollmentsRepo.updateAppParentLinkIdByStudentPhone.mockResolvedValue(
+          { count: 2 },
+        );
 
-      // When
-      const result = await parentsService.registerChild(
-        UserType.PARENT,
-        parentId,
-        childData,
-      );
+        // Mock $transaction
+        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
+          fn(mockPrisma),
+        );
 
-      // Then
-      expect(mockParentChildLinkRepo.create).toHaveBeenCalled();
-      expect(
-        mockEnrollmentsRepo.updateAppParentLinkIdByStudentPhone,
-      ).toHaveBeenCalledWith(
-        childData.phoneNumber,
-        'link-123',
-        expect.any(Object),
-      );
-      expect(result.id).toBe('link-123');
-    });
-
-    it('should throw ForbiddenException if not parent', async () => {
-      await expect(
-        parentsService.registerChild(
-          UserType.STUDENT,
-          'student-123',
+        // Act
+        const result = await parentsService.registerChild(
+          UserType.PARENT,
+          parentId,
           childData,
-        ),
-      ).rejects.toThrow('학부모만 자녀를 등록할 수 있습니다.'); // "학부모만 자녀를 등록할 수 있습니다."
-    });
+        );
 
-    it('should throw BadRequestException if child already registered', async () => {
-      mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue({
-        id: 'existing-link',
+        // Assert
+        expect(result).toBeDefined();
+        expect(result.id).toBe(mockParentLinks.active.id);
+        expect(
+          mockParentChildLinkRepo.findByParentIdAndPhoneNumber,
+        ).toHaveBeenCalledWith(parentId, childData.phoneNumber);
+        expect(mockParentChildLinkRepo.create).toHaveBeenCalledWith(
+          expect.objectContaining({
+            appParentId: parentId,
+            name: childData.name,
+            phoneNumber: childData.phoneNumber,
+          }),
+          expect.anything(),
+        );
+        expect(
+          mockEnrollmentsRepo.updateAppParentLinkIdByStudentPhone,
+        ).toHaveBeenCalledWith(
+          childData.phoneNumber,
+          mockParentLinks.active.id,
+          expect.anything(),
+        );
       });
 
-      await expect(
-        parentsService.registerChild(UserType.PARENT, parentId, childData),
-      ).rejects.toThrow('이미');
+      it('트랜잭션 내에서 모든 처리가 수행된다', async () => {
+        mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue(
+          null,
+        );
+        mockParentChildLinkRepo.create.mockResolvedValue(
+          mockParentLinks.active,
+        );
+
+        let transactionCalled = false;
+        (mockPrisma.$transaction as jest.Mock).mockImplementation(
+          async (fn) => {
+            transactionCalled = true;
+            return await fn(mockPrisma);
+          },
+        );
+
+        await parentsService.registerChild(
+          UserType.PARENT,
+          parentId,
+          childData,
+        );
+
+        expect(transactionCalled).toBe(true);
+        expect(mockPrisma.$transaction).toHaveBeenCalled();
+      });
+    });
+
+    describe('PAR-02: 자녀 등록 실패 - 권한 검증', () => {
+      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
+        await expect(
+          parentsService.registerChild(
+            UserType.STUDENT,
+            'student-id',
+            childData,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          parentsService.registerChild(
+            UserType.STUDENT,
+            'student-id',
+            childData,
+          ),
+        ).rejects.toThrow('학부모만 자녀를 등록할 수 있습니다.');
+      });
+
+      it('INSTRUCTOR는 자녀를 등록할 수 없다', async () => {
+        await expect(
+          parentsService.registerChild(
+            UserType.INSTRUCTOR,
+            'instructor-id',
+            childData,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+    });
+
+    describe('PAR-03: 자녀 등록 실패 - 중복 검증', () => {
+      it('이미 등록된 자녀 번호는 BadRequestException을 던진다', async () => {
+        mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue(
+          mockParentLinks.active,
+        );
+
+        await expect(
+          parentsService.registerChild(UserType.PARENT, parentId, childData),
+        ).rejects.toThrow(BadRequestException);
+
+        await expect(
+          parentsService.registerChild(UserType.PARENT, parentId, childData),
+        ).rejects.toThrow('이미 등록된 자녀 번호입니다.');
+      });
     });
   });
 
-  describe('getChildEnrollments', () => {
-    const parentId = 'parent-123';
-    const childLinkId = 'link-123';
+  describe('[자녀 목록 조회] getChildren', () => {
+    const parentId = mockParents.basic.id;
 
-    it('should return enrollments for my child', async () => {
-      // Given
-      mockParentChildLinkRepo.findById.mockResolvedValue({
-        id: childLinkId,
-        appParentId: parentId,
+    describe('PAR-04: 자녀 목록 조회 성공', () => {
+      it('학부모의 모든 자녀 목록을 반환한다', async () => {
+        const childrenList = [mockParentLinks.active, mockParentLinks.another];
+        mockParentChildLinkRepo.findByAppParentId.mockResolvedValue(
+          childrenList,
+        );
+
+        const result = await parentsService.getChildren(
+          UserType.PARENT,
+          parentId,
+        );
+
+        expect(result).toEqual(childrenList);
+        expect(result).toHaveLength(2);
+        expect(mockParentChildLinkRepo.findByAppParentId).toHaveBeenCalledWith(
+          parentId,
+        );
       });
-      mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue({
-        enrollments: [{ id: 'enroll-1', status: EnrollmentStatus.ACTIVE }],
-        totalCount: 1,
+
+      it('자녀가 없는 경우 빈 배열을 반환한다', async () => {
+        mockParentChildLinkRepo.findByAppParentId.mockResolvedValue([]);
+
+        const result = await parentsService.getChildren(
+          UserType.PARENT,
+          parentId,
+        );
+
+        expect(result).toEqual([]);
+        expect(result).toHaveLength(0);
       });
-
-      // When
-      const result = await parentsService.getChildEnrollments(
-        UserType.PARENT,
-        parentId,
-        childLinkId,
-      );
-
-      // Then
-      expect(result.enrollments).toHaveLength(1);
-      expect(result.enrollments[0].id).toBe('enroll-1');
     });
 
-    it('should throw ForbiddenException if accessing other parent child', async () => {
-      mockParentChildLinkRepo.findById.mockResolvedValue({
-        id: childLinkId,
-        appParentId: 'other-parent',
+    describe('PAR-05: 자녀 목록 조회 실패', () => {
+      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
+        await expect(
+          parentsService.getChildren(UserType.STUDENT, 'student-id'),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          parentsService.getChildren(UserType.STUDENT, 'student-id'),
+        ).rejects.toThrow('학부모만 자녀 목록을 조회할 수 있습니다.');
       });
 
-      await expect(
-        parentsService.getChildEnrollments(
+      it('INSTRUCTOR는 자녀 목록을 조회할 수 없다', async () => {
+        await expect(
+          parentsService.getChildren(UserType.INSTRUCTOR, 'instructor-id'),
+        ).rejects.toThrow(ForbiddenException);
+      });
+    });
+  });
+
+  describe('[자녀 수강 목록 조회] getChildEnrollments', () => {
+    const parentId = mockParents.basic.id;
+    const childLinkId = mockParentLinks.active.id;
+
+    describe('PAR-06: 수강 목록 조회 성공', () => {
+      it('내 자녀의 수강 목록을 반환한다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          mockParentLinks.active,
+        );
+        const enrollmentsResult = {
+          enrollments: [mockEnrollmentWithRelationsForParent],
+          totalCount: 1,
+        };
+        mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue(
+          enrollmentsResult,
+        );
+
+        const result = await parentsService.getChildEnrollments(
           UserType.PARENT,
           parentId,
           childLinkId,
-        ),
-      ).rejects.toThrow('본인의 자녀만');
+        );
+
+        expect(result).toBeDefined();
+        expect(result.enrollments).toHaveLength(1);
+        expect(result.totalCount).toBe(1);
+        expect(result.enrollments[0].id).toBe(mockEnrollments.active.id);
+        expect(mockParentChildLinkRepo.findById).toHaveBeenCalledWith(
+          childLinkId,
+        );
+        expect(mockEnrollmentsRepo.findByAppParentLinkId).toHaveBeenCalledWith(
+          childLinkId,
+          undefined,
+        );
+      });
+
+      it('페이지네이션 쿼리와 함께 수강 목록을 조회한다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          mockParentLinks.active,
+        );
+        const enrollmentsResult = {
+          enrollments: [mockEnrollmentWithRelationsForParent],
+          totalCount: 10,
+        };
+        mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue(
+          enrollmentsResult,
+        );
+
+        const query = { page: 1, limit: 10 };
+
+        const result = await parentsService.getChildEnrollments(
+          UserType.PARENT,
+          parentId,
+          childLinkId,
+          query,
+        );
+
+        expect(result.totalCount).toBe(10);
+        expect(mockEnrollmentsRepo.findByAppParentLinkId).toHaveBeenCalledWith(
+          childLinkId,
+          query,
+        );
+      });
+    });
+
+    describe('PAR-07: 수강 목록 조회 실패', () => {
+      it('다른 학부모의 자녀 조회 시 ForbiddenException을 던진다', async () => {
+        const otherParentLink = {
+          ...mockParentLinks.active,
+          appParentId: mockParents.another.id,
+        };
+        mockParentChildLinkRepo.findById.mockResolvedValue(otherParentLink);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+          ),
+        ).rejects.toThrow('본인의 자녀만 조회할 수 있습니다.');
+      });
+
+      it('존재하지 않는 자녀 조회 시 NotFoundException을 던진다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(null);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            'invalid-child-id',
+          ),
+        ).rejects.toThrow(NotFoundException);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            'invalid-child-id',
+          ),
+        ).rejects.toThrow('자녀 정보를 찾을 수 없습니다.');
+      });
+
+      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.STUDENT,
+            'student-id',
+            childLinkId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.STUDENT,
+            'student-id',
+            childLinkId,
+          ),
+        ).rejects.toThrow('접근 권한이 없습니다.');
+      });
+    });
+  });
+
+  describe('[자녀 수강 상세 조회] getChildEnrollmentDetail', () => {
+    const parentId = mockParents.basic.id;
+    const childLinkId = mockParentLinks.active.id;
+    const enrollmentId = mockEnrollments.active.id;
+
+    describe('PAR-08: 수강 상세 조회 성공', () => {
+      it('내 자녀의 수강 상세 정보를 반환한다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          mockParentLinks.active,
+        );
+        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
+          mockEnrollmentWithRelations,
+        );
+
+        const result = await parentsService.getChildEnrollmentDetail(
+          UserType.PARENT,
+          parentId,
+          childLinkId,
+          enrollmentId,
+        );
+
+        expect(result).toBeDefined();
+        expect(result.id).toBe(enrollmentId);
+        expect(mockParentChildLinkRepo.findById).toHaveBeenCalledWith(
+          childLinkId,
+        );
+        expect(mockEnrollmentsRepo.findByIdWithRelations).toHaveBeenCalledWith(
+          enrollmentId,
+        );
+      });
+    });
+
+    describe('PAR-09: 수강 상세 조회 실패', () => {
+      it('다른 자녀의 수강 정보 조회 시 ForbiddenException을 던진다', async () => {
+        const otherParentLink = {
+          ...mockParentLinks.active,
+          appParentId: mockParents.another.id,
+        };
+        mockParentChildLinkRepo.findById.mockResolvedValue(otherParentLink);
+
+        await expect(
+          parentsService.getChildEnrollmentDetail(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+            enrollmentId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('존재하지 않는 수강 정보 조회 시 NotFoundException을 던진다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          mockParentLinks.active,
+        );
+        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(null);
+
+        await expect(
+          parentsService.getChildEnrollmentDetail(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+            'invalid-enrollment-id',
+          ),
+        ).rejects.toThrow(NotFoundException);
+
+        await expect(
+          parentsService.getChildEnrollmentDetail(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+            'invalid-enrollment-id',
+          ),
+        ).rejects.toThrow('수강 정보를 찾을 수 없습니다.');
+      });
+
+      it('자녀와 연결되지 않은 수강 정보 조회 시 ForbiddenException을 던진다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          mockParentLinks.active,
+        );
+        const differentEnrollment = {
+          ...mockEnrollmentWithRelations,
+          appParentLinkId: 'different-link-id',
+        };
+        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
+          differentEnrollment,
+        );
+
+        await expect(
+          parentsService.getChildEnrollmentDetail(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+            enrollmentId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          parentsService.getChildEnrollmentDetail(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+            enrollmentId,
+          ),
+        ).rejects.toThrow(
+          '해당 자녀의 수강 정보가 아니거나 접근 권한이 없습니다.',
+        );
+      });
+
+      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
+        await expect(
+          parentsService.getChildEnrollmentDetail(
+            UserType.INSTRUCTOR,
+            'instructor-id',
+            childLinkId,
+            enrollmentId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+    });
+  });
+
+  describe('[Helper 함수] validateChildAccess', () => {
+    const parentId = mockParents.basic.id;
+    const childLinkId = mockParentLinks.active.id;
+
+    describe('PAR-10: 자녀 접근 권한 검증 성공', () => {
+      it('본인 자녀 검증이 통과한다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          mockParentLinks.active,
+        );
+        mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue({
+          enrollments: [],
+          totalCount: 0,
+        });
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+          ),
+        ).resolves.toBeDefined();
+
+        expect(mockParentChildLinkRepo.findById).toHaveBeenCalledWith(
+          childLinkId,
+        );
+      });
+    });
+
+    describe('PAR-11: 자녀 접근 권한 검증 실패', () => {
+      it('PARENT가 아닌 경우 ForbiddenException을 던진다', async () => {
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.STUDENT,
+            'student-id',
+            childLinkId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.INSTRUCTOR,
+            'instructor-id',
+            childLinkId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('존재하지 않는 자녀는 NotFoundException을 던진다', async () => {
+        mockParentChildLinkRepo.findById.mockResolvedValue(null);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            'invalid-child-id',
+          ),
+        ).rejects.toThrow(NotFoundException);
+      });
+
+      it('다른 학부모의 자녀는 ForbiddenException을 던진다', async () => {
+        const otherParentLink = {
+          ...mockParentLinks.active,
+          appParentId: mockParents.another.id,
+        };
+        mockParentChildLinkRepo.findById.mockResolvedValue(otherParentLink);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+
+        await expect(
+          parentsService.getChildEnrollments(
+            UserType.PARENT,
+            parentId,
+            childLinkId,
+          ),
+        ).rejects.toThrow('본인의 자녀만 조회할 수 있습니다.');
+      });
     });
   });
 });

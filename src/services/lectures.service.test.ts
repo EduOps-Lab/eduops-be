@@ -12,13 +12,17 @@ import {
 import {
   mockInstructor,
   mockLectures,
-  mockEnrollments,
-  mockStudent,
   mockLecturesListResponse,
   createLectureRequests,
   updateLectureRequests,
-  createEnrollmentRequest,
+  mockEnrollments,
+  mockStudents,
+  createEnrollmentRequests,
 } from '../test/fixtures/index.js';
+
+// Aliases for backward compatibility
+const mockStudent = mockStudents.basic;
+const createEnrollmentRequest = createEnrollmentRequests.basic;
 import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 
@@ -93,7 +97,10 @@ describe('LecturesService', () => {
           ...mockLectures.withEnrollments,
           lectureTimes: [],
         });
-        mockEnrollmentsRepo.createMany.mockResolvedValue(mockEnrollments);
+        mockEnrollmentsRepo.createMany.mockResolvedValue([
+          mockEnrollments.active,
+          mockEnrollments.withoutParentLink,
+        ]);
 
         // Mock $transaction - callback을 실제로 실행하고 결과 반환
         (mockPrisma.$transaction as jest.Mock).mockImplementation(
@@ -444,7 +451,7 @@ describe('LecturesService', () => {
       it('기존 학생 연동 없이 수강 등록이 성공한다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockStudentRepo.findByPhoneNumber.mockResolvedValue(null);
-        mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments[0]);
+        mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments.active);
         (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
           fn({}),
         );
@@ -471,7 +478,7 @@ describe('LecturesService', () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockStudentRepo.findByPhoneNumber.mockResolvedValue(mockStudent);
         mockEnrollmentsRepo.create.mockResolvedValue({
-          ...mockEnrollments[0],
+          ...mockEnrollments.active,
           appStudentId: mockStudent.id,
         });
         (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
