@@ -16,4 +16,4 @@ export const UserTypeToModel = {
 } as const;
 
 // 인증 쿠키 이름
-export const AUTH_COOKIE_NAME = 'better-auth.session_token';
+export const AUTH_COOKIE_NAME = 'ssambee-auth.session_token';

@@ -28,9 +28,14 @@ import { AttendancesService } from '../services/attendances.service.js';
 import { AttendancesController } from '../controllers/attendances.controller.js';
 
 import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
+import { ExamsRepository } from '../repos/exams.repo.js';
+
 import { ParentsService } from '../services/parents.service.js';
 import { PermissionService } from '../services/permission.service.js';
+import { ExamsService } from '../services/exams.service.js';
+
 import { ChildrenController } from '../controllers/children.controller.js';
+import { ExamsController } from '../controllers/exams.controller.js';
 
 // 1. Instantiate Repositories
 const instructorRepo = new InstructorRepository(prisma);
@@ -39,6 +44,7 @@ const assistantRepo = new AssistantRepository(prisma);
 const parentRepo = new ParentRepository(prisma);
 const assistantCodeRepo = new AssistantCodeRepository(prisma);
 const parentChildLinkRepo = new ParentChildLinkRepository(prisma);
+const examsRepo = new ExamsRepository(prisma);
 
 const lecturesRepo = new LecturesRepository(prisma);
 const enrollmentsRepo = new EnrollmentsRepository(prisma);
@@ -59,6 +65,13 @@ const authService = new AuthService(
 const permissionService = new PermissionService(
   assistantRepo,
   parentChildLinkRepo,
+);
+
+const examsService = new ExamsService(
+  examsRepo,
+  lecturesRepo,
+  permissionService,
+  prisma,
 );
 
 const lecturesService = new LecturesService(
@@ -102,6 +115,7 @@ const lecturesController = new LecturesController(lecturesService);
 const enrollmentsController = new EnrollmentsController(enrollmentsService);
 const attendancesController = new AttendancesController(attendancesService);
 const childrenController = new ChildrenController(parentsService);
+const examsController = new ExamsController(examsService);
 
 // 4. Create Middlewares (Inject Services)
 const requireAuth = createRequireAuth(authService);
@@ -127,6 +141,7 @@ export const container = {
   enrollmentsController,
   attendancesController,
   childrenController,
+  examsController,
   // Middlewares
   requireAuth,
   optionalAuth,

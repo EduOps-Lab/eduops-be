@@ -4,11 +4,16 @@ import { validate } from '../../../middlewares/validate.middleware.js';
 import {
   createLectureSchema,
   getLecturesQuerySchema,
+  lectureParamSchema,
   lectureIdParamSchema,
   updateLectureSchema,
 } from '../../../validations/lectures.validation.js';
 import { createEnrollmentSchema } from '../../../validations/enrollments.validation.js';
 import { createBulkAttendancesSchema } from '../../../validations/attendances.validation.js';
+import {
+  createExamSchema,
+  lectureIdExamParamSchema,
+} from '../../../validations/exams.validation.js';
 
 export const mgmtLecturesRouter = Router();
 
@@ -33,7 +38,7 @@ mgmtLecturesRouter.get(
 /** 강의 개별 조회 */
 mgmtLecturesRouter.get(
   '/:id',
-  validate(lectureIdParamSchema, 'params'),
+  validate(lectureParamSchema, 'params'),
   lecturesController.getLecture,
 );
 
@@ -47,7 +52,7 @@ mgmtLecturesRouter.post(
 /** 강의 수정 */
 mgmtLecturesRouter.patch(
   '/:id',
-  validate(lectureIdParamSchema, 'params'),
+  validate(lectureParamSchema, 'params'),
   validate(updateLectureSchema, 'body'),
   lecturesController.updateLecture,
 );
@@ -56,8 +61,23 @@ mgmtLecturesRouter.patch(
 mgmtLecturesRouter.delete(
   '/:id',
   requireInstructor,
-  validate(lectureIdParamSchema, 'params'),
+  validate(lectureParamSchema, 'params'),
   lecturesController.deleteLecture,
+);
+
+/** 강의별 시험 목록 조회 (questions 제외) */
+mgmtLecturesRouter.get(
+  '/:lectureId/exams',
+  validate(lectureIdExamParamSchema, 'params'),
+  container.examsController.getExamsByLecture,
+);
+
+/** 시험 생성 */
+mgmtLecturesRouter.post(
+  '/:lectureId/exams',
+  validate(lectureIdParamSchema, 'params'),
+  validate(createExamSchema, 'body'),
+  container.examsController.createExam,
 );
 
 /** --- 수강생 (Nested Routes) --- */

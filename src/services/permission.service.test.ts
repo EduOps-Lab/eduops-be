@@ -18,7 +18,7 @@ import {
 } from '../test/fixtures/index.js';
 import type { Enrollment } from '../generated/prisma/client.js';
 
-describe('PermissionService - @unit #permission', () => {
+describe('PermissionService - @unit #critical', () => {
   // Mock Dependencies
   let mockAssistantRepo: ReturnType<typeof createMockAssistantRepository>;
   let mockParentChildLinkRepo: ReturnType<
