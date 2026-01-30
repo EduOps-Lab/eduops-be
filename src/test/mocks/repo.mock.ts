@@ -6,6 +6,7 @@ import type { AssistantCodeRepository } from '../../repos/assistant-code.repo.js
 import type { LecturesRepository } from '../../repos/lectures.repo.js';
 import type { EnrollmentsRepository } from '../../repos/enrollments.repo.js';
 import type { ParentChildLinkRepository } from '../../repos/parent-child-link.repo.js';
+import type { AttendancesRepository } from '../../repos/attendances.repo.js';
 import { createAutoMock } from './create-mock.util.js';
 
 /** Mock InstructorRepository 생성 */
@@ -84,4 +85,14 @@ export const createMockEnrollmentsRepository = () =>
     'softDelete',
     'updateAppStudentIdByPhoneNumber',
     'updateAppParentLinkIdByStudentPhone',
+  ]);
+
+/** Mock AttendancesRepository 생성 */
+export const createMockAttendancesRepository = () =>
+  createAutoMock<AttendancesRepository>([
+    'create',
+    'upsert',
+    'findById',
+    'findByEnrollmentId',
+    'update',
   ]);
