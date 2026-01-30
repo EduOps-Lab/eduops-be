@@ -1,10 +1,5 @@
-import type {
-  Lecture,
-  Enrollment,
-  Instructor,
-} from '../../generated/prisma/client.js';
+import type { Lecture, Instructor } from '../../generated/prisma/client.js';
 import { LectureStatus } from '../../constants/lectures.constant.js';
-import { EnrollmentStatus } from '../../constants/enrollments.constant.js';
 
 /** Mock Instructor 데이터 */
 export const mockInstructor: Instructor = {
@@ -87,42 +82,6 @@ export const mockLectures = {
   } as Lecture,
 } as const;
 
-/** Mock Enrollment 데이터 */
-export const mockEnrollments: Enrollment[] = [
-  {
-    id: 'enrollment-id-001',
-    lectureId: 'lecture-id-002',
-    instructorId: 'instructor-id-123',
-    appStudentId: 'student-id-001',
-    appParentLinkId: null,
-    studentName: '김철수',
-    school: '서울고등학교',
-    schoolYear: '고1',
-    studentPhone: '010-1111-2222',
-    parentPhone: '010-3333-4444',
-    status: EnrollmentStatus.ACTIVE,
-    registeredAt: new Date('2024-02-01'),
-    memo: null,
-    deletedAt: null,
-  },
-  {
-    id: 'enrollment-id-002',
-    lectureId: 'lecture-id-002',
-    instructorId: 'instructor-id-123',
-    appStudentId: 'student-id-002',
-    appParentLinkId: null,
-    studentName: '이영희',
-    school: '서울고등학교',
-    schoolYear: '고2',
-    studentPhone: '010-5555-6666',
-    parentPhone: '010-7777-8888',
-    status: EnrollmentStatus.ACTIVE,
-    registeredAt: new Date('2024-02-01'),
-    memo: null,
-    deletedAt: null,
-  },
-];
-
 /** 강의 생성 요청 DTO */
 export const createLectureRequests = {
   /** 기본 강의 생성 요청 */
@@ -203,25 +162,6 @@ export const updateLectureRequests = {
   titleOnly: {
     title: 'Only Title Changed',
   },
-};
-
-/** Mock AppStudent 데이터 (수강 등록 연동용) */
-export const mockStudent = {
-  id: 'student-id-001',
-  userId: 'user-student-id-001',
-  phoneNumber: '010-1111-2222',
-  school: '서울고등학교',
-  schoolYear: '고1',
-  createdAt: new Date('2024-01-01'),
-};
-
-/** 수강 등록 요청 DTO */
-export const createEnrollmentRequest = {
-  studentName: '김철수',
-  school: '서울고등학교',
-  schoolYear: '고1',
-  studentPhone: '010-1111-2222',
-  parentPhone: '010-3333-4444',
 };
 
 /** 강의 목록 조회 응답 Mock */
