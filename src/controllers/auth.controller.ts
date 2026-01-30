@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
-import { UserType } from '../constants/auth.constant.js';
+import { AUTH_COOKIE_NAME, UserType } from '../constants/auth.constant.js';
 import { UnauthorizedException } from '../err/http.exception.js';
 import { successResponse } from '../utils/response.util.js';
 import { AuthResponse } from '../types/auth.types.js';
+import { isProduction } from '../config/env.config.js';
 
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -26,6 +27,16 @@ export class AuthController {
         user: result.user,
         profile: result.profile,
       },
+    });
+  };
+
+  private clearSessionCookie = (res: Response) => {
+    res.cookie(AUTH_COOKIE_NAME, '', {
+      httpOnly: true,
+      secure: isProduction(),
+      sameSite: 'lax',
+      path: '/',
+      expires: new Date(0), // 1970년으로 설정하여 즉시 삭제 유도
     });
   };
 
@@ -102,6 +113,7 @@ export class AuthController {
     try {
       // Better Auth는 헤더에서 세션을 파싱하므로 req.headers를 전달
       await this.authService.signOut(req.headers);
+      this.clearSessionCookie(res);
       return successResponse(res, { message: '로그아웃 되었습니다.' });
     } catch (error) {
       next(error);
@@ -118,6 +130,9 @@ export class AuthController {
 
       return successResponse(res, { data: session });
     } catch (error) {
+      // 세션 조회에 실패한 모든 경우(세션 없음, DB 오류 등)에
+      // 클라이언트의 쿠키를 정리해주는 것이 안전합니다.
+      this.clearSessionCookie(res);
       next(error);
     }
   };
