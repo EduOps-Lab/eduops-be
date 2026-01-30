@@ -1,10 +1,12 @@
 import { fakerKO as faker } from '@faker-js/faker';
 import { mockUsers } from './user.fixture.js';
 
+const instructorProfileId = faker.string.uuid();
+
 /** Profile Mock 데이터 */
 export const mockProfiles = {
   instructor: {
-    id: faker.string.uuid(),
+    id: instructorProfileId,
     userId: mockUsers.instructor.id,
     phoneNumber: faker.phone.number({ style: 'national' }),
     subject: faker.helpers.arrayElement([
@@ -22,7 +24,7 @@ export const mockProfiles = {
     id: faker.string.uuid(),
     userId: mockUsers.assistant.id,
     phoneNumber: faker.phone.number({ style: 'national' }),
-    instructorId: faker.string.uuid(), // This might need to be consistent if used in tests
+    instructorId: instructorProfileId,
     signupCode: faker.string.alphanumeric(10).toUpperCase(),
     contract: null,
     createdAt: new Date('2024-01-01'),
