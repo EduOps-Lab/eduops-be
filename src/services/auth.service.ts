@@ -16,6 +16,7 @@ import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
 import { SignUpData, AuthResponse } from '../types/auth.types.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
+import { config } from '../config/env.config.js';
 
 export class AuthService {
   constructor(
@@ -29,6 +30,8 @@ export class AuthService {
     private readonly prisma: PrismaClient,
   ) {}
 
+  private readonly baseURL = config.BETTER_AUTH_URL;
+
   /** 회원가입 */
   async signUp(userType: UserType, data: SignUpData) {
     const existingProfile = await this.findProfileByPhoneNumber(
@@ -41,8 +44,7 @@ export class AuthService {
     }
 
     // auth.handler를 사용하여 요청을 처리하고 쿠키를 캡처
-    const baseURL = 'http://localhost:3000'; // 내부 호출용 URL
-    const signUpReq = new Request(`${baseURL}/api/auth/sign-up/email`, {
+    const signUpReq = new Request(`${this.baseURL}/api/auth/sign-up/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -115,8 +117,7 @@ export class AuthService {
     }
 
     // 2. auth.handler를 사용하여 로그인 및 쿠키 캡처
-    const baseURL = 'http://localhost:3000';
-    const signInReq = new Request(`${baseURL}/api/auth/sign-in/email`, {
+    const signInReq = new Request(`${this.baseURL}/api/auth/sign-in/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
