@@ -85,14 +85,3 @@ export const createMockEnrollmentsRepository = () =>
     'updateAppStudentIdByPhoneNumber',
     'updateAppParentLinkIdByStudentPhone',
   ]);
-
-/** Mock ParentChildLinkRepository 생성 */
-export const createMockParentChildLinkRepository = () =>
-  createAutoMock<ParentChildLinkRepository>([
-    'create',
-    'findByAppParentId',
-    'findById',
-    'findByIdWithParent',
-    'findByParentIdAndPhoneNumber',
-    'findManyByPhoneNumber',
-  ]);

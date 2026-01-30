@@ -17,13 +17,10 @@ import {
   createLectureRequests,
   updateLectureRequests,
   mockEnrollments,
-  mockStudents,
-  createEnrollmentRequests,
 } from '../test/fixtures/index.js';
 
 // Aliases for backward compatibility
-const mockStudent = mockStudents.basic;
-const createEnrollmentRequest = createEnrollmentRequests.basic;
+
 import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 
@@ -444,98 +441,6 @@ describe('LecturesService', () => {
           instructorId: mockInstructor.id,
           search: 'Basic',
         });
-      });
-    });
-  });
-
-  describe('[수강 등록] createEnrollment', () => {
-    describe('LECTURE-10: 수강 등록 성공', () => {
-      it('기존 학생 연동 없이 수강 등록이 성공한다', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
-        mockStudentRepo.findByPhoneNumber.mockResolvedValue(null);
-        mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments.active);
-        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
-          fn({}),
-        );
-
-        const result = await lecturesService.createEnrollment(
-          mockInstructor.id,
-          mockLectures.basic.id,
-          createEnrollmentRequest,
-        );
-
-        expect(result).toBeDefined();
-        expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
-          expect.objectContaining({
-            lectureId: mockLectures.basic.id,
-            instructorId: mockInstructor.id,
-            studentName: createEnrollmentRequest.studentName,
-            appStudentId: undefined,
-          }),
-          expect.anything(),
-        );
-      });
-
-      it('기존 학생이 있으면 appStudentId가 연동된다', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
-        mockStudentRepo.findByPhoneNumber.mockResolvedValue(mockStudent);
-        mockEnrollmentsRepo.create.mockResolvedValue({
-          ...mockEnrollments.active,
-          appStudentId: mockStudent.id,
-        });
-        (mockPrisma.$transaction as jest.Mock).mockImplementation(async (fn) =>
-          fn({}),
-        );
-
-        const result = await lecturesService.createEnrollment(
-          mockInstructor.id,
-          mockLectures.basic.id,
-          createEnrollmentRequest,
-        );
-
-        expect(result).toBeDefined();
-        expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
-          expect.objectContaining({
-            appStudentId: mockStudent.id,
-          }),
-          expect.anything(),
-        );
-      });
-    });
-
-    describe('LECTURE-11: 수강 등록 실패', () => {
-      it('존재하지 않는 강의에 수강 등록 시 NotFoundException 발생', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(null);
-
-        await expect(
-          lecturesService.createEnrollment(
-            mockInstructor.id,
-            'non-existent-lecture-id',
-            createEnrollmentRequest,
-          ),
-        ).rejects.toThrow(NotFoundException);
-      });
-
-      it('다른 강사의 강의에 수강 등록 시 ForbiddenException 발생', async () => {
-        mockLecturesRepo.findById.mockResolvedValue(
-          mockLectures.otherInstructor,
-        );
-
-        await expect(
-          lecturesService.createEnrollment(
-            mockInstructor.id,
-            mockLectures.otherInstructor.id,
-            createEnrollmentRequest,
-          ),
-        ).rejects.toThrow(ForbiddenException);
-
-        await expect(
-          lecturesService.createEnrollment(
-            mockInstructor.id,
-            mockLectures.otherInstructor.id,
-            createEnrollmentRequest,
-          ),
-        ).rejects.toThrow('해당 강의에 접근할 권한이 없습니다.');
       });
     });
   });

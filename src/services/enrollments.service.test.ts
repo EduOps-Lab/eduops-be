@@ -8,6 +8,8 @@ import {
   createMockLecturesRepository,
   createMockAssistantRepository,
   createMockParentChildLinkRepository,
+  createMockStudentRepository,
+  createMockParentsService,
   createMockPrisma,
 } from '../test/mocks/index.js';
 import {
@@ -44,6 +46,8 @@ describe('EnrollmentsService', () => {
   let mockParentChildLinkRepo: ReturnType<
     typeof createMockParentChildLinkRepository
   >;
+  let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
+  let mockParentsService: ReturnType<typeof createMockParentsService>;
   let mockPrisma: PrismaClient;
 
   // Service under test
@@ -58,6 +62,8 @@ describe('EnrollmentsService', () => {
     mockLecturesRepo = createMockLecturesRepository();
     mockAssistantRepo = createMockAssistantRepository();
     mockParentChildLinkRepo = createMockParentChildLinkRepository();
+    mockStudentRepo = createMockStudentRepository();
+    mockParentsService = createMockParentsService();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
     // Create EnrollmentsService DI
@@ -66,6 +72,8 @@ describe('EnrollmentsService', () => {
       mockLecturesRepo,
       mockAssistantRepo,
       mockParentChildLinkRepo,
+      mockStudentRepo,
+      mockParentsService,
       mockPrisma,
     );
   });
@@ -136,9 +144,9 @@ describe('EnrollmentsService', () => {
 
       it('학생 전화번호로 ParentLink를 자동으로 연결한다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
-        mockParentChildLinkRepo.findManyByPhoneNumber.mockResolvedValue([
+        mockParentsService.findLinkByPhoneNumber.mockResolvedValue(
           mockParentLinks.active,
-        ]);
+        );
         mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments.active);
 
         await enrollmentsService.createEnrollment(
@@ -153,9 +161,9 @@ describe('EnrollmentsService', () => {
           instructorId,
         );
 
-        expect(
-          mockParentChildLinkRepo.findManyByPhoneNumber,
-        ).toHaveBeenCalledWith(createEnrollmentRequests.basic.studentPhone);
+        expect(mockParentsService.findLinkByPhoneNumber).toHaveBeenCalledWith(
+          createEnrollmentRequests.basic.studentPhone,
+        );
         expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
           expect.objectContaining({
             appParentLinkId: mockParentLinks.active.id,
@@ -178,9 +186,8 @@ describe('EnrollmentsService', () => {
           UserType.INSTRUCTOR,
           instructorId,
         );
-        expect(
-          mockParentChildLinkRepo.findManyByPhoneNumber,
-        ).not.toHaveBeenCalled();
+
+        expect(mockParentsService.findLinkByPhoneNumber).not.toHaveBeenCalled();
         expect(mockEnrollmentsRepo.create).toHaveBeenCalledWith(
           expect.objectContaining({
             appParentLinkId:
@@ -676,25 +683,12 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-14: 학부모 수강 목록 조회', () => {
-      it('학부모가 자녀들의 수강 목록을 조회할 수 있다', async () => {
+      it('학부모는 이 API를 사용할 수 없다 (ForbiddenException)', async () => {
         const parentId = mockParents.basic.id;
-        mockEnrollmentsRepo.findByAppParentId.mockResolvedValue([
-          mockEnrollments.active,
-          mockEnrollments.withoutParentLink,
-        ] as unknown as Awaited<
-          ReturnType<EnrollmentsRepository['findByAppParentId']>
-        >);
 
-        const result = await enrollmentsService.getEnrollments(
-          UserType.PARENT,
-          parentId,
-        );
-
-        expect(result.enrollments).toHaveLength(2);
-        expect(result.totalCount).toBe(2);
-        expect(mockEnrollmentsRepo.findByAppParentId).toHaveBeenCalledWith(
-          parentId,
-        );
+        await expect(
+          enrollmentsService.getEnrollments(UserType.PARENT, parentId),
+        ).rejects.toThrow(ForbiddenException);
       });
     });
 
@@ -750,51 +744,15 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-17: 학부모 수강 상세 조회', () => {
-      it('학부모가 자녀의 수강 정보를 조회할 수 있다', async () => {
+      it('학부모는 이 API를 사용할 수 없다 (ForbiddenException)', async () => {
         const parentId = mockParents.basic.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
-        mockEnrollmentsRepo.findParentIdByParentChildLinkId.mockResolvedValue({
-          appParentId: parentId,
-        });
-
-        const result = await enrollmentsService.getEnrollmentById(
-          enrollmentId,
-          UserType.PARENT,
-          parentId,
-        );
-
-        expect(result).toEqual(mockEnrollments.active);
-      });
-
-      it('다른 학부모가 조회 시 ForbiddenException을 던진다', async () => {
-        const anotherParentId = mockParents.another.id;
-        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.active as unknown as EnrollmentWithRelations,
-        );
-        mockEnrollmentsRepo.findParentIdByParentChildLinkId.mockResolvedValue({
-          appParentId: mockParents.basic.id,
-        });
 
         await expect(
           enrollmentsService.getEnrollmentById(
             enrollmentId,
-            UserType.PARENT,
-            anotherParentId,
-          ),
-        ).rejects.toThrow(ForbiddenException);
-      });
-
-      it('ParentLink가 없는 경우 ForbiddenException을 던진다', async () => {
-        const parentId = mockParents.basic.id;
-        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollments.withoutParentLink as unknown as EnrollmentWithRelations,
-        );
-
-        await expect(
-          enrollmentsService.getEnrollmentById(
-            mockEnrollments.withoutParentLink.id,
             UserType.PARENT,
             parentId,
           ),

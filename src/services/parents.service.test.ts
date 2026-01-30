@@ -19,6 +19,11 @@ import {
   mockEnrollmentWithRelationsForParent,
 } from '../test/fixtures/index.js';
 import { PrismaClient } from '../generated/prisma/client.js';
+import { ParentChildLinkRepository } from '../repos/parent-child-link.repo.js';
+
+type ParentChildLinkRepoFindByIdResult = Awaited<
+  ReturnType<ParentChildLinkRepository['findById']>
+>;
 
 describe('ParentsService', () => {
   // Mock Dependencies
@@ -242,7 +247,7 @@ describe('ParentsService', () => {
     describe('PAR-06: 수강 목록 조회 성공', () => {
       it('내 자녀의 수강 목록을 반환한다', async () => {
         mockParentChildLinkRepo.findById.mockResolvedValue(
-          mockParentLinks.active,
+          mockParentLinks.active as unknown as ParentChildLinkRepoFindByIdResult,
         );
         const enrollmentsResult = {
           enrollments: [mockEnrollmentWithRelationsForParent],
@@ -273,7 +278,7 @@ describe('ParentsService', () => {
 
       it('페이지네이션 쿼리와 함께 수강 목록을 조회한다', async () => {
         mockParentChildLinkRepo.findById.mockResolvedValue(
-          mockParentLinks.active,
+          mockParentLinks.active as unknown as ParentChildLinkRepoFindByIdResult,
         );
         const enrollmentsResult = {
           enrollments: [mockEnrollmentWithRelationsForParent],
@@ -306,7 +311,9 @@ describe('ParentsService', () => {
           ...mockParentLinks.active,
           appParentId: mockParents.another.id,
         };
-        mockParentChildLinkRepo.findById.mockResolvedValue(otherParentLink);
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          otherParentLink as unknown as ParentChildLinkRepoFindByIdResult,
+        );
 
         await expect(
           parentsService.getChildEnrollments(
@@ -373,7 +380,7 @@ describe('ParentsService', () => {
     describe('PAR-08: 수강 상세 조회 성공', () => {
       it('내 자녀의 수강 상세 정보를 반환한다', async () => {
         mockParentChildLinkRepo.findById.mockResolvedValue(
-          mockParentLinks.active,
+          mockParentLinks.active as unknown as ParentChildLinkRepoFindByIdResult,
         );
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollmentWithRelations,
@@ -403,7 +410,9 @@ describe('ParentsService', () => {
           ...mockParentLinks.active,
           appParentId: mockParents.another.id,
         };
-        mockParentChildLinkRepo.findById.mockResolvedValue(otherParentLink);
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          otherParentLink as unknown as ParentChildLinkRepoFindByIdResult,
+        );
 
         await expect(
           parentsService.getChildEnrollmentDetail(
@@ -417,7 +426,7 @@ describe('ParentsService', () => {
 
       it('존재하지 않는 수강 정보 조회 시 NotFoundException을 던진다', async () => {
         mockParentChildLinkRepo.findById.mockResolvedValue(
-          mockParentLinks.active,
+          mockParentLinks.active as unknown as ParentChildLinkRepoFindByIdResult,
         );
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(null);
 
@@ -442,7 +451,7 @@ describe('ParentsService', () => {
 
       it('자녀와 연결되지 않은 수강 정보 조회 시 ForbiddenException을 던진다', async () => {
         mockParentChildLinkRepo.findById.mockResolvedValue(
-          mockParentLinks.active,
+          mockParentLinks.active as unknown as ParentChildLinkRepoFindByIdResult,
         );
         const differentEnrollment = {
           ...mockEnrollmentWithRelations,
@@ -493,7 +502,7 @@ describe('ParentsService', () => {
     describe('PAR-10: 자녀 접근 권한 검증 성공', () => {
       it('본인 자녀 검증이 통과한다', async () => {
         mockParentChildLinkRepo.findById.mockResolvedValue(
-          mockParentLinks.active,
+          mockParentLinks.active as unknown as ParentChildLinkRepoFindByIdResult,
         );
         mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue({
           enrollments: [],
@@ -550,7 +559,9 @@ describe('ParentsService', () => {
           ...mockParentLinks.active,
           appParentId: mockParents.another.id,
         };
-        mockParentChildLinkRepo.findById.mockResolvedValue(otherParentLink);
+        mockParentChildLinkRepo.findById.mockResolvedValue(
+          otherParentLink as unknown as ParentChildLinkRepoFindByIdResult,
+        );
 
         await expect(
           parentsService.getChildEnrollments(
