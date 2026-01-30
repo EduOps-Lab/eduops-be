@@ -1,13 +1,17 @@
+import { fakerKO as faker } from '@faker-js/faker';
 import { UserType } from '../../constants/auth.constant.js';
+import { mockUsers } from './user.fixture.js';
+
+const assistantSignupCode = faker.string.alphanumeric(10).toUpperCase();
 
 /** Mock Session 데이터 */
 export const mockSession = {
-  id: 'test-session-id',
-  userId: 'test-user-id',
-  token: 'test-session-token',
+  id: faker.string.uuid(),
+  userId: mockUsers.instructor.id,
+  token: faker.string.alphanumeric(32),
   expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  ipAddress: '127.0.0.1',
-  userAgent: 'jest-test',
+  ipAddress: faker.internet.ip(),
+  userAgent: faker.internet.userAgent(),
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 } as const;
@@ -15,47 +19,47 @@ export const mockSession = {
 /** 회원가입 요청 데이터 */
 export const signUpRequests = {
   instructor: {
-    email: 'new-instructor@example.com',
+    email: faker.internet.email(),
     password: 'password123!',
-    name: 'New Instructor',
-    phoneNumber: '010-1111-2222',
-    subject: 'Mathematics',
-    academy: 'Test Academy',
+    name: faker.person.fullName(),
+    phoneNumber: faker.phone.number({ style: 'national' }),
+    subject: faker.helpers.arrayElement(['국어', '영어', '수학']),
+    academy: `${faker.company.name()} 학원`,
   },
   assistant: {
-    email: 'new-assistant@example.com',
+    email: faker.internet.email(),
     password: 'password123!',
-    name: 'New Assistant',
-    phoneNumber: '010-2222-3333',
-    signupCode: 'VALID-CODE-123',
+    name: faker.person.fullName(),
+    phoneNumber: faker.phone.number({ style: 'national' }),
+    signupCode: assistantSignupCode,
   },
   student: {
-    email: 'new-student@example.com',
+    email: faker.internet.email(),
     password: 'password123!',
-    name: 'New Student',
-    phoneNumber: '010-3333-4444',
-    school: 'Test High School',
-    schoolYear: '2',
+    name: faker.person.fullName(),
+    phoneNumber: faker.phone.number({ style: 'national' }),
+    school: `${faker.person.lastName()}고등학교`,
+    schoolYear: faker.helpers.arrayElement(['1', '2', '3']),
   },
   parent: {
-    email: 'new-parent@example.com',
+    email: faker.internet.email(),
     password: 'password123!',
     userType: UserType.PARENT,
-    name: 'New Parent',
-    phoneNumber: '010-4444-5555',
+    name: faker.person.fullName(),
+    phoneNumber: faker.phone.number({ style: 'national' }),
   },
 } as const;
 
 /** 로그인 요청 데이터 */
 export const signInRequests = {
   instructor: {
-    email: 'instructor@example.com',
+    email: mockUsers.instructor.email,
     password: 'password123!',
     userType: UserType.INSTRUCTOR,
     rememberMe: false,
   },
   student: {
-    email: 'student@example.com',
+    email: mockUsers.student.email,
     password: 'password123!',
     userType: UserType.STUDENT,
     rememberMe: true,
@@ -64,9 +68,9 @@ export const signInRequests = {
 
 /** 조교 코드 Mock 데이터 */
 export const mockAssistantCode = {
-  id: 'assistant-code-id',
-  code: 'VALID-CODE-123',
-  instructorId: 'instructor-id-123',
+  id: faker.string.uuid(),
+  code: assistantSignupCode,
+  instructorId: mockUsers.instructor.id,
   isUsed: false,
   expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30일 후
   createdAt: new Date(),

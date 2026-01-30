@@ -26,7 +26,7 @@ import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import { UserType } from '../constants/auth.constant.js';
 
-describe('LecturesService', () => {
+describe('LecturesService - @unit #critical', () => {
   // Mock Dependencies
   let mockLecturesRepo: ReturnType<typeof createMockLecturesRepository>;
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
@@ -63,7 +63,7 @@ describe('LecturesService', () => {
 
   describe('[강의 생성] createLecture', () => {
     describe('LECTURE-01: 강의 생성 성공', () => {
-      it('기본 정보만으로 강의 생성이 성공한다', async () => {
+      it('강사가 기본 정보만으로 강의 생성을 요청할 때, 강의가 생성되고 연관 관계가 없는 상태로 반환된다', async () => {
         // Arrange
         mockInstructorRepo.findById.mockResolvedValue(mockInstructor);
         mockLecturesRepo.create.mockResolvedValue({
@@ -97,7 +97,7 @@ describe('LecturesService', () => {
         );
       });
 
-      it('enrollments와 함께 강의 생성이 성공한다', async () => {
+      it('강사가 수강생 목록과 함께 강의 생성을 요청할 때, 강의와 수강 정보가 모두 생성되고 반환된다', async () => {
         mockInstructorRepo.findById.mockResolvedValue(mockInstructor);
         mockLecturesRepo.create.mockResolvedValue({
           ...mockLectures.withEnrollments,
@@ -142,7 +142,7 @@ describe('LecturesService', () => {
     });
 
     describe('LECTURE-02: 강의 생성 실패', () => {
-      it('존재하지 않는 강사 ID로 생성 시 NotFoundException 발생', async () => {
+      it('존재하지 않는 강사 ID로 강의 생성을 요청할 때, NotFoundException을 던진다', async () => {
         mockInstructorRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -166,7 +166,7 @@ describe('LecturesService', () => {
 
   describe('[강의 수정] updateLecture', () => {
     describe('LECTURE-03: 강의 수정 성공', () => {
-      it('본인의 강의 수정이 성공한다', async () => {
+      it('강사가 본인 소속 강의의 정보 수정을 요청할 때, 정보가 업데이트되고 반영된 결과가 반환된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         const updatedLecture = {
           ...mockLectures.basic,
@@ -200,7 +200,7 @@ describe('LecturesService', () => {
         );
       });
 
-      it('일부 필드만 수정 시 undefined 필드는 제외된다', async () => {
+      it('강사가 일부 필드만 포함하여 강의 정보 수정을 요청할 때, 해당 필드만 업데이트되고 나머지는 유지된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockLecturesRepo.update.mockResolvedValue({
           ...mockLectures.basic,
@@ -228,7 +228,7 @@ describe('LecturesService', () => {
     });
 
     describe('LECTURE-04: 강의 수정 실패', () => {
-      it('존재하지 않는 강의 수정 시 NotFoundException 발생', async () => {
+      it('사용자가 존재하지 않는 강의 ID로 정보 수정을 요청할 때, NotFoundException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -252,7 +252,7 @@ describe('LecturesService', () => {
         expect(mockLecturesRepo.update).not.toHaveBeenCalled();
       });
 
-      it('다른 강사의 강의 수정 시 ForbiddenException 발생', async () => {
+      it('강사가 다른 강사 소속 강의의 정보를 수정하려 할 때, ForbiddenException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
@@ -285,7 +285,7 @@ describe('LecturesService', () => {
 
   describe('[강의 삭제] deleteLecture', () => {
     describe('LECTURE-05: 강의 삭제 성공', () => {
-      it('Soft Delete가 성공적으로 수행된다', async () => {
+      it('강사가 강의 삭제를 요청할 때, 해당 강의가 Soft Delete(삭제일시 기록)되고 반환된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockLecturesRepo.softDelete.mockResolvedValue(undefined);
 
@@ -305,7 +305,7 @@ describe('LecturesService', () => {
     });
 
     describe('LECTURE-06: 강의 삭제 실패', () => {
-      it('존재하지 않는 강의 삭제 시 NotFoundException 발생', async () => {
+      it('사용자가 존재하지 않는 강의 ID로 삭제를 요청할 때, NotFoundException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -327,7 +327,7 @@ describe('LecturesService', () => {
         expect(mockLecturesRepo.softDelete).not.toHaveBeenCalled();
       });
 
-      it('다른 강사의 강의 삭제 시 ForbiddenException 발생', async () => {
+      it('강사가 다른 강사 소속 강의를 삭제하려 할 때, ForbiddenException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
@@ -358,7 +358,7 @@ describe('LecturesService', () => {
 
   describe('[강의 조회] getLectureById', () => {
     describe('LECTURE-07: 강의 조회 성공', () => {
-      it('본인의 강의 조회가 성공한다', async () => {
+      it('강사가 본인 소속 강의의 상세 조회를 요청할 때, 상세 강의 정보가 반환된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
 
         const result = await lecturesService.getLectureById(
@@ -377,7 +377,7 @@ describe('LecturesService', () => {
     });
 
     describe('LECTURE-08: 강의 조회 실패', () => {
-      it('존재하지 않는 강의 조회 시 NotFoundException 발생', async () => {
+      it('사용자가 존재하지 않는 강의 ID로 상세 조회를 요청할 때, NotFoundException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -397,7 +397,7 @@ describe('LecturesService', () => {
         ).rejects.toThrow('강의를 찾을 수 없습니다.');
       });
 
-      it('다른 강사의 강의 조회 시 ForbiddenException 발생', async () => {
+      it('강사가 다른 강사 소속 강의의 상세 정보를 조회하려 할 때, ForbiddenException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
@@ -426,7 +426,7 @@ describe('LecturesService', () => {
 
   describe('[강의 목록 조회] getLectures', () => {
     describe('LECTURE-09: 강의 목록 조회 성공', () => {
-      it('강의 목록과 페이지네이션 정보를 반환한다', async () => {
+      it('강사가 강의 목록 조회를 요청할 때, 본인 소속의 강의 목록과 페이지네이션 정보가 반환된다', async () => {
         mockLecturesRepo.findMany.mockResolvedValue(mockLecturesListResponse);
 
         const result = await lecturesService.getLectures(mockInstructor.id, {
@@ -452,7 +452,7 @@ describe('LecturesService', () => {
         });
       });
 
-      it('검색어로 필터링된 결과를 반환한다', async () => {
+      it('강사가 검색어와 함께 강의 목록 조회를 요청할 때, 제목이 필터링된 결과가 반환된다', async () => {
         mockLecturesRepo.findMany.mockResolvedValue({
           lectures: [mockLectures.basic],
           totalCount: 1,

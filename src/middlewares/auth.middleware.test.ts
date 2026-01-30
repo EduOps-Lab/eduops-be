@@ -22,7 +22,7 @@ import {
 } from '../test/fixtures/index.js';
 import { createMockAuthService } from '../test/mocks/index.js';
 
-describe('Auth Middleware', () => {
+describe('Auth Middleware - @unit #critical', () => {
   // Mock Request, Response, NextFunction
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;

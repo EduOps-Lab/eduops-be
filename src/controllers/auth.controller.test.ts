@@ -14,7 +14,7 @@ import {
   mockProfiles,
 } from '../test/fixtures/index.js';
 
-describe('AuthController', () => {
+describe('AuthController - @unit #critical', () => {
   // Mock AuthService
   let mockAuthService: ReturnType<typeof createMockAuthService>;
   let authController: AuthController;

@@ -37,7 +37,7 @@ type EnrollmentWithRelations = Awaited<
   ReturnType<EnrollmentsRepository['findByIdWithRelations']>
 >;
 
-describe('EnrollmentsService', () => {
+describe('EnrollmentsService - @unit #critical', () => {
   // Mock Dependencies
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
   let mockLecturesRepo: ReturnType<typeof createMockLecturesRepository>;
@@ -78,7 +78,7 @@ describe('EnrollmentsService', () => {
     const instructorId = mockInstructor.id;
 
     describe('ENR-01: 수강 생성 성공', () => {
-      it('강사가 자신의 강의에 수강생을 등록할 수 있다', async () => {
+      it('강사가 자신의 강의에 수강생 등록을 요청할 때, 수강 정보가 생성되고 반환된다', async () => {
         // Arrange
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockPermissionService.validateInstructorAccess.mockResolvedValue();
@@ -111,7 +111,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('조교가 담당 강사의 강의에 수강생을 등록할 수 있다', async () => {
+      it('조교가 담당 강사의 강의에 수강생 등록을 요청할 때, 수강 정보가 생성되고 반환된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockPermissionService.validateInstructorAccess.mockResolvedValue();
         mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments.active);
@@ -139,7 +139,7 @@ describe('EnrollmentsService', () => {
         expect(mockEnrollmentsRepo.create).toHaveBeenCalled();
       });
 
-      it('학생 전화번호로 ParentLink를 자동으로 연결한다', async () => {
+      it('수강생 등록 시 학생 전화번호가 학부모-자녀 링크와 일치할 때, ParentLink가 자동으로 연결된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockParentsService.findLinkByPhoneNumber.mockResolvedValue(
           mockParentLinks.active,
@@ -168,7 +168,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('appParentLinkId가 이미 제공된 경우 전화번호 검색을 하지 않는다', async () => {
+      it('수강생 등록 시 ParentLinkId가 직접 제공될 때, 전화번호 검색 없이 해당 링크로 연결된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockEnrollmentsRepo.create.mockResolvedValue(mockEnrollments.active);
 
@@ -195,7 +195,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-02: 수강 생성 실패 - 강의 검증', () => {
-      it('존재하지 않는 강의에 수강생을 등록하려 하면 NotFoundException을 던진다', async () => {
+      it('사용자가 존재하지 않는 강의 ID로 수강생 등록을 요청할 때, NotFoundException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -218,7 +218,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-03: 수강 생성 실패 - 권한 검증', () => {
-      it('다른 강사의 강의에 수강생을 등록하려 하면 ForbiddenException을 던진다', async () => {
+      it('강사가 다른 강사의 강의에 수강생 등록을 요청할 때, ForbiddenException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
@@ -241,7 +241,7 @@ describe('EnrollmentsService', () => {
         ).rejects.toThrow(ForbiddenException);
       });
 
-      it('다른 강사 소속 조교가 수강생을 등록하려 하면 ForbiddenException을 던진다', async () => {
+      it('조교가 담당 강사가 아닌 다른 강사의 강의에 수강생 등록을 요청할 때, ForbiddenException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockPermissionService.validateInstructorAccess.mockRejectedValue(
           new ForbiddenException('해당 권한이 없습니다.'),
@@ -270,7 +270,7 @@ describe('EnrollmentsService', () => {
     const instructorId = mockInstructor.id;
 
     describe('ENR-04: 강의별 수강생 목록 조회 성공', () => {
-      it('강사가 자신의 강의 수강생 목록을 조회할 수 있다', async () => {
+      it('강사가 자신의 강의 수강생 목록 조회를 요청할 때, 해당 강의의 모든 수강 정보 목록이 반환된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockEnrollmentsRepo.findManyByLectureId.mockResolvedValue(
           mockEnrollmentsList as unknown as Awaited<
@@ -291,7 +291,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('조교가 담당 강사의 강의 수강생 목록을 조회할 수 있다', async () => {
+      it('조교가 담당 강사의 강의 수강생 목록 조회를 요청할 때, 해당 강의의 모든 수강 정보 목록이 반환된다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
         mockPermissionService.validateInstructorAccess.mockResolvedValue();
         mockEnrollmentsRepo.findManyByLectureId.mockResolvedValue(
@@ -318,7 +318,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-05: 강의별 수강생 목록 조회 실패', () => {
-      it('존재하지 않는 강의 조회 시 NotFoundException을 던진다', async () => {
+      it('사용자가 존재하지 않는 강의 ID로 수강생 목록 조회를 요청할 때, NotFoundException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -330,7 +330,7 @@ describe('EnrollmentsService', () => {
         ).rejects.toThrow(NotFoundException);
       });
 
-      it('다른 강사의 강의 조회 시 ForbiddenException을 던진다', async () => {
+      it('강사가 다른 강사의 강의 수강생 목록 조회를 요청할 때, ForbiddenException을 던진다', async () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
@@ -354,7 +354,7 @@ describe('EnrollmentsService', () => {
     const instructorId = mockInstructor.id;
 
     describe('ENR-06: 강사별 전체 수강생 목록 조회 성공', () => {
-      it('강사가 자신의 모든 수강생을 조회할 수 있다', async () => {
+      it('강사가 본인 소속 모든 수강생 목록 조회를 요청할 때, 페이지네이션이 적용된 목록과 전체 개수가 반환된다', async () => {
         mockEnrollmentsRepo.findManyByInstructorId.mockResolvedValue({
           enrollments: mockEnrollmentsList as unknown as Awaited<
             ReturnType<EnrollmentsRepository['findManyByInstructorId']>
@@ -377,7 +377,7 @@ describe('EnrollmentsService', () => {
         ).toHaveBeenCalledWith(UserType.INSTRUCTOR, instructorId);
       });
 
-      it('조교가 담당 강사의 모든 수강생을 조회할 수 있다', async () => {
+      it('조교가 담당 강사 소속 모든 수강생 목록 조회를 요청할 때, 페이지네이션이 적용된 목록과 전체 개수가 반환된다', async () => {
         mockPermissionService.getEffectiveInstructorId.mockResolvedValue(
           instructorId,
         );
@@ -415,7 +415,7 @@ describe('EnrollmentsService', () => {
     const instructorId = mockInstructor.id;
 
     describe('ENR-07: 수강 상세 조회 성공', () => {
-      it('강사가 자신의 수강생 상세 정보를 조회할 수 있다', async () => {
+      it('강사가 자신의 수강생 상세 정보 조회를 요청할 때, 연관 관계가 포함된 상세 수강 정보가 반환된다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollmentWithRelations as unknown as EnrollmentWithRelations,
         );
@@ -432,7 +432,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('조교가 담당 강사의 수강생 상세 정보를 조회할 수 있다', async () => {
+      it('조교가 담당 강사 소속 수강생의 상세 정보 조회를 요청할 때, 연관 관계가 포함된 상세 수강 정보가 반환된다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollmentWithRelations as unknown as EnrollmentWithRelations,
         );
@@ -452,7 +452,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-08: 수강 상세 조회 실패', () => {
-      it('존재하지 않는 수강 정보 조회 시 NotFoundException을 던진다', async () => {
+      it('사용자가 존재하지 않는 수강 ID로 상세 조회를 요청할 때, NotFoundException을 던진다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(null);
 
         await expect(
@@ -464,7 +464,7 @@ describe('EnrollmentsService', () => {
         ).rejects.toThrow(NotFoundException);
       });
 
-      it('다른 강사의 수강생 조회 시 ForbiddenException을 던진다', async () => {
+      it('강사가 다른 강사 소속 수강생의 상세 정보를 조회하려 할 때, ForbiddenException을 던진다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollments.otherInstructor as unknown as EnrollmentWithRelations,
         );
@@ -489,7 +489,7 @@ describe('EnrollmentsService', () => {
     const instructorId = mockInstructor.id;
 
     describe('ENR-09: 수강 정보 수정 성공', () => {
-      it('강사가 수강 정보를 전체 수정할 수 있다', async () => {
+      it('강사가 모든 유효한 필드를 포함하여 수강 정보 수정을 요청할 때, 정보가 업데이트되고 반영된 결과가 반환된다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
@@ -513,7 +513,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('강사가 수강 정보를 부분 수정할 수 있다', async () => {
+      it('강사가 일부 필드만 포함하여 수강 정보 수정을 요청할 때, 해당 필드만 업데이트되고 결과가 반환된다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
@@ -537,7 +537,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('조교가 담당 강사의 수강생 정보를 수정할 수 있다', async () => {
+      it('조교가 담당 강사 소속 수강생의 정보 수정을 요청할 때, 수강 정보가 업데이트되고 결과가 반환된다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
@@ -563,7 +563,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-10: 수강 정보 수정 실패', () => {
-      it('존재하지 않는 수강 정보 수정 시 NotFoundException을 던진다', async () => {
+      it('사용자가 존재하지 않는 수강 ID로 수강 정보 수정을 요청할 때, NotFoundException을 던진다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -576,7 +576,7 @@ describe('EnrollmentsService', () => {
         ).rejects.toThrow(NotFoundException);
       });
 
-      it('권한 없는 수강 정보 수정 시 ForbiddenException을 던진다', async () => {
+      it('강사가 다른 강사 소속 수강생의 정보를 수정하려 할 때, ForbiddenException을 던진다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
           mockEnrollments.otherInstructor,
         );
@@ -602,7 +602,7 @@ describe('EnrollmentsService', () => {
     const instructorId = mockInstructor.id;
 
     describe('ENR-11: 수강 정보 삭제 성공', () => {
-      it('강사가 수강 정보를 Soft Delete 할 수 있다', async () => {
+      it('강사가 수강 정보 삭제를 요청할 때, 해당 수강 정보가 Soft Delete(삭제일시 기록)되고 반환된다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
@@ -624,7 +624,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('조교가 담당 강사의 수강생을 삭제할 수 있다', async () => {
+      it('조교가 담당 강사 소속 수강생의 삭제를 요청할 때, 해당 수강 정보가 Soft Delete되고 반환된다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
@@ -649,7 +649,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-12: 수강 정보 삭제 실패', () => {
-      it('존재하지 않는 수강 정보 삭제 시 NotFoundException을 던진다', async () => {
+      it('사용자가 존재하지 않는 수강 ID로 삭제를 요청할 때, NotFoundException을 던진다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(null);
 
         await expect(
@@ -661,7 +661,7 @@ describe('EnrollmentsService', () => {
         ).rejects.toThrow(NotFoundException);
       });
 
-      it('권한 없는 수강 정보 삭제 시 ForbiddenException을 던진다', async () => {
+      it('강사가 다른 강사 소속 수강생의 정보를 삭제하려 할 때, ForbiddenException을 던진다', async () => {
         mockEnrollmentsRepo.findById.mockResolvedValue(
           mockEnrollments.otherInstructor,
         );
@@ -683,7 +683,7 @@ describe('EnrollmentsService', () => {
   /** [학생/학부모용] getEnrollments 테스트 케이스 */
   describe('[학생/학부모용] getEnrollments', () => {
     describe('ENR-13: 학생 수강 목록 조회', () => {
-      it('학생이 자신의 수강 목록을 조회할 수 있다', async () => {
+      it('학생이 본인의 수강 목록 조회를 요청할 때, 페이지네이션이 적용된 목록과 전체 개수가 반환된다', async () => {
         const studentId = mockStudents.basic.id;
         mockEnrollmentsRepo.findByAppStudentId.mockResolvedValue({
           enrollments: [mockEnrollments.active] as unknown as Awaited<
@@ -708,7 +708,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-14: 학부모 수강 목록 조회', () => {
-      it('학부모는 이 API를 사용할 수 없다 (ForbiddenException)', async () => {
+      it('학부모가 자녀들의 전체 수강 목록 조회를 요청할 때, 모든 자녀의 수강 정보 목록이 반환된다', async () => {
         const parentId = mockParents.basic.id;
 
         await expect(
@@ -718,7 +718,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-15: 수강 목록 조회 실패', () => {
-      it('권한 없는 userType은 ForbiddenException을 던진다', async () => {
+      it('학생/학부모가 아닌 사용자가 전용 수강 목록 조회를 요청할 때, ForbiddenException을 던진다', async () => {
         await expect(
           enrollmentsService.getEnrollments(
             UserType.INSTRUCTOR,
@@ -734,7 +734,7 @@ describe('EnrollmentsService', () => {
     const enrollmentId = mockEnrollments.active.id;
 
     describe('ENR-16: 학생 수강 상세 조회', () => {
-      it('학생이 자신의 수강 정보를 조회할 수 있다', async () => {
+      it('학생이 본인의 수강 상세 정보 조회를 요청할 때, 상세 수강 정보가 반환된다', async () => {
         const studentId = mockStudents.basic.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
@@ -752,7 +752,7 @@ describe('EnrollmentsService', () => {
         );
       });
 
-      it('다른 학생의 수강 정보 조회 시 ForbiddenException을 던진다', async () => {
+      it('학생이 다른 학생의 수강 상세 정보를 조회하려 할 때, ForbiddenException을 던진다', async () => {
         const anotherStudentId = mockStudents.another.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
@@ -772,8 +772,23 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-17: 학부모 수강 상세 조회', () => {
-      it('학부모는 이 API를 사용할 수 없다 (ForbiddenException)', async () => {
+      it('학부모가 본인 자녀의 수강 상세 정보 조회를 요청할 때, 상세 수강 정보가 반환된다', async () => {
         const parentId = mockParents.basic.id;
+        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
+          mockEnrollments.active as unknown as EnrollmentWithRelations,
+        );
+        const result = await enrollmentsService.getEnrollmentById(
+          enrollmentId,
+          UserType.PARENT,
+          parentId,
+        );
+
+        expect(result).toBeDefined();
+        expect(result.id).toBe(enrollmentId);
+      });
+
+      it('학부모가 다른 학부모의 자녀 수강 상세 정보를 조회하려 할 때, ForbiddenException을 던진다', async () => {
+        const anotherParentId = mockParents.another.id;
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollments.active as unknown as EnrollmentWithRelations,
         );
@@ -785,6 +800,24 @@ describe('EnrollmentsService', () => {
           enrollmentsService.getEnrollmentById(
             enrollmentId,
             UserType.PARENT,
+            anotherParentId,
+          ),
+        ).rejects.toThrow(ForbiddenException);
+      });
+
+      it('학부모-자녀 링크가 없는 수강 정보에 대해 학부모가 상세 조회를 요청할 때, ForbiddenException을 던진다', async () => {
+        const parentId = mockParents.basic.id;
+        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
+          mockEnrollments.withoutParentLink as unknown as EnrollmentWithRelations,
+        );
+        mockPermissionService.validateEnrollmentReadAccess.mockRejectedValue(
+          new ForbiddenException('연결된 자녀 정보가 없습니다.'),
+        );
+
+        await expect(
+          enrollmentsService.getEnrollmentById(
+            mockEnrollments.withoutParentLink.id,
+            UserType.PARENT,
             parentId,
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -792,7 +825,7 @@ describe('EnrollmentsService', () => {
     });
 
     describe('ENR-18: 수강 상세 조회 실패', () => {
-      it('존재하지 않는 수강 정보 조회 시 NotFoundException을 던진다', async () => {
+      it('학생/학부모가 존재하지 않는 수강 ID로 상세 조회를 요청할 때, NotFoundException을 던진다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(null);
 
         await expect(
@@ -804,7 +837,7 @@ describe('EnrollmentsService', () => {
         ).rejects.toThrow(NotFoundException);
       });
 
-      it('삭제된 수강 정보 조회 시 NotFoundException을 던진다', async () => {
+      it('학생/학부모가 이미 삭제된 수강 ID로 상세 조회를 요청할 때, NotFoundException을 던진다', async () => {
         mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
           mockEnrollments.deleted as unknown as EnrollmentWithRelations,
         );
@@ -817,6 +850,59 @@ describe('EnrollmentsService', () => {
           ),
         ).rejects.toThrow(NotFoundException);
       });
+    });
+  });
+
+  /** [Helper 함수] getEffectiveInstructorId 테스트 케이스 */
+  describe('[Helper 함수] getEffectiveInstructorId', () => {
+    it('조교가 강사 소속 정보 조회를 요청할 때, 담당 강사의 ID가 효과적인 ID로 사용된다', async () => {
+      mockPermissionService.getEffectiveInstructorId.mockResolvedValue(
+        mockAssistants.basic.instructorId,
+      );
+
+      await enrollmentsService.getEnrollmentsByInstructor(
+        UserType.ASSISTANT,
+        mockAssistants.basic.id,
+        mockEnrollmentQueries.withPagination,
+      );
+
+      expect(
+        mockPermissionService.getEffectiveInstructorId,
+      ).toHaveBeenCalledWith(UserType.ASSISTANT, mockAssistants.basic.id);
+      expect(mockEnrollmentsRepo.findManyByInstructorId).toHaveBeenCalledWith(
+        mockAssistants.basic.instructorId,
+        mockEnrollmentQueries.withPagination,
+      );
+    });
+
+    it('존재하지 않는 조교 ID로 권한 검증을 시도할 때, NotFoundException을 던진다', async () => {
+      mockPermissionService.getEffectiveInstructorId.mockRejectedValue(
+        new NotFoundException('조교 정보를 찾을 수 없습니다.'),
+      );
+
+      await expect(
+        enrollmentsService.getEnrollmentsByInstructor(
+          UserType.ASSISTANT,
+          'invalid-assistant-id',
+          mockEnrollmentQueries.withPagination,
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('ENR-20: 권한 없는 userType', () => {
+    it('강사/조교가 아닌 사용자가 강사 소속 정보 조회를 요청할 때, ForbiddenException을 던진다', async () => {
+      mockPermissionService.getEffectiveInstructorId.mockRejectedValue(
+        new ForbiddenException('강사 또는 조교만 접근 가능합니다.'),
+      );
+
+      await expect(
+        enrollmentsService.getEnrollmentsByInstructor(
+          UserType.STUDENT,
+          mockStudents.basic.id,
+          mockEnrollmentQueries.withPagination,
+        ),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

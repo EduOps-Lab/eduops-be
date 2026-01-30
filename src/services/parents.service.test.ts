@@ -21,7 +21,7 @@ import {
 } from '../test/fixtures/index.js';
 import { PrismaClient } from '../generated/prisma/client.js';
 
-describe('ParentsService', () => {
+describe('ParentsService - @unit #critical', () => {
   // Mock Dependencies
   let mockParentRepo: ReturnType<typeof createMockParentRepository>;
   let mockParentChildLinkRepo: ReturnType<
@@ -64,7 +64,7 @@ describe('ParentsService', () => {
     };
 
     describe('PAR-01: 자녀 등록 성공', () => {
-      it('신규 자녀를 등록하고 기존 수강 내역을 자동으로 연결한다', async () => {
+      it('학부모가 신규 자녀를 등록할 때, 자녀 정보가 생성되고 기존 수강 내역이 자동으로 연결된다', async () => {
         // Arrange
         mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue(
           null,
@@ -111,7 +111,7 @@ describe('ParentsService', () => {
         );
       });
 
-      it('트랜잭션 내에서 모든 처리가 수행된다', async () => {
+      it('학부모가 자녀를 등록할 때, 등록 과정의 모든 처리가 트랜잭션 내에서 수행된다', async () => {
         mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue(
           null,
         );
@@ -139,7 +139,7 @@ describe('ParentsService', () => {
     });
 
     describe('PAR-02: 자녀 등록 실패 - 권한 검증', () => {
-      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
+      it('학부모 권한이 없는 사용자가 자녀를 등록하려 할 때, ForbiddenException을 던진다', async () => {
         await expect(
           parentsService.registerChild(
             UserType.STUDENT,
@@ -157,7 +157,7 @@ describe('ParentsService', () => {
         ).rejects.toThrow('학부모만 자녀를 등록할 수 있습니다.');
       });
 
-      it('INSTRUCTOR는 자녀를 등록할 수 없다', async () => {
+      it('강사가 자녀를 등록하려 할 때, ForbiddenException을 던진다', async () => {
         await expect(
           parentsService.registerChild(
             UserType.INSTRUCTOR,
@@ -169,7 +169,7 @@ describe('ParentsService', () => {
     });
 
     describe('PAR-03: 자녀 등록 실패 - 중복 검증', () => {
-      it('이미 등록된 자녀 번호는 BadRequestException을 던진다', async () => {
+      it('학부모가 이미 등록된 자녀 번호로 등록을 시도할 때, BadRequestException을 던진다', async () => {
         mockParentChildLinkRepo.findByParentIdAndPhoneNumber.mockResolvedValue(
           mockParentLinks.active,
         );
@@ -189,7 +189,7 @@ describe('ParentsService', () => {
     const parentId = mockParents.basic.id;
 
     describe('PAR-04: 자녀 목록 조회 성공', () => {
-      it('학부모의 모든 자녀 목록을 반환한다', async () => {
+      it('학부모가 자녀 목록 조회를 요청할 때, 등록된 모든 자녀 목록이 반환된다', async () => {
         const childrenList = [mockParentLinks.active, mockParentLinks.another];
         mockParentChildLinkRepo.findByAppParentId.mockResolvedValue(
           childrenList,
@@ -207,7 +207,7 @@ describe('ParentsService', () => {
         );
       });
 
-      it('자녀가 없는 경우 빈 배열을 반환한다', async () => {
+      it('등록된 자녀가 없는 학부모가 목록 조회를 요청할 때, 빈 배열이 반환된다', async () => {
         mockParentChildLinkRepo.findByAppParentId.mockResolvedValue([]);
 
         const result = await parentsService.getChildren(
@@ -221,7 +221,7 @@ describe('ParentsService', () => {
     });
 
     describe('PAR-05: 자녀 목록 조회 실패', () => {
-      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
+      it('학부모 권한이 없는 사용자가 자녀 목록을 조회하려 할 때, ForbiddenException을 던진다', async () => {
         await expect(
           parentsService.getChildren(UserType.STUDENT, 'student-id'),
         ).rejects.toThrow(ForbiddenException);
@@ -231,7 +231,7 @@ describe('ParentsService', () => {
         ).rejects.toThrow('학부모만 자녀 목록을 조회할 수 있습니다.');
       });
 
-      it('INSTRUCTOR는 자녀 목록을 조회할 수 없다', async () => {
+      it('강사가 자녀 목록을 조회하려 할 때, ForbiddenException을 던진다', async () => {
         await expect(
           parentsService.getChildren(UserType.INSTRUCTOR, 'instructor-id'),
         ).rejects.toThrow(ForbiddenException);
@@ -244,7 +244,7 @@ describe('ParentsService', () => {
     const childLinkId = mockParentLinks.active.id;
 
     describe('PAR-06: 수강 목록 조회 성공', () => {
-      it('내 자녀의 수강 목록을 반환한다', async () => {
+      it('학부모가 본인 자녀의 수강 목록 조회를 요청할 때, 수강 정보 배열이 반환된다', async () => {
         mockPermissionService.validateChildAccess.mockResolvedValue(
           mockParentLinks.active,
         );
@@ -277,7 +277,7 @@ describe('ParentsService', () => {
         );
       });
 
-      it('페이지네이션 쿼리와 함께 수강 목록을 조회한다', async () => {
+      it('학부모가 페이지네이션 옵션과 함께 자녀의 수강 목록 조회를 요청할 때, 요청된 범위의 목록과 전체 개수가 반환된다', async () => {
         mockPermissionService.validateChildAccess.mockResolvedValue(
           mockParentLinks.active,
         );
@@ -307,7 +307,7 @@ describe('ParentsService', () => {
     });
 
     describe('PAR-07: 수강 목록 조회 실패', () => {
-      it('다른 학부모의 자녀 조회 시 ForbiddenException을 던진다', async () => {
+      it('학부모가 다른 학부모의 자녀 수강 목록을 조회하려 할 때, ForbiddenException을 던진다', async () => {
         mockPermissionService.validateChildAccess.mockRejectedValue(
           new ForbiddenException('본인의 자녀만 조회할 수 있습니다.'),
         );
@@ -329,7 +329,7 @@ describe('ParentsService', () => {
         ).rejects.toThrow('본인의 자녀만 조회할 수 있습니다.');
       });
 
-      it('존재하지 않는 자녀 조회 시 NotFoundException을 던진다', async () => {
+      it('학부모가 존재하지 않는 자녀 ID로 수강 목록을 조회하려 할 때, NotFoundException을 던진다', async () => {
         mockPermissionService.validateChildAccess.mockRejectedValue(
           new NotFoundException('자녀 정보를 찾을 수 없습니다.'),
         );
@@ -351,7 +351,7 @@ describe('ParentsService', () => {
         ).rejects.toThrow('자녀 정보를 찾을 수 없습니다.');
       });
 
-      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
+      it('학부모 권한이 없는 사용자가 자녀 수강 목록을 조회하려 할 때, ForbiddenException을 던진다', async () => {
         mockPermissionService.validateChildAccess.mockRejectedValue(
           new ForbiddenException('접근 권한이 없습니다.'),
         );
@@ -365,213 +365,188 @@ describe('ParentsService', () => {
         ).rejects.toThrow('접근 권한이 없습니다.');
       });
     });
-  });
 
-  describe('[자녀 수강 상세 조회] getChildEnrollmentDetail', () => {
-    const parentId = mockParents.basic.id;
-    const childLinkId = mockParentLinks.active.id;
-    const enrollmentId = mockEnrollments.active.id;
+    describe('[자녀 수강 상세 조회] getChildEnrollmentDetail', () => {
+      const parentId = mockParents.basic.id;
+      const childLinkId = mockParentLinks.active.id;
+      const enrollmentId = mockEnrollments.active.id;
 
-    describe('PAR-08: 수강 상세 조회 성공', () => {
-      it('내 자녀의 수강 상세 정보를 반환한다', async () => {
-        mockPermissionService.validateChildAccess.mockResolvedValue(
-          mockParentLinks.active,
-        );
-        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          mockEnrollmentWithRelations,
-        );
+      describe('PAR-08: 수강 상세 조회 성공', () => {
+        it('학부모가 본인 자녀의 수강 상세 정보 조회를 요청할 때, 상세 수강 정보가 반환된다', async () => {
+          mockPermissionService.validateChildAccess.mockResolvedValue(
+            mockParentLinks.active,
+          );
+          mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
+            mockEnrollmentWithRelations,
+          );
 
-        const result = await parentsService.getChildEnrollmentDetail(
-          UserType.PARENT,
-          parentId,
-          childLinkId,
-          enrollmentId,
-        );
-
-        expect(result).toBeDefined();
-        expect(result.id).toBe(enrollmentId);
-        expect(mockPermissionService.validateChildAccess).toHaveBeenCalledWith(
-          UserType.PARENT,
-          parentId,
-          childLinkId,
-        );
-        expect(mockEnrollmentsRepo.findByIdWithRelations).toHaveBeenCalledWith(
-          enrollmentId,
-        );
-      });
-    });
-
-    describe('PAR-09: 수강 상세 조회 실패', () => {
-      it('다른 자녀의 수강 정보 조회 시 ForbiddenException을 던진다', async () => {
-        mockPermissionService.validateChildAccess.mockRejectedValue(
-          new ForbiddenException('본인의 자녀만 조회할 수 있습니다.'),
-        );
-
-        await expect(
-          parentsService.getChildEnrollmentDetail(
+          const result = await parentsService.getChildEnrollmentDetail(
             UserType.PARENT,
             parentId,
             childLinkId,
             enrollmentId,
-          ),
-        ).rejects.toThrow(ForbiddenException);
+          );
+
+          expect(result).toBeDefined();
+          expect(result.id).toBe(enrollmentId);
+          expect(
+            mockPermissionService.validateChildAccess,
+          ).toHaveBeenCalledWith(UserType.PARENT, parentId, childLinkId);
+          expect(
+            mockEnrollmentsRepo.findByIdWithRelations,
+          ).toHaveBeenCalledWith(enrollmentId);
+        });
       });
 
-      it('존재하지 않는 수강 정보 조회 시 NotFoundException을 던진다', async () => {
-        mockPermissionService.validateChildAccess.mockResolvedValue(
-          mockParentLinks.active,
-        );
-        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(null);
+      describe('PAR-09: 수강 상세 조회 실패', () => {
+        it('학부모가 다른 학부모의 자녀 수강 상세 정보를 조회하려 할 때, ForbiddenException을 던진다', async () => {
+          mockPermissionService.validateChildAccess.mockRejectedValue(
+            new ForbiddenException('본인의 자녀만 조회할 수 있습니다.'),
+          );
 
-        await expect(
-          parentsService.getChildEnrollmentDetail(
-            UserType.PARENT,
-            parentId,
-            childLinkId,
-            'invalid-enrollment-id',
-          ),
-        ).rejects.toThrow(NotFoundException);
-
-        await expect(
-          parentsService.getChildEnrollmentDetail(
-            UserType.PARENT,
-            parentId,
-            childLinkId,
-            'invalid-enrollment-id',
-          ),
-        ).rejects.toThrow('수강 정보를 찾을 수 없습니다.');
-      });
-
-      it('자녀와 연결되지 않은 수강 정보 조회 시 ForbiddenException을 던진다', async () => {
-        mockPermissionService.validateChildAccess.mockResolvedValue(
-          mockParentLinks.active,
-        );
-        const differentEnrollment = {
-          ...mockEnrollmentWithRelations,
-          appParentLinkId: 'different-link-id',
-        };
-        mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
-          differentEnrollment,
-        );
-
-        await expect(
-          parentsService.getChildEnrollmentDetail(
-            UserType.PARENT,
-            parentId,
-            childLinkId,
-            enrollmentId,
-          ),
-        ).rejects.toThrow(ForbiddenException);
-
-        await expect(
-          parentsService.getChildEnrollmentDetail(
-            UserType.PARENT,
-            parentId,
-            childLinkId,
-            enrollmentId,
-          ),
-        ).rejects.toThrow(
-          '해당 자녀의 수강 정보가 아니거나 접근 권한이 없습니다.',
-        );
-      });
-
-      it('PARENT가 아닌 사용자는 ForbiddenException을 던진다', async () => {
-        // ParentsService.getChildEnrollmentDetail calls validateChildAccess first
-        mockPermissionService.validateChildAccess.mockRejectedValue(
-          new ForbiddenException('접근 권한이 없습니다.'),
-        );
-
-        await expect(
-          parentsService.getChildEnrollmentDetail(
-            UserType.INSTRUCTOR,
-            'instructor-id',
-            childLinkId,
-            enrollmentId,
-          ),
-        ).rejects.toThrow(ForbiddenException);
-      });
-    });
-  });
-
-  describe('[Helper 함수] validateChildAccess', () => {
-    const parentId = mockParents.basic.id;
-    const childLinkId = mockParentLinks.active.id;
-
-    describe('PAR-10: 자녀 접근 권한 검증 성공', () => {
-      it('본인 자녀 검증이 통과한다', async () => {
-        mockPermissionService.validateChildAccess.mockResolvedValue(
-          mockParentLinks.active,
-        );
-        mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue({
-          enrollments: [],
-          totalCount: 0,
+          await expect(
+            parentsService.getChildEnrollmentDetail(
+              UserType.PARENT,
+              parentId,
+              childLinkId,
+              enrollmentId,
+            ),
+          ).rejects.toThrow(ForbiddenException);
         });
 
-        await expect(
-          parentsService.getChildEnrollments(
-            UserType.PARENT,
-            parentId,
-            childLinkId,
-          ),
-        ).resolves.toBeDefined();
+        it('학부모가 존재하지 않는 수강 ID로 상세 조회를 요청할 때, NotFoundException을 던진다', async () => {
+          mockPermissionService.validateChildAccess.mockResolvedValue(
+            mockParentLinks.active,
+          );
+          mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(null);
 
-        expect(mockPermissionService.validateChildAccess).toHaveBeenCalledWith(
-          UserType.PARENT,
-          parentId,
-          childLinkId,
-        );
+          await expect(
+            parentsService.getChildEnrollmentDetail(
+              UserType.PARENT,
+              parentId,
+              childLinkId,
+              'invalid-enrollment-id',
+            ),
+          ).rejects.toThrow(NotFoundException);
+        });
+
+        it('학부모가 본인 자녀의 것이 아닌 수강 정보를 조회하려 할 때, ForbiddenException을 던진다', async () => {
+          mockPermissionService.validateChildAccess.mockResolvedValue(
+            mockParentLinks.active,
+          );
+          const differentEnrollment = {
+            ...mockEnrollmentWithRelations,
+            appParentLinkId: 'different-link-id',
+          };
+          mockEnrollmentsRepo.findByIdWithRelations.mockResolvedValue(
+            differentEnrollment,
+          );
+
+          await expect(
+            parentsService.getChildEnrollmentDetail(
+              UserType.PARENT,
+              parentId,
+              childLinkId,
+              enrollmentId,
+            ),
+          ).rejects.toThrow(ForbiddenException);
+        });
+
+        it('학부모 권한이 없는 사용자가 수강 상세 정보를 조회하려 할 때, ForbiddenException을 던진다', async () => {
+          mockPermissionService.validateChildAccess.mockRejectedValue(
+            new ForbiddenException('접근 권한이 없습니다.'),
+          );
+
+          await expect(
+            parentsService.getChildEnrollmentDetail(
+              UserType.INSTRUCTOR,
+              'instructor-id',
+              childLinkId,
+              enrollmentId,
+            ),
+          ).rejects.toThrow(ForbiddenException);
+        });
       });
-    });
 
-    describe('PAR-11: 자녀 접근 권한 검증 실패', () => {
-      it('PARENT가 아닌 경우 ForbiddenException을 던진다', async () => {
-        mockPermissionService.validateChildAccess.mockRejectedValue(
-          new ForbiddenException('접근 권한이 없습니다.'),
-        );
+      describe('[Helper 함수] validateChildAccess', () => {
+        const parentId = mockParents.basic.id;
+        const childLinkId = mockParentLinks.active.id;
 
-        await expect(
-          parentsService.getChildEnrollments(
-            UserType.STUDENT,
-            'student-id',
-            childLinkId,
-          ),
-        ).rejects.toThrow(ForbiddenException);
-      });
+        describe('PAR-10: 자녀 접근 권한 검증 성공', () => {
+          it('권한이 있는 학부모가 자녀 정보 조회를 요청할 때, 접근 권한 검증이 성공한다', async () => {
+            mockPermissionService.validateChildAccess.mockResolvedValue(
+              mockParentLinks.active,
+            );
+            mockEnrollmentsRepo.findByAppParentLinkId.mockResolvedValue({
+              enrollments: [],
+              totalCount: 0,
+            });
 
-      it('존재하지 않는 자녀는 NotFoundException을 던진다', async () => {
-        mockPermissionService.validateChildAccess.mockRejectedValue(
-          new NotFoundException('자녀 정보를 찾을 수 없습니다.'),
-        );
+            await expect(
+              parentsService.getChildEnrollments(
+                UserType.PARENT,
+                parentId,
+                childLinkId,
+              ),
+            ).resolves.toBeDefined();
 
-        await expect(
-          parentsService.getChildEnrollments(
-            UserType.PARENT,
-            parentId,
-            'invalid-child-id',
-          ),
-        ).rejects.toThrow(NotFoundException);
-      });
+            expect(
+              mockPermissionService.validateChildAccess,
+            ).toHaveBeenCalledWith(UserType.PARENT, parentId, childLinkId);
+          });
+        });
 
-      it('다른 학부모의 자녀는 ForbiddenException을 던진다', async () => {
-        mockPermissionService.validateChildAccess.mockRejectedValue(
-          new ForbiddenException('본인의 자녀만 조회할 수 있습니다.'),
-        );
+        describe('PAR-11: 자녀 접근 권한 검증 실패', () => {
+          it('학부모가 아닌 사용자가 자녀 접근 권한 검증을 거칠 때, ForbiddenException을 던진다', async () => {
+            mockPermissionService.validateChildAccess.mockRejectedValue(
+              new ForbiddenException('접근 권한이 없습니다.'),
+            );
 
-        await expect(
-          parentsService.getChildEnrollments(
-            UserType.PARENT,
-            parentId,
-            childLinkId,
-          ),
-        ).rejects.toThrow(ForbiddenException);
+            await expect(
+              parentsService.getChildEnrollments(
+                UserType.STUDENT,
+                'student-id',
+                childLinkId,
+              ),
+            ).rejects.toThrow(ForbiddenException);
+          });
 
-        await expect(
-          parentsService.getChildEnrollments(
-            UserType.PARENT,
-            parentId,
-            childLinkId,
-          ),
-        ).rejects.toThrow('본인의 자녀만 조회할 수 있습니다.');
+          it('존재하지 않는 자녀 ID에 대해 접근 권한 검증을 시도할 때, NotFoundException을 던진다', async () => {
+            mockPermissionService.validateChildAccess.mockRejectedValue(
+              new NotFoundException('자녀 정보를 찾을 수 없습니다.'),
+            );
+
+            await expect(
+              parentsService.getChildEnrollments(
+                UserType.PARENT,
+                parentId,
+                'invalid-child-id',
+              ),
+            ).rejects.toThrow(NotFoundException);
+          });
+
+          it('학부모가 다른 사람의 자녀에 대해 접근 권한 검증을 시도할 때, ForbiddenException을 던진다', async () => {
+            mockPermissionService.validateChildAccess.mockRejectedValue(
+              new ForbiddenException('본인의 자녀만 조회할 수 있습니다.'),
+            );
+
+            await expect(
+              parentsService.getChildEnrollments(
+                UserType.PARENT,
+                parentId,
+                childLinkId,
+              ),
+            ).rejects.toThrow(ForbiddenException);
+
+            await expect(
+              parentsService.getChildEnrollments(
+                UserType.PARENT,
+                parentId,
+                childLinkId,
+              ),
+            ).rejects.toThrow('본인의 자녀만 조회할 수 있습니다.');
+          });
+        });
       });
     });
   });
