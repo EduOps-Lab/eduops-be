@@ -243,7 +243,7 @@ model Enrollment {
 
   grades         Grade[]
   studentAnswers StudentAnswer[]
-  clinicTargets  ClinicTarget[]
+  clinic         Clinic[]
   attendances    Attendance[] // [New] 출석부 연결
 
   studentPosts            StudentPost[]
@@ -326,11 +326,32 @@ model Question {
   exam Exam @relation(fields: [lectureId, examId], references: [lectureId, id], onDelete: Cascade)
 
   studentAnswers StudentAnswer[]
+  statistic      QuestionStatistic?
 
   @@unique([lectureId, id])
   // [Performance] 시험지 렌더링 시 문항 번호 순 정렬
   @@index([examId, questionNumber])
+  @@index([lectureId])
   @@map("questions")
+}
+
+model QuestionStatistic {
+  id         String @id @default(cuid(2))
+  examId     String @map("exam_id")
+  questionId String @unique @map("question_id")
+
+  totalSubmissions Int @default(0) @map("total_submissions")
+  
+  // 정답률 (0~100)
+  correctRate      Float @default(0) @map("correct_rate") 
+
+  // 보기별 선택 비율: { "1": 15.5, "2": 70.0, ... }
+  choiceRates      Json? @map("choice_rates") 
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([examId])
+  @@map("question_statistics")
 }
 
 model StudentAnswer {
@@ -405,42 +426,35 @@ model Clinic {
   id        String @id @default(cuid(2))
   lectureId String @map("lecture_id")
   examId    String @map("exam_id")
-
+  
+  // 기존 Clinic 필드
   title    String
   deadline DateTime?
 
-  lecture Lecture @relation(fields: [lectureId], references: [id], onDelete: Cascade)
-  exam    Exam    @relation(fields: [lectureId, examId], references: [lectureId, id], onDelete: Cascade)
+  // 기존 ClinicTarget 필드 통합
+  enrollmentId       String @map("enrollment_id")
+  status             String @default("PENDING") // PENDING, COMPLETED
+  notificationStatus String @default("READY") @map("notification_status")
+  memo               String? @db.Text
+
+  // 관계 설정
+  lecture    Lecture    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
+  exam       Exam       @relation(fields: [lectureId, examId], references: [lectureId, id], onDelete: Cascade)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
   instructorId String?     @map("instructor_id")
   instructor   Instructor? @relation(fields: [instructorId], references: [id])
 
   schedule Schedule?
-  targets  ClinicTarget[]
 
-  // [Performance] 시험별 클리닉 조회
+  // 인덱스 및 제약 조건
+  // 한 수강생이 동일한 시험에 대해 중복 클리닉을 받지 않도록 유니크 설정 (필요시)
+  @@unique([enrollmentId, examId]) 
+  
   @@index([examId])
-  @@map("clinics")
-}
-
-model ClinicTarget {
-  id           String @id @default(cuid(2))
-  clinicId     String @map("clinic_id")
-  enrollmentId String @map("enrollment_id")
-
-  status             String @default("PENDING") // PENDING, COMPLETED
-  notificationStatus String @default("READY") @map("notification_status")
-
-  memo String? @db.Text
-
-  clinic     Clinic     @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
-
-  @@unique([clinicId, enrollmentId])
-  // [Performance] 미완료 대상자 필터링
-  @@index([clinicId, status])
   @@index([enrollmentId])
-  @@map("clinic_targets")
+  @@index([status])
+  @@map("clinics")
 }
 
 // --------------------------------------------------------
