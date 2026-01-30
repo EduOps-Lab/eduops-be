@@ -118,9 +118,16 @@ export const getLecturesQuerySchema = z.object({
 
 export type GetLecturesQueryDto = z.infer<typeof getLecturesQuerySchema>;
 
-/** 강의 ID 파라미터 스키마 */
-export const lectureIdParamSchema = z.object({
+/** 강의 ID 파라미터 스키마 (/:id) */
+export const lectureParamSchema = z.object({
   id: z.string().min(1, { message: '강의 ID는 필수입니다.' }),
+});
+
+export type LectureParamDto = z.infer<typeof lectureParamSchema>;
+
+/** 강의 ID 파라미터 스키마 (/:lectureId) */
+export const lectureIdParamSchema = z.object({
+  lectureId: z.string().min(1, { message: '강의 ID는 필수입니다.' }),
 });
 
 export type LectureIdParamDto = z.infer<typeof lectureIdParamSchema>;
