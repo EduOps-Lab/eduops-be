@@ -1,8 +1,7 @@
+import { PrismaClient } from '../generated/prisma/client.js';
 import type {
   Lecture,
   LectureTime,
-  Instructor,
-  PrismaClient,
   Prisma,
 } from '../generated/prisma/client.js';
 import { QueryMode } from '../generated/prisma/internal/prismaNamespace.js';
@@ -25,7 +24,9 @@ export class LecturesRepository {
         title: data.title,
         subject: data.subject,
         description: data.description,
+        startAt: data.startAt ? new Date(data.startAt) : null,
         endAt: data.endAt ? new Date(data.endAt) : null,
+        status: data.status,
       },
     });
 
@@ -62,24 +63,17 @@ export class LecturesRepository {
     });
   }
 
-  /** ID로 강사 조회 (존재 확인용) */
-  async findInstructorById(
-    instructorId: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<Instructor | null> {
-    const client = tx ?? this.prisma;
-    return await client.instructor.findUnique({
-      where: { id: instructorId, deletedAt: null }, // Soft delete 확인
-    });
-  }
-
   /** 강의 리스트 조회 (오프셋 기반 페이지네이션) */
-  async findMany(options: {
-    page: number;
-    limit: number;
-    instructorId?: string;
-    search?: string;
-  }): Promise<{ lectures: Lecture[]; totalCount: number }> {
+  async findMany(
+    options: {
+      page: number;
+      limit: number;
+      instructorId?: string;
+      search?: string;
+    },
+    tx?: Prisma.TransactionClient,
+  ): Promise<{ lectures: Lecture[]; totalCount: number }> {
+    const client = tx ?? this.prisma;
     const { page, limit, instructorId, search } = options;
 
     const where: Prisma.LectureWhereInput = {
@@ -94,33 +88,16 @@ export class LecturesRepository {
     };
 
     const [lectures, totalCount] = await Promise.all([
-      this.prisma.lecture.findMany({
+      client.lecture.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.lecture.count({ where }),
+      client.lecture.count({ where }),
     ]);
 
     return { lectures, totalCount };
-  }
-
-  /** ID로 강의 조회  */
-  async findByIdWithRelations(
-    id: string,
-    tx?: Prisma.TransactionClient,
-  ): Promise<Lecture | null> {
-    const client = tx ?? this.prisma;
-    return await client.lecture.findUnique({
-      where: { id, deletedAt: null },
-      // TODO: 추후 instructor, assistants 관계 데이터 포함 가능 (담당 조교)
-      // include: {
-      //   instructor: {
-      //     select: { id: true, name: true }
-      //   }
-      // }
-    });
   }
 
   /** 강의 수정 */
@@ -130,7 +107,9 @@ export class LecturesRepository {
       title: string;
       subject: string;
       description: string;
+      startAt: Date | null;
       endAt: Date | null;
+      status: string;
     }>,
     tx?: Prisma.TransactionClient,
   ): Promise<Lecture> {

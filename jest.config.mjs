@@ -13,17 +13,17 @@ const config = {
     '!src/test/**/*.ts'
   ],
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      tsconfig: './tsconfig.test.json'
+    '^.+\\.(ts|js)$': ['ts-jest', {
+      tsconfig: './tsconfig.test.json',
     }]
   },
   transformIgnorePatterns: [
-    'node_modules/(?!(better-auth|better-call)/)'
+    'node_modules/(?!(better-auth|better-call|@faker-js)/)'
   ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     // ESM .js 확장자를 .ts로 매핑
-    '^(\\.{1,2}/.*)\\.js$': '$1'
+    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
   verbose: true,

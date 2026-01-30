@@ -1,4 +1,6 @@
 import { IncomingHttpHeaders } from 'http';
+import { fromNodeHeaders } from 'better-auth/node';
+import { PrismaClient } from '../generated/prisma/client.js';
 import { auth } from '../config/auth.config.js';
 import { UserType } from '../constants/auth.constant.js';
 import {
@@ -13,8 +15,8 @@ import { AssistantCodeRepository } from '../repos/assistant-code.repo.js';
 import { StudentRepository } from '../repos/student.repo.js';
 import { ParentRepository } from '../repos/parent.repo.js';
 import { SignUpData, AuthResponse } from '../types/auth.types.js';
-import { fromNodeHeaders } from 'better-auth/node';
-import { PrismaClient } from '../generated/prisma/client.js';
+import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
+import { config } from '../config/env.config.js';
 
 export class AuthService {
   constructor(
@@ -23,11 +25,14 @@ export class AuthService {
     private readonly assistantCodeRepo: AssistantCodeRepository,
     private readonly studentRepo: StudentRepository,
     private readonly parentRepo: ParentRepository,
+    private readonly enrollmentsRepo: EnrollmentsRepository,
     private readonly authClient: typeof auth,
     private readonly prisma: PrismaClient,
   ) {}
 
-  // 회원가입
+  private readonly baseURL = config.BETTER_AUTH_URL;
+
+  /** 회원가입 */
   async signUp(userType: UserType, data: SignUpData) {
     const existingProfile = await this.findProfileByPhoneNumber(
       userType,
@@ -39,8 +44,7 @@ export class AuthService {
     }
 
     // auth.handler를 사용하여 요청을 처리하고 쿠키를 캡처
-    const baseURL = 'http://localhost:3000'; // 내부 호출용 URL
-    const signUpReq = new Request(`${baseURL}/api/auth/sign-up/email`, {
+    const signUpReq = new Request(`${this.baseURL}/api/auth/sign-up/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -93,7 +97,7 @@ export class AuthService {
     return { user, session: finalSession, profile, setCookie };
   }
 
-  // 로그인
+  /** 로그인 */
   async signIn(
     email: string,
     password: string,
@@ -113,8 +117,7 @@ export class AuthService {
     }
 
     // 2. auth.handler를 사용하여 로그인 및 쿠키 캡처
-    const baseURL = 'http://localhost:3000';
-    const signInReq = new Request(`${baseURL}/api/auth/sign-in/email`, {
+    const signInReq = new Request(`${this.baseURL}/api/auth/sign-in/email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -153,14 +156,14 @@ export class AuthService {
     };
   }
 
-  // 로그아웃 (핸들러에서 처리하거나 API 호출)
+  /** 로그아웃 (핸들러에서 처리하거나 API 호출) */
   async signOut(headers: IncomingHttpHeaders) {
     return await this.authClient.api.signOut({
       headers: headers as Record<string, string>,
     });
   }
 
-  // 세션 조회
+  /** 세션 조회 */
   async getSession(headers: IncomingHttpHeaders) {
     const session = await this.authClient.api.getSession({
       headers: fromNodeHeaders(headers),
@@ -179,7 +182,7 @@ export class AuthService {
     };
   }
 
-  // 강사 프로필 생성
+  /** 강사 프로필 생성 */
   private async createInstructor(userId: string, data: SignUpData) {
     return await this.instructorRepo.create({
       userId,
@@ -189,7 +192,7 @@ export class AuthService {
     });
   }
 
-  // 조교 프로필 생성
+  /** 조교 프로필 생성 */
   private async createAssistant(userId: string, data: SignUpData) {
     if (!data.signupCode) {
       throw new BadRequestException('조교가입코드가 필요합니다.');
@@ -218,17 +221,25 @@ export class AuthService {
     });
   }
 
-  // 학생 프로필 생성
+  /** 학생 프로필 생성 */
   private async createStudent(userId: string, data: SignUpData) {
-    return await this.studentRepo.create({
+    const student = await this.studentRepo.create({
       userId,
       phoneNumber: data.phoneNumber,
       school: data.school,
       schoolYear: data.schoolYear,
     });
+
+    // 전화번호로 기존 수강 내역 자동 연동
+    await this.enrollmentsRepo.updateAppStudentIdByPhoneNumber(
+      data.phoneNumber,
+      student.id,
+    );
+
+    return student;
   }
 
-  // 학부모 프로필 생성
+  /** 학부모 프로필 생성 */
   private async createParent(userId: string, data: SignUpData) {
     return await this.parentRepo.create({
       userId,
@@ -236,7 +247,7 @@ export class AuthService {
     });
   }
 
-  // ID로 프로필 조회
+  /** ID로 프로필 조회 */
   private async findProfileByUserId(userType: UserType, userId: string) {
     switch (userType) {
       case UserType.INSTRUCTOR:
@@ -250,7 +261,7 @@ export class AuthService {
     }
   }
 
-  // 전화번호로 프로필 조회
+  /** 전화번호로 프로필 조회 */
   private async findProfileByPhoneNumber(
     userType: UserType,
     phoneNumber: string,

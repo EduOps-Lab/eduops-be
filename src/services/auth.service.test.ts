@@ -10,6 +10,7 @@ import {
   createMockAssistantRepository,
   createMockParentRepository,
   createMockAssistantCodeRepository,
+  createMockEnrollmentsRepository,
   createMockBetterAuth,
   createMockPrisma,
 } from '../test/mocks/index.js';
@@ -23,7 +24,7 @@ import {
 import { PrismaClient } from '../generated/prisma/client.js';
 import type { auth } from '../config/auth.config.js';
 
-describe('AuthService', () => {
+describe('AuthService - @unit #critical', () => {
   // Mock Dependencies
   let mockInstructorRepo: ReturnType<typeof createMockInstructorRepository>;
   let mockAssistantRepo: ReturnType<typeof createMockAssistantRepository>;
@@ -32,6 +33,7 @@ describe('AuthService', () => {
   >;
   let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
   let mockParentRepo: ReturnType<typeof createMockParentRepository>;
+  let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
   let mockBetterAuth: ReturnType<typeof createMockBetterAuth>;
   let mockPrisma: PrismaClient;
 
@@ -48,6 +50,7 @@ describe('AuthService', () => {
     mockAssistantCodeRepo = createMockAssistantCodeRepository();
     mockStudentRepo = createMockStudentRepository();
     mockParentRepo = createMockParentRepository();
+    mockEnrollmentsRepo = createMockEnrollmentsRepository();
     mockBetterAuth = createMockBetterAuth();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
@@ -58,6 +61,7 @@ describe('AuthService', () => {
       mockAssistantCodeRepo,
       mockStudentRepo,
       mockParentRepo,
+      mockEnrollmentsRepo,
       mockBetterAuth as unknown as typeof auth,
       mockPrisma,
     );
@@ -69,7 +73,7 @@ describe('AuthService', () => {
 
   describe('[인증] signUp', () => {
     describe('AUTH-01: 강사 회원가입', () => {
-      it('강사 회원가입이 성공적으로 완료된다', async () => {
+      it('강사가 올바른 정보로 회원가입을 요청할 때, 회원가입이 성공적으로 완료되고 유저 정보가 반환된다', async () => {
         // Arrange
         mockInstructorRepo.findByPhoneNumber.mockResolvedValue(null);
         mockInstructorRepo.create.mockResolvedValue(mockProfiles.instructor);
@@ -101,7 +105,7 @@ describe('AuthService', () => {
         );
       });
 
-      it('이미 가입된 전화번호로 회원가입 시 BadRequestException 발생', async () => {
+      it('강사가 이미 가입된 전화번호로 회원가입을 요청할 때, BadRequestException을 던진다', async () => {
         // Arrange
         mockInstructorRepo.findByPhoneNumber.mockResolvedValue(
           mockProfiles.instructor,
@@ -118,7 +122,7 @@ describe('AuthService', () => {
     });
 
     describe('AUTH-02: 조교 회원가입 (조교 코드 검증)', () => {
-      it('유효한 조교 코드로 회원가입이 성공한다', async () => {
+      it('조교가 유효한 조교 코드로 회원가입을 요청할 때, 회원가입이 성공적으로 완료된다', async () => {
         // Arrange
         mockAssistantRepo.findByPhoneNumber.mockResolvedValue(null);
         mockAssistantCodeRepo.findValidCode.mockResolvedValue(
@@ -157,7 +161,7 @@ describe('AuthService', () => {
         );
       });
 
-      it('조교 코드 없이 회원가입 시 BadRequestException 발생', async () => {
+      it('조교가 조교 코드 없이 회원가입을 요청할 때, BadRequestException을 던진다', async () => {
         // Arrange
         const dataWithoutCode = {
           ...signUpRequests.assistant,
@@ -184,7 +188,7 @@ describe('AuthService', () => {
         ).rejects.toThrow(BadRequestException);
       });
 
-      it('유효하지 않은 조교 코드 사용 시 BadRequestException 발생', async () => {
+      it('조교가 유효하지 않은 조교 코드로 회원가입을 요청할 때, BadRequestException을 던진다', async () => {
         // Arrange
         mockAssistantRepo.findByPhoneNumber.mockResolvedValue(null);
         mockAssistantCodeRepo.findValidCode.mockResolvedValue(null);
@@ -213,7 +217,7 @@ describe('AuthService', () => {
     });
 
     describe('AUTH-03: 학생 회원가입', () => {
-      it('학생 회원가입이 성공적으로 완료된다', async () => {
+      it('학생이 올바른 정보로 회원가입을 요청할 때, 회원가입이 성공적으로 완료된다', async () => {
         // Arrange
         mockStudentRepo.findByPhoneNumber.mockResolvedValue(null);
         mockStudentRepo.create.mockResolvedValue(mockProfiles.student);
@@ -240,11 +244,17 @@ describe('AuthService', () => {
         // Assert
         expect(result.user.userType).toBe(UserType.STUDENT);
         expect(mockStudentRepo.create).toHaveBeenCalled();
+        expect(
+          mockEnrollmentsRepo.updateAppStudentIdByPhoneNumber,
+        ).toHaveBeenCalledWith(
+          signUpRequests.student.phoneNumber,
+          mockProfiles.student.id,
+        );
       });
     });
 
     describe('AUTH-04: 학부모 회원가입', () => {
-      it('학부모 회원가입이 성공적으로 완료된다', async () => {
+      it('학부모가 올바른 정보로 회원가입을 요청할 때, 회원가입이 성공적으로 완료된다', async () => {
         // Arrange
         mockParentRepo.findByPhoneNumber.mockResolvedValue(null);
         mockParentRepo.create.mockResolvedValue(mockProfiles.parent);
@@ -277,7 +287,7 @@ describe('AuthService', () => {
 
   describe('[인증] signIn', () => {
     describe('AUTH-05: 로그인 성공', () => {
-      it('올바른 자격 증명으로 로그인 성공', async () => {
+      it('사용자가 올바른 자격 증명으로 로그인을 요청할 때, 로그인이 성공하고 사용자 정보가 반환된다', async () => {
         // Arrange
         (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
           id: mockUsers.instructor.id,
@@ -318,7 +328,7 @@ describe('AuthService', () => {
     });
 
     describe('AUTH-08: userType 불일치 로그인', () => {
-      it('다른 역할로 로그인 시도 시 ForbiddenException 발생', async () => {
+      it('사용자가 가입된 역할과 다른 역할로 로그인을 시도할 때, ForbiddenException을 던진다', async () => {
         // Arrange - 강사로 가입된 유저가 학생으로 로그인 시도
         (mockPrisma.user.findUnique as jest.Mock).mockResolvedValue({
           id: mockUsers.instructor.id,
@@ -349,7 +359,7 @@ describe('AuthService', () => {
 
   describe('[인증] getSession', () => {
     describe('AUTH-07: 세션 조회', () => {
-      it('유효한 세션 조회 시 사용자 및 프로필 정보 반환', async () => {
+      it('사용자가 유효한 세션으로 조회를 요청할 때, 사용자 및 프로필 정보가 반환된다', async () => {
         // Arrange
         const headers = { cookie: 'session_token=test-token' };
 
@@ -371,7 +381,7 @@ describe('AuthService', () => {
         expect(result?.profile).toEqual(mockProfiles.instructor);
       });
 
-      it('유효하지 않은 세션 시 null 반환', async () => {
+      it('사용자가 유효하지 않은 세션으로 조회를 요청할 때, null이 반환된다', async () => {
         // Arrange
         const headers = {};
         mockBetterAuth.api.getSession.mockResolvedValue(null);
@@ -387,7 +397,7 @@ describe('AuthService', () => {
 
   describe('[인증] signOut', () => {
     describe('AUTH-06: 로그아웃', () => {
-      it('로그아웃 시 better-auth API 호출', async () => {
+      it('사용자가 로그아웃을 요청할 때, better-auth API가 호출되고 세션이 종료된다', async () => {
         // Arrange
         const headers = { cookie: 'session_token=test-token' };
         mockBetterAuth.api.signOut.mockResolvedValue({ success: true });
@@ -403,13 +413,10 @@ describe('AuthService', () => {
     });
   });
 
-  // ============================================
-  // [권한 (RBAC)] 테스트 케이스 - Service Layer
-  // ============================================
-
+  /**  [권한 (RBAC)] 테스트 케이스 - Service Layer */
   describe('[권한] 역할별 프로필 조회', () => {
     describe('RBAC-U01: 강사 프로필 조회', () => {
-      it('강사 세션에서 강사 프로필 조회', async () => {
+      it('강사가 세션 조회를 요청할 때, 강사 프로필 정보가 포함되어 반환된다', async () => {
         // Arrange
         mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.instructor,
@@ -431,7 +438,7 @@ describe('AuthService', () => {
     });
 
     describe('RBAC-U02: 조교 프로필 조회', () => {
-      it('조교 세션에서 조교 프로필 조회', async () => {
+      it('조교가 세션 조회를 요청할 때, 조교 프로필 정보가 포함되어 반환된다', async () => {
         // Arrange
         mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.assistant,
@@ -453,7 +460,7 @@ describe('AuthService', () => {
     });
 
     describe('RBAC-U03: 학생/학부모 프로필 분리 조회', () => {
-      it('학생 세션에서 학생 프로필 조회', async () => {
+      it('학생이 세션 조회를 요청할 때, 학생 프로필 정보가 포함되어 반환된다', async () => {
         // Arrange
         mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.student,
@@ -471,7 +478,7 @@ describe('AuthService', () => {
         expect(result?.profile).toEqual(mockProfiles.student);
       });
 
-      it('학부모 세션에서 학부모 프로필 조회', async () => {
+      it('학부모가 세션 조회를 요청할 때, 학부모 프로필 정보가 포함되어 반환된다', async () => {
         // Arrange
         mockBetterAuth.api.getSession.mockResolvedValue({
           user: mockUsers.parent,
@@ -491,13 +498,10 @@ describe('AuthService', () => {
     });
   });
 
-  // ============================================
-  // [예외 케이스] 테스트
-  // ============================================
-
+  /**  [예외 케이스] 테스트 */
   describe('[예외] 에러 핸들링', () => {
     describe('ERR-01: 프로필 생성 실패 시 롤백', () => {
-      it('프로필 생성 실패 시 유저 정보 롤백', async () => {
+      it('회원가입 중 프로필 생성에 실패할 때, 생성된 유저 정보가 롤백(삭제)된다', async () => {
         // Arrange
         mockInstructorRepo.findByPhoneNumber.mockResolvedValue(null);
         mockInstructorRepo.create.mockRejectedValue(

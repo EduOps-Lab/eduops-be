@@ -1,9 +1,6 @@
 /** 테스트에서 공통으로 사용하는 fixture 데이터 */
-export { mockUsers } from './user.fixture.js';
-export {
-  mockSession,
-  signUpRequests,
-  signInRequests,
-  mockAssistantCode,
-} from './auth.fixture.js';
-export { mockProfiles } from './profile.fixture.js';
+export * from './user.fixture.js';
+export * from './auth.fixture.js';
+export * from './profile.fixture.js';
+export * from './lectures.fixture.js';
+export * from './enrollments.fixture.js';

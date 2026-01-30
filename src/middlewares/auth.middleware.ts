@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { UserType } from '../constants/auth.constant.js';
-import { AuthSession, ProfileBase } from '../types/auth.types.js';
+import type { AuthSession, ProfileBase } from '../types/auth.types.js';
 import {
   UnauthorizedException,
   ForbiddenException,

@@ -1,7 +1,7 @@
 /**  테스트 시 인증된 사용자 상태를 시뮬레이션합니다.*/
 import { Request, Response, NextFunction } from 'express';
 import { UserType } from '../../constants/auth.constant.js';
-import { AuthSession } from '../../types/auth.types.js';
+import type { AuthSession } from '../../types/auth.types.js';
 
 /** Mock 사용자 인터페이스 */
 export interface MockUser {

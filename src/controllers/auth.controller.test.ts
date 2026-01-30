@@ -14,7 +14,7 @@ import {
   mockProfiles,
 } from '../test/fixtures/index.js';
 
-describe('AuthController', () => {
+describe('AuthController - @unit #critical', () => {
   // Mock AuthService
   let mockAuthService: ReturnType<typeof createMockAuthService>;
   let authController: AuthController;
@@ -84,9 +84,12 @@ describe('AuthController', () => {
         expect(mockRes.status).toHaveBeenCalledWith(201);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
+            status: 'success',
             message: '회원가입이 완료되었습니다.',
-            user: mockUsers.instructor,
-            profile: mockProfiles.instructor,
+            data: {
+              user: mockUsers.instructor,
+              profile: mockProfiles.instructor,
+            },
           }),
         );
         expect(mockRes.setHeader).toHaveBeenCalledWith(
@@ -233,8 +236,11 @@ describe('AuthController', () => {
         expect(mockRes.status).toHaveBeenCalledWith(200);
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
+            status: 'success',
             message: '로그인 성공',
-            user: mockUsers.instructor,
+            data: expect.objectContaining({
+              user: mockUsers.instructor,
+            }),
           }),
         );
         expect(mockRes.setHeader).toHaveBeenCalledWith(
@@ -292,9 +298,12 @@ describe('AuthController', () => {
 
         // Assert
         expect(mockAuthService.signOut).toHaveBeenCalledWith(mockReq.headers);
-        expect(mockRes.json).toHaveBeenCalledWith({
-          message: '로그아웃 되었습니다.',
-        });
+        expect(mockRes.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            status: 'success',
+            message: '로그아웃 되었습니다.',
+          }),
+        );
       });
     });
   });
@@ -323,9 +332,12 @@ describe('AuthController', () => {
         );
         expect(mockRes.json).toHaveBeenCalledWith(
           expect.objectContaining({
-            user: mockUsers.instructor,
-            session: mockSession,
-            profile: mockProfiles.instructor,
+            status: 'success',
+            data: expect.objectContaining({
+              user: mockUsers.instructor,
+              session: mockSession,
+              profile: mockProfiles.instructor,
+            }),
           }),
         );
       });

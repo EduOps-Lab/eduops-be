@@ -3,49 +3,100 @@ import type { StudentRepository } from '../../repos/student.repo.js';
 import type { AssistantRepository } from '../../repos/assistant.repo.js';
 import type { ParentRepository } from '../../repos/parent.repo.js';
 import type { AssistantCodeRepository } from '../../repos/assistant-code.repo.js';
+import type { LecturesRepository } from '../../repos/lectures.repo.js';
+import type { EnrollmentsRepository } from '../../repos/enrollments.repo.js';
+import type { ParentChildLinkRepository } from '../../repos/parent-child-link.repo.js';
+import type { ExamsRepository } from '../../repos/exams.repo.js';
+import { createAutoMock } from './create-mock.util.js';
 
 /** Mock InstructorRepository 생성 */
-export const createMockInstructorRepository =
-  (): jest.Mocked<InstructorRepository> =>
-    ({
-      findByUserId: jest.fn(),
-      findById: jest.fn(),
-      findByPhoneNumber: jest.fn(),
-      create: jest.fn(),
-    }) as unknown as jest.Mocked<InstructorRepository>;
+export const createMockInstructorRepository = () =>
+  createAutoMock<InstructorRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock StudentRepository 생성 */
-export const createMockStudentRepository = (): jest.Mocked<StudentRepository> =>
-  ({
-    findByUserId: jest.fn(),
-    findById: jest.fn(),
-    findByPhoneNumber: jest.fn(),
-    create: jest.fn(),
-  }) as unknown as jest.Mocked<StudentRepository>;
+export const createMockStudentRepository = () =>
+  createAutoMock<StudentRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock AssistantRepository 생성 */
-export const createMockAssistantRepository =
-  (): jest.Mocked<AssistantRepository> =>
-    ({
-      findByUserId: jest.fn(),
-      findById: jest.fn(),
-      findByPhoneNumber: jest.fn(),
-      create: jest.fn(),
-    }) as unknown as jest.Mocked<AssistantRepository>;
+export const createMockAssistantRepository = () =>
+  createAutoMock<AssistantRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock ParentRepository 생성 */
-export const createMockParentRepository = (): jest.Mocked<ParentRepository> =>
-  ({
-    findByUserId: jest.fn(),
-    findById: jest.fn(),
-    findByPhoneNumber: jest.fn(),
-    create: jest.fn(),
-  }) as unknown as jest.Mocked<ParentRepository>;
+export const createMockParentRepository = () =>
+  createAutoMock<ParentRepository>([
+    'findByUserId',
+    'findById',
+    'findByPhoneNumber',
+    'create',
+  ]);
 
 /** Mock AssistantCodeRepository 생성 */
-export const createMockAssistantCodeRepository =
-  (): jest.Mocked<AssistantCodeRepository> =>
-    ({
-      findValidCode: jest.fn(),
-      markAsUsed: jest.fn(),
-    }) as unknown as jest.Mocked<AssistantCodeRepository>;
+export const createMockAssistantCodeRepository = () =>
+  createAutoMock<AssistantCodeRepository>(['findValidCode', 'markAsUsed']);
+
+/** Mock ParentChildLinkRepository 생성 */
+export const createMockParentChildLinkRepository = () =>
+  createAutoMock<ParentChildLinkRepository>([
+    'create',
+    'findByAppParentId',
+    'findById',
+    'findByParentIdAndPhoneNumber',
+    'findManyByPhoneNumber',
+  ]);
+
+/** Mock LecturesRepository 생성 */
+export const createMockLecturesRepository = () =>
+  createAutoMock<LecturesRepository>([
+    'create',
+    'findById',
+    'findMany',
+    'update',
+    'softDelete',
+  ]);
+
+/** Mock EnrollmentsRepository 생성 */
+export const createMockEnrollmentsRepository = () =>
+  createAutoMock<EnrollmentsRepository>([
+    'createMany',
+    'create',
+    'findById',
+    'findByIdWithRelations',
+    'findByAppStudentId',
+    'findByAppParentLinkId',
+    'findByAppParentLinkId',
+    'findManyByLectureId',
+    'findManyByInstructorId',
+    'update',
+    'softDelete',
+    'updateAppStudentIdByPhoneNumber',
+    'updateAppParentLinkIdByStudentPhone',
+  ]);
+
+/** Mock ExamsRepository 생성 */
+export const createMockExamsRepository = () =>
+  createAutoMock<ExamsRepository>([
+    'createWithQuestions',
+    'findById',
+    'findByIdWithQuestions',
+    'findByLectureId',
+    'update',
+    'createQuestion',
+    'updateQuestion',
+    'deleteQuestions',
+    'findQuestionsByExamId',
+  ]);

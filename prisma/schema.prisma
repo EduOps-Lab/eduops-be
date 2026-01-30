@@ -166,8 +166,9 @@ model Lecture {
   title       String
   description String? @db.Text
 
-  isActive  Boolean   @default(true) @map("is_active")
+  status    String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED
   createdAt DateTime  @default(now()) @map("created_at")
+  startAt   DateTime? @map("start_at")
   endAt     DateTime? @map("end_at")
 
   // [Safety] 강의 삭제 시 연관 데이터 보존을 위한 Soft Delete
@@ -225,6 +226,10 @@ model Enrollment {
   appParentLinkId String? @map("app_parent_link_id")
 
   registeredAt DateTime @default(now()) @map("registered_at")
+
+  // [State] 수강 상태 (ACTIVE: 수강중, DROPPED: 퇴원, PAUSED: 휴원)
+  status String @default("ACTIVE")
+  memo   String? // [New] 수강 관련 메모 (강사/조교용)
 
   // [Safety] 수강 취소/퇴원 시 이력 보존
   deletedAt DateTime? @map("deleted_at")

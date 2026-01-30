@@ -1,36 +1,205 @@
+import { PrismaClient } from '../generated/prisma/client.js';
 import { UserType } from '../constants/auth.constant.js';
+import { EnrollmentStatus } from '../constants/enrollments.constant.js';
 import {
   NotFoundException,
   ForbiddenException,
 } from '../err/http.exception.js';
 import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
+import { LecturesRepository } from '../repos/lectures.repo.js';
+import { StudentRepository } from '../repos/student.repo.js';
+import { ParentsService } from './parents.service.js';
+import { PermissionService } from './permission.service.js';
+import type { Prisma } from '../generated/prisma/client.js';
+import type {
+  GetEnrollmentsQueryDto,
+  GetSvcEnrollmentsQueryDto,
+} from '../validations/enrollments.validation.js';
 
 export class EnrollmentsService {
-  constructor(private readonly enrollmentsRepository: EnrollmentsRepository) {}
+  constructor(
+    private readonly enrollmentsRepository: EnrollmentsRepository,
+    private readonly lecturesRepository: LecturesRepository,
+    private readonly studentRepository: StudentRepository,
+    private readonly parentsService: ParentsService,
+    private readonly permissionService: PermissionService,
+    private readonly prisma: PrismaClient,
+  ) {}
 
-  /** 수강 목록 조회 */
-  async getEnrollments(userType: UserType, profileId: string) {
-    let enrollments;
-
-    /**  userType에 따라 수강 목록 조회*/
-    if (userType === UserType.STUDENT) {
-      //  appStudentId로 조회
-      enrollments =
-        await this.enrollmentsRepository.findByAppStudentId(profileId);
-    } else if (userType === UserType.PARENT) {
-      // appParentId로 ParentChildLink 을 찾고 각 link의 ID로 enrollments 조회 후 병합
-      enrollments =
-        await this.enrollmentsRepository.findByAppParentId(profileId);
-    } else {
-      throw new ForbiddenException('해당 수강 정보에 접근할 권한이 없습니다.');
+  /** Enrollment 생성 */
+  async createEnrollment(
+    lectureId: string,
+    data: Prisma.EnrollmentUncheckedCreateInput,
+    userType: UserType,
+    profileId: string,
+  ) {
+    // 1. 강의 존재 여부 확인
+    const lecture = await this.lecturesRepository.findById(lectureId);
+    if (!lecture) {
+      throw new NotFoundException('강의를 찾을 수 없습니다.');
     }
+
+    // 2. 권한 체크 (강사 본인 또는 담당 조교)
+    await this.permissionService.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
+
+    let parentLinkId = data.appParentLinkId;
+    if (!parentLinkId && data.studentPhone) {
+      const link = await this.parentsService.findLinkByPhoneNumber(
+        data.studentPhone,
+      );
+      if (link) {
+        parentLinkId = link.id;
+      }
+    }
+
+    let studentId = data.appStudentId;
+    if (!studentId && data.studentPhone) {
+      const student = await this.studentRepository.findByPhoneNumber(
+        data.studentPhone,
+      );
+      if (student) {
+        studentId = student.id;
+      }
+    }
+
+    // 3. Enrollment 생성
+    return await this.enrollmentsRepository.create({
+      ...data,
+      lectureId,
+      instructorId: lecture.instructorId, // 강의의 담당 강사로 설정
+      status: EnrollmentStatus.ACTIVE,
+      appParentLinkId: parentLinkId, // 자동 연결된 ID 설정
+      appStudentId: studentId, // 자동 연결된 ID 설정
+    });
+  }
+
+  /** 강의별 수강생 목록 조회 */
+  async getEnrollmentsByLectureId(
+    lectureId: string,
+    userType: UserType,
+    profileId: string,
+  ) {
+    // 1. 강의 존재 및 권한 확인
+    const lecture = await this.lecturesRepository.findById(lectureId);
+    if (!lecture) {
+      throw new NotFoundException('강의를 찾을 수 없습니다.');
+    }
+
+    await this.permissionService.validateInstructorAccess(
+      lecture.instructorId,
+      userType,
+      profileId,
+    );
+
+    return await this.enrollmentsRepository.findManyByLectureId(lectureId);
+  }
+
+  /** 강사(조교 포함)별 전체 수강생 목록 조회 */
+  async getEnrollmentsByInstructor(
+    userType: UserType,
+    profileId: string,
+    query: GetEnrollmentsQueryDto,
+  ) {
+    const targetInstructorId =
+      await this.permissionService.getEffectiveInstructorId(
+        userType,
+        profileId,
+      );
+
+    return await this.enrollmentsRepository.findManyByInstructorId(
+      targetInstructorId,
+      query,
+    );
+  }
+
+  /** Enrollment 상세 조회 (권한 체크 포함) */
+  async getEnrollmentDetail(
+    enrollmentId: string,
+    userType: UserType,
+    profileId: string,
+  ) {
+    const enrollment =
+      await this.enrollmentsRepository.findByIdWithRelations(enrollmentId);
+
+    if (!enrollment) {
+      throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
+    }
+
+    // 권한 체크
+    await this.permissionService.validateInstructorAccess(
+      enrollment.instructorId,
+      userType,
+      profileId,
+    );
+
+    return enrollment;
+  }
+
+  /** Enrollment 수정 */
+  async updateEnrollment(
+    id: string,
+    data: Prisma.EnrollmentUpdateInput,
+    userType: UserType,
+    profileId: string,
+  ) {
+    const enrollment = await this.enrollmentsRepository.findById(id);
+    if (!enrollment) {
+      throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
+    }
+
+    // 권한 체크
+    await this.permissionService.validateInstructorAccess(
+      enrollment.instructorId,
+      userType,
+      profileId,
+    );
+
+    return await this.enrollmentsRepository.update(id, data);
+  }
+
+  /** Enrollment 삭제 (Soft Delete) */
+  async deleteEnrollment(id: string, userType: UserType, profileId: string) {
+    const enrollment = await this.enrollmentsRepository.findById(id);
+    if (!enrollment) {
+      throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
+    }
+
+    // 권한 체크
+    await this.permissionService.validateInstructorAccess(
+      enrollment.instructorId,
+      userType,
+      profileId,
+    );
+
+    return await this.enrollmentsRepository.softDelete(id);
+  }
+
+  /** 학생/학부모용 수강 목록 조회 */
+  async getEnrollments(
+    userType: UserType,
+    profileId: string,
+    query?: GetSvcEnrollmentsQueryDto,
+  ) {
+    if (userType !== UserType.STUDENT) {
+      throw new ForbiddenException(
+        '학생은 본인의 수강 목록만, 학부모는 자녀별 수강 목록 API를 각각 사용해 주세요.',
+      );
+    }
+
+    const { enrollments, totalCount } =
+      await this.enrollmentsRepository.findByAppStudentId(profileId, query);
 
     return {
       enrollments,
+      totalCount,
     };
   }
 
-  /** Enrollment 상세 조회 */
+  /** 학생/학부모용 수강 상세 조회 */
   async getEnrollmentById(
     enrollmentId: string,
     userType: UserType,
@@ -43,39 +212,13 @@ export class EnrollmentsService {
       throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
     }
 
-    /** userType에 따른 권한 체크 */
-    let hasPermission = false;
-
-    if (userType === UserType.STUDENT) {
-      hasPermission = enrollment.appStudentId === profileId;
-    } else if (userType === UserType.PARENT) {
-      // 학부모인 경우 ParentChildLink를 통해 확인
-      hasPermission = enrollment.appParentLinkId
-        ? await this.checkParentPermission(
-            profileId,
-            enrollment.appParentLinkId,
-          )
-        : false;
-    }
-
-    if (!hasPermission) {
-      throw new ForbiddenException('해당 수강 정보에 접근할 권한이 없습니다.');
-    }
+    // 권한 체크 (학생/학부모 조회 권한)
+    await this.permissionService.validateEnrollmentReadAccess(
+      enrollment,
+      userType,
+      profileId,
+    );
 
     return enrollment;
-  }
-
-  /** -------- Helper Functions -------- */
-
-  /** 학부모 권한 체크 */
-  private async checkParentPermission(
-    appParentId: string,
-    appParentLinkId: string,
-  ): Promise<boolean> {
-    const link =
-      await this.enrollmentsRepository.findParentIdByParentChildLinkId(
-        appParentLinkId,
-      );
-    return link?.appParentId === appParentId;
   }
 }
