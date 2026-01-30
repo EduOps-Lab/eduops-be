@@ -8,6 +8,10 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m]'
 NC='\033[0m' # No Color
 
+# 포트 정의
+BLUE_PORT=4000
+GREEN_PORT=4001
+
 echo -e "${BLUE}=== 무중단 배포 시작 ===${NC}"
 
 # 환경 변수 로드
@@ -15,66 +19,26 @@ if [ -f .env ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-# Prisma 마이그레이션 실행( 현재 활성 환경)
-echo -e "${YELLOW}=== Prisma 마이그레이션 실행 (동기화) === ${NC}"
-
 # 현재 실행 중인 컨테이너 확인
 BLUE_RUNNING=$(docker ps -q -f name=eduops-backend-blue -f status=running)
 GREEN_RUNNING=$(docker ps -q -f name=eduops-backend-green -f status=running)
 
-if [ -n "$BLUE_RUNNING" ]; then
-    CURRENT="blue"
-    CURRENT_PORT=4000
-    CURRENT_CONTAINER="eduops-backend-blue"
-    echo -e "${GREEN}현재 Blue 환경이 실행 중입니다.${NC}"
-    echo -e "${YELLOW}Blue 환경에 Prisma 마이그레이션 실행 중...${NC}"
-    
-    # Blue 컨테이너에서 마이그레이션 실행
-    if docker exec eduops-backend-blue npx prisma migrate deploy; then
-        echo -e "${GREEN}Blue 환경 Prisma 마이그레이션 성공!${NC}"
-    else
-        echo -e "${RED}Blue 환경 Prisma 마이그레이션 실패!${NC}"
-        exit 1
-    fi
-    
-elif [ -n "$GREEN_RUNNING" ]; then
-    CURRENT="green"
-    CURRENT_PORT=4001
-    CURRENT_CONTAINER="eduops-backend-green"
-    echo -e "${GREEN}현재 Green 환경이 실행 중입니다.${NC}"
-    echo -e "${YELLOW}Green 환경에 Prisma 마이그레이션 실행 중...${NC}"
-    
-    # Green 컨테이너에서 마이그레이션 실행
-    if docker exec eduops-backend-green npx prisma migrate deploy; then
-        echo -e "${GREEN}Green 환경 Prisma 마이그레이션 성공!${NC}"
-    else
-        echo -e "${RED}Green 환경 Prisma 마이그레이션 실패!${NC}"
-        exit 1
-    fi
-    
-else
-    echo -e "${YELLOW}실행 중인 컨테이너가 없습니다.${NC}"
-    echo -e "${YELLOW}Prisma 마이그레이션은 새 컨테이너 시작 후 실행됩니다.${NC}"
-    CURRENT="none"
-    CURRENT_CONTAINER=""
-fi
-
 # 새 컨테이너 시작
 if [ -n "$BLUE_RUNNING" ]; then
     TARGET="green"
-    TARGET_PORT=4001
+    TARGET_PORT=$GREEN_PORT
     OLD_CONTAINER="eduops-backend-blue"
     NEW_CONTAINER="eduops-backend-green"
     NEW_SERVICE="backend-green"
 elif [ -n "$GREEN_RUNNING" ]; then
     TARGET="blue"
-    TARGET_PORT=4000
+    TARGET_PORT=$BLUE_PORT
     OLD_CONTAINER="eduops-backend-green"
     NEW_CONTAINER="eduops-backend-blue"
     NEW_SERVICE="backend-blue"
 else
     TARGET="blue"
-    TARGET_PORT=4000
+    TARGET_PORT=$BLUE_PORT
     NEW_CONTAINER="eduops-backend-blue"
     NEW_SERVICE="backend-blue"
 fi
@@ -193,11 +157,11 @@ if [ "$HEALTH_CHECK_FAILED" = true ]; then
     if [ "$CURRENT" != "none" ]; then
         echo -e "${YELLOW}Nginx 설정 원복 중...${NC}"
         if [ "$CURRENT" = "blue" ]; then
-            sed -i 's/# server backend-blue:4000;/server backend-blue:4000;/' nginx/conf.d/default.conf
-            sed -i 's/server backend-green:4000;/# server backend-green:4000;/' nginx/conf.d/default.conf
+            sed -i "s/# server backend-blue:[0-9]*;/server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
+            sed -i "s/server backend-green:[0-9]*;/# server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
         else
-            sed -i 's/server backend-blue:4000;/# server backend-blue:4000;/' nginx/conf.d/default.conf
-            sed -i 's/# server backend-green:4000;/server backend-green:4000;/' nginx/conf.d/default.conf
+            sed -i "s/server backend-blue:[0-9]*;/# server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
+            sed -i "s/# server backend-green:[0-9]*;/server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
         fi
         $COMPOSE exec -T nginx nginx -s reload
     fi
@@ -210,11 +174,11 @@ fi
 echo -e "${YELLOW}Nginx 설정을 [$TARGET]으로 전환합니다...${NC}"
 
 if [ "$TARGET" = "green" ]; then
-    sed -i 's/server backend-blue:4000;/# server backend-blue:4000;/' nginx/conf.d/default.conf
-    sed -i 's/# server backend-green:4000;/server backend-green:4000;/' nginx/conf.d/default.conf
+    sed -i "s/server backend-blue:[0-9]*;/# server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
+    sed -i "s/# server backend-green:[0-9]*;/server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
 else
-    sed -i 's/# server backend-blue:4000;/server backend-blue:4000;/' nginx/conf.d/default.conf
-    sed -i 's/server backend-green:4000;/# server backend-green:4000;/' nginx/conf.d/default.conf
+    sed -i "s/# server backend-blue:[0-9]*;/server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
+    sed -i "s/server backend-green:[0-9]*;/# server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
 fi
 
 # Nginx 설정 검증 및 리로드
@@ -229,11 +193,11 @@ else
     # Nginx 설정 원복
     if [ "$CURRENT" != "none" ]; then
         if [ "$CURRENT" = "blue" ]; then
-            sed -i 's/# server backend-blue:4000;/server backend-blue:4000;/' nginx/conf.d/default.conf
-            sed -i 's/server backend-green:4000;/# server backend-green:4000;/' nginx/conf.d/default.conf
+            sed -i "s/# server backend-blue:[0-9]*;/server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
+            sed -i "s/server backend-green:[0-9]*;/# server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
         else
-            sed -i 's/server backend-blue:4000;/# server backend-blue:4000;/' nginx/conf.d/default.conf
-            sed -i 's/# server backend-green:4000;/server backend-green:4000;/' nginx/conf.d/default.conf
+            sed -i "s/server backend-blue:[0-9]*;/# server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
+            sed -i "s/# server backend-green:[0-9]*;/server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
         fi
         $COMPOSE exec -T nginx nginx -s reload
     fi
