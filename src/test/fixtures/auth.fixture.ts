@@ -2,6 +2,8 @@ import { fakerKO as faker } from '@faker-js/faker';
 import { UserType } from '../../constants/auth.constant.js';
 import { mockUsers } from './user.fixture.js';
 
+const assistantSignupCode = faker.string.alphanumeric(10).toUpperCase();
+
 /** Mock Session 데이터 */
 export const mockSession = {
   id: faker.string.uuid(),
@@ -29,7 +31,7 @@ export const signUpRequests = {
     password: 'password123!',
     name: faker.person.fullName(),
     phoneNumber: faker.phone.number({ style: 'national' }),
-    signupCode: faker.string.alphanumeric(10).toUpperCase(),
+    signupCode: assistantSignupCode,
   },
   student: {
     email: faker.internet.email(),
@@ -67,7 +69,7 @@ export const signInRequests = {
 /** 조교 코드 Mock 데이터 */
 export const mockAssistantCode = {
   id: faker.string.uuid(),
-  code: faker.string.alphanumeric(10).toUpperCase(),
+  code: assistantSignupCode,
   instructorId: mockUsers.instructor.id,
   isUsed: false,
   expireAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30일 후
