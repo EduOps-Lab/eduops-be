@@ -8,6 +8,7 @@ import {
   createMockEnrollmentsRepository,
   createMockStudentRepository,
   createMockInstructorRepository,
+  createMockPermissionService,
   createMockPrisma,
 } from '../test/mocks/index.js';
 import {
@@ -23,6 +24,7 @@ import {
 
 import { PrismaClient } from '../generated/prisma/client.js';
 import { EnrollmentStatus } from '../constants/enrollments.constant.js';
+import { UserType } from '../constants/auth.constant.js';
 
 describe('LecturesService', () => {
   // Mock Dependencies
@@ -30,6 +32,7 @@ describe('LecturesService', () => {
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
   let mockStudentRepo: ReturnType<typeof createMockStudentRepository>;
   let mockInstructorRepo: ReturnType<typeof createMockInstructorRepository>;
+  let mockPermissionService: ReturnType<typeof createMockPermissionService>;
   let mockPrisma: PrismaClient;
 
   // Service under test
@@ -44,6 +47,7 @@ describe('LecturesService', () => {
     mockEnrollmentsRepo = createMockEnrollmentsRepository();
     mockStudentRepo = createMockStudentRepository();
     mockInstructorRepo = createMockInstructorRepository();
+    mockPermissionService = createMockPermissionService();
     mockPrisma = createMockPrisma() as unknown as PrismaClient;
 
     // Create LecturesService DI
@@ -52,6 +56,7 @@ describe('LecturesService', () => {
       mockEnrollmentsRepo,
       mockStudentRepo,
       mockInstructorRepo,
+      mockPermissionService,
       mockPrisma,
     );
   });
@@ -176,6 +181,7 @@ describe('LecturesService', () => {
 
         const result = await lecturesService.updateLecture(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
           updateLectureRequests.full,
         );
@@ -203,6 +209,7 @@ describe('LecturesService', () => {
 
         const result = await lecturesService.updateLecture(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
           updateLectureRequests.partial,
         );
@@ -227,6 +234,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
             updateLectureRequests.full,
           ),
@@ -235,6 +243,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
             updateLectureRequests.full,
           ),
@@ -247,10 +256,14 @@ describe('LecturesService', () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
+        mockPermissionService.validateInstructorAccess.mockRejectedValue(
+          new ForbiddenException('해당 강의를 수정할 권한이 없습니다.'),
+        );
 
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
             updateLectureRequests.full,
           ),
@@ -259,6 +272,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.updateLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
             updateLectureRequests.full,
           ),
@@ -277,6 +291,7 @@ describe('LecturesService', () => {
 
         await lecturesService.deleteLecture(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
         );
 
@@ -296,6 +311,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow(NotFoundException);
@@ -303,6 +319,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow('강의를 찾을 수 없습니다.');
@@ -314,10 +331,14 @@ describe('LecturesService', () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
+        mockPermissionService.validateInstructorAccess.mockRejectedValue(
+          new ForbiddenException('해당 강의를 삭제할 권한이 없습니다.'),
+        );
 
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -325,6 +346,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.deleteLecture(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow('해당 강의를 삭제할 권한이 없습니다.');
@@ -341,6 +363,7 @@ describe('LecturesService', () => {
 
         const result = await lecturesService.getLectureById(
           mockInstructor.id,
+          UserType.INSTRUCTOR,
           mockLectures.basic.id,
         );
 
@@ -360,6 +383,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow(NotFoundException);
@@ -367,6 +391,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             'non-existent-lecture-id',
           ),
         ).rejects.toThrow('강의를 찾을 수 없습니다.');
@@ -376,10 +401,14 @@ describe('LecturesService', () => {
         mockLecturesRepo.findById.mockResolvedValue(
           mockLectures.otherInstructor,
         );
+        mockPermissionService.validateInstructorAccess.mockRejectedValue(
+          new ForbiddenException('해당 강의를 조회할 권한이 없습니다.'),
+        );
 
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow(ForbiddenException);
@@ -387,6 +416,7 @@ describe('LecturesService', () => {
         await expect(
           lecturesService.getLectureById(
             mockInstructor.id,
+            UserType.INSTRUCTOR,
             mockLectures.otherInstructor.id,
           ),
         ).rejects.toThrow('해당 강의를 조회할 권한이 없습니다.');
