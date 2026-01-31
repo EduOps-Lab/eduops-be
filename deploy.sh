@@ -14,9 +14,33 @@ GREEN_PORT=4001
 
 echo -e "${BLUE}=== 무중단 배포 시작 ===${NC}"
 
+# .env 파일 경로를 스크립트 위치 기준으로 절대 경로화
+ENV_PATH="./.env"
+
 # 환경 변수 로드
-if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
+if [ -f "$ENV_PATH" ]; then
+    echo -e "${YELLOW}.env 파일 로드 중... ${NC}"
+    
+    # (CRLF) 문제 해결: 파일이 있으면 실행
+    sed -i 's/\r$//' "$ENV_PATH"
+    
+    # [수정] 더 안정적인 변수 로드 방식 (set -a 사용)
+    set -a
+    . "$ENV_PATH"  # source 대신 . 을 사용하여 호환성 확보
+    set +a
+    echo -e "${GREEN}.env 파일 로드 성공!${NC}"
+else
+    echo -e "${RED}경고: .env 파일을 찾을 수 없습니다! $(pwd) ${NC}"
+    ls -al
+    exit 1
+fi
+
+# 환경 변수 확인 (!)
+if [ -z "$DATABASE_URL" ]; then
+    echo -e "${RED}경고: DATABASE_URL이 로드되지 않았습니다! .env 파일을 확인하세요.${NC}"
+    # DATABASE_URL이 로드되지 않은 경우, 파일 내용은 있는데 변수명이 틀렸는지 확인하기 위해 출력
+    grep "DATABASE_URL" "$ENV_PATH" || echo "DATABASE_URL 키가 파일에 없습니다."
+    exit 1
 fi
 
 # 현재 실행 중인 컨테이너 확인
@@ -25,18 +49,23 @@ GREEN_RUNNING=$(docker ps -q -f name=eduops-backend-green -f status=running)
 
 # 새 컨테이너 시작
 if [ -n "$BLUE_RUNNING" ]; then
+    CURRENT="blue"
     TARGET="green"
     TARGET_PORT=$GREEN_PORT
     OLD_CONTAINER="eduops-backend-blue"
     NEW_CONTAINER="eduops-backend-green"
+    OLD_SERVICE="backend-blue"
     NEW_SERVICE="backend-green"
 elif [ -n "$GREEN_RUNNING" ]; then
+    CURRENT="green"
     TARGET="blue"
     TARGET_PORT=$BLUE_PORT
     OLD_CONTAINER="eduops-backend-green"
     NEW_CONTAINER="eduops-backend-blue"
+    OLD_SERVICE="backend-green"
     NEW_SERVICE="backend-blue"
 else
+    CURRENT="none"
     TARGET="blue"
     TARGET_PORT=$BLUE_PORT
     NEW_CONTAINER="eduops-backend-blue"
@@ -101,11 +130,16 @@ done
 if [ "$CONTAINER_READY" = true ]; then
     echo -e "${YELLOW}[$TARGET] 환경에 Prisma 마이그레이션 실행 중...${NC}"
     
-    if docker exec $NEW_CONTAINER npx prisma migrate deploy; then
+    CLEAN_DATABASE_URL=$(echo "$DATABASE_URL" | tr -d '\r' | xargs)
+
+    if docker exec -e DATABASE_URL="$CLEAN_DATABASE_URL" $NEW_CONTAINER pnpm prisma migrate deploy; then
         echo -e "${GREEN}[$TARGET] 환경 Prisma 마이그레이션 성공!${NC}"
     else
         echo -e "${RED}[$TARGET] 환경 Prisma 마이그레이션 실패!${NC}"
+        docker exec $NEW_CONTAINER ls -la .env || echo ".env 파일이 컨테이너 내부에 없습니다."
+        docker exec $NEW_CONTAINER printenv || grep DATABASE_URL || echo "변수 없음"
         echo -e "${RED}새 컨테이너를 중지합니다.${NC}"
+        echo "CLEAN_DATABASE_URL: ${CLEAN_DATABASE_URL}"
         $COMPOSE stop $NEW_SERVICE
         exit 1
     fi
@@ -153,17 +187,22 @@ if [ "$HEALTH_CHECK_FAILED" = true ]; then
     echo -e "${YELLOW}[$TARGET] 컨테이너 삭제 중...${NC}"
     $COMPOSE rm -f $NEW_CONTAINER
     
-    # Nginx 설정 원복 (현재 환경으로)
+    # Nginx 설정 원복 (이전 환경이 있었을 경우에만)
     if [ "$CURRENT" != "none" ]; then
-        echo -e "${YELLOW}Nginx 설정 원복 중...${NC}"
-        if [ "$CURRENT" = "blue" ]; then
-            sed -i "s/# server backend-blue:[0-9]*;/server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
-            sed -i "s/server backend-green:[0-9]*;/# server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
+        echo -e "${YELLOW}Nginx [$CURRENT] 설정 원복 중...${NC}"
+
+ if [ "$CURRENT" = "blue" ]; then
+            # Blue를 살리고 Green을 주석처리
+            sed -i "s|^[[:space:]]*#server eduops-backend-blue:4000;|    server eduops-backend-blue:4000;|" nginx/conf.d/default.conf
+            sed -i "s|^[[:space:]]*server eduops-backend-green:4000;|    #server eduops-backend-green:4000;|" nginx/conf.d/default.conf
         else
-            sed -i "s/server backend-blue:[0-9]*;/# server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
-            sed -i "s/# server backend-green:[0-9]*;/server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
+            # Green을 살리고 Blue를 주석처리
+            sed -i "s|^[[:space:]]*#server eduops-backend-green:4000;|    server eduops-backend-green:4000;|" nginx/conf.d/default.conf
+            sed -i "s|^[[:space:]]*server eduops-backend-blue:4000;|    #server eduops-backend-blue:4000;|" nginx/conf.d/default.conf
         fi
+
         $COMPOSE exec -T nginx nginx -s reload
+        echo -e "${GREEN}Nginx 설정 원복 완료!${NC}"
     fi
     
     echo -e "${RED}배포 중단 및 롤백 완료!${NC}"
@@ -173,13 +212,16 @@ fi
 # Nginx 설정 전환
 echo -e "${YELLOW}Nginx 설정을 [$TARGET]으로 전환합니다...${NC}"
 
+# 1. TARGET이 green일 때 (전환 로직)
 if [ "$TARGET" = "green" ]; then
-    sed -i "s/server backend-blue:[0-9]*;/# server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
-    sed -i "s/# server backend-green:[0-9]*;/server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
+    # blue 주석 처리, green 주석 해제 (항상 내부 포트 4000 사용)
+    sed -i "s|^[[:space:]]*server eduops-backend-blue:[0-9]*;|    #server eduops-backend-blue:4000;|" nginx/conf.d/default.conf
+    sed -i "s|^[[:space:]]*#server eduops-backend-green:[0-9]*;|    server eduops-backend-green:4000;|" nginx/conf.d/default.conf
 else
-    sed -i "s/# server backend-blue:[0-9]*;/server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
-    sed -i "s/server backend-green:[0-9]*;/# server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
-fi
+    # green 주석 처리, blue 주석 해제
+    sed -i "s|^[[:space:]]*server eduops-backend-green:[0-9]*;|    #server eduops-backend-green:4000;|" nginx/conf.d/default.conf
+    sed -i "s|^[[:space:]]*#server eduops-backend-blue:[0-9]*;|    server eduops-backend-blue:4000;|" nginx/conf.d/default.conf
+fi 
 
 # Nginx 설정 검증 및 리로드
 echo -e "${YELLOW}Nginx 설정 검증 중...${NC}"
@@ -193,18 +235,19 @@ else
     # Nginx 설정 원복
     if [ "$CURRENT" != "none" ]; then
         if [ "$CURRENT" = "blue" ]; then
-            sed -i "s/# server backend-blue:[0-9]*;/server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
-            sed -i "s/server backend-green:[0-9]*;/# server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
+            # [수정] 패턴을 eduops- 접두사와 포트 4000으로 통일
+            sed -i "s|^[[:space:]]*#server eduops-backend-blue:4000;|    server eduops-backend-blue:4000;|" nginx/conf.d/default.conf
+            sed -i "s|^[[:space:]]*server eduops-backend-green:4000;|    #server eduops-backend-green:4000;|" nginx/conf.d/default.conf
         else
-            sed -i "s/server backend-blue:[0-9]*;/# server backend-blue:${BLUE_PORT};/" nginx/conf.d/default.conf
-            sed -i "s/# server backend-green:[0-9]*;/server backend-green:${GREEN_PORT};/" nginx/conf.d/default.conf
+            sed -i "s|^[[:space:]]*#server eduops-backend-green:4000;|    server eduops-backend-green:4000;|" nginx/conf.d/default.conf
+            sed -i "s|^[[:space:]]*server eduops-backend-blue:4000;|    #server eduops-backend-blue:4000;|" nginx/conf.d/default.conf
         fi
         $COMPOSE exec -T nginx nginx -s reload
     fi
     
     # 새 컨테이너 중지
-    $COMPOSE stop $NEW_CONTAINER
-    $COMPOSE rm -f $NEW_CONTAINER
+    $COMPOSE stop $NEW_SERVICE
+    $COMPOSE rm -f $NEW_SERVICE
     
     exit 1
 fi
@@ -215,11 +258,11 @@ if [ "$CURRENT" != "none" ]; then
     sleep 5
     
     echo -e "${YELLOW}[$CURRENT] 컨테이너 중지 중...${NC}"
-    $COMPOSE stop $OLD_CONTAINER
+    $COMPOSE stop $OLD_SERVICE
     
     # 컨테이너 삭제 (리소스 확보)
     echo -e "${YELLOW}[$CURRENT] 컨테이너 삭제 중...${NC}"
-    $COMPOSE rm -f $OLD_CONTAINER
+    $COMPOSE rm -f $OLD_SERVICE
     
     echo -e "${GREEN}[$CURRENT] 컨테이너 중지 및 정리 완료${NC}"
 fi
