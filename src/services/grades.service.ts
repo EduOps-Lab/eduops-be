@@ -8,6 +8,7 @@ import {
 import { GradesRepository } from '../repos/grades.repo.js';
 import { ExamsRepository } from '../repos/exams.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
+import { EnrollmentsRepository } from '../repos/enrollments.repo.js';
 import { PermissionService } from './permission.service.js';
 import type { SubmitGradingDto } from '../validations/grades.validation.js';
 
@@ -16,6 +17,7 @@ export class GradesService {
     private readonly gradesRepo: GradesRepository,
     private readonly examsRepo: ExamsRepository,
     private readonly lecturesRepo: LecturesRepository,
+    private readonly enrollmentsRepo: EnrollmentsRepository,
     private readonly permissionService: PermissionService,
     private readonly prisma: PrismaClient,
   ) {}
@@ -49,6 +51,18 @@ export class GradesService {
       userType,
       profileId,
     );
+
+    // 2-1. Enrollment 검증
+    const enrollment = await this.enrollmentsRepo.findById(enrollmentId);
+    if (!enrollment) {
+      throw new NotFoundException('수강 정보를 찾을 수 없습니다.');
+    }
+
+    if (enrollment.lectureId !== exam.lectureId) {
+      throw new BadRequestException(
+        '해당 시험이 속한 강의의 수강생이 아닙니다.',
+      );
+    }
 
     // 3. 보안 채점 로직
     const questions = await this.examsRepo.findQuestionsByExamId(examId);
@@ -113,10 +127,18 @@ export class GradesService {
     const isPass = calculatedTotalScore >= exam.cutoffScore;
 
     // 5. DB Upsert (Transaction)
-    // 5. DB Upsert (Transaction)
     return await this.prisma.$transaction(async (tx) => {
-      // 5-0. 시험 상태 변경 (채점 전 -> 채점 중)
-      if (exam.gradingStatus === GradingStatus.PENDING) {
+      // 5-0. 시험 상태 재확인 (동시성 제어)
+      const currentExam = await this.examsRepo.findById(examId, tx);
+      if (!currentExam) {
+        throw new NotFoundException('시험을 찾을 수 없습니다.');
+      }
+
+      if (currentExam.gradingStatus === GradingStatus.COMPLETED) {
+        throw new BadRequestException('이미 채점이 완료된 시험입니다.');
+      }
+
+      if (currentExam.gradingStatus === GradingStatus.PENDING) {
         await this.examsRepo.updateGradingStatus(
           examId,
           GradingStatus.IN_PROGRESS,
