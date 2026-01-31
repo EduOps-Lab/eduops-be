@@ -32,4 +32,31 @@ export class ClinicsController {
       next(error);
     }
   };
+
+  /** 클리닉 조회 핸들러 */
+  getClinics = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const profileId = getProfileIdOrThrow(req);
+      const user = getAuthUser(req);
+      const userType = user.userType as UserType;
+      const query = req.query as unknown as {
+        lectureId?: string;
+        examId?: string;
+      };
+
+      const result = await this.clinicsService.getClinics(
+        userType,
+        profileId,
+        query,
+      );
+
+      return successResponse(res, {
+        statusCode: 200,
+        data: result,
+        message: '클리닉 목록을 조회했습니다.',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

@@ -8,3 +8,11 @@ export const createClinicsSchema = z.object({
 });
 
 export type CreateClinicsDto = z.infer<typeof createClinicsSchema>;
+
+/** 클리닉 조회 쿼리 스키마 */
+export const getClinicsQuerySchema = z.object({
+  lectureId: z.string().optional(),
+  examId: z.string().optional(),
+});
+
+export type GetClinicsQueryDto = z.infer<typeof getClinicsQuerySchema>;
