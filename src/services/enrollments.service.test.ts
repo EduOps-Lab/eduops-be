@@ -37,6 +37,10 @@ type EnrollmentWithRelations = Awaited<
   ReturnType<EnrollmentsRepository['findByIdWithRelations']>
 >;
 
+type EnrollmentListItem = Awaited<
+  ReturnType<EnrollmentsRepository['findManyByLectureId']>
+>[number];
+
 describe('EnrollmentsService - @unit #critical', () => {
   // Mock Dependencies
   let mockEnrollmentsRepo: ReturnType<typeof createMockEnrollmentsRepository>;
@@ -284,10 +288,18 @@ describe('EnrollmentsService - @unit #critical', () => {
           instructorId,
         );
 
-        expect(result).toEqual(mockEnrollmentsList);
+        const expected = (mockEnrollmentsList as EnrollmentListItem[]).map(
+          (e) => ({
+            ...e,
+            gradeId: null,
+            grades: undefined,
+          }),
+        );
+        expect(result).toEqual(expected);
         expect(mockLecturesRepo.findById).toHaveBeenCalledWith(lectureId);
         expect(mockEnrollmentsRepo.findManyByLectureId).toHaveBeenCalledWith(
           lectureId,
+          undefined, // options
         );
       });
 
@@ -306,7 +318,14 @@ describe('EnrollmentsService - @unit #critical', () => {
           mockAssistants.basic.id,
         );
 
-        expect(result).toEqual(mockEnrollmentsList);
+        const expected = (mockEnrollmentsList as EnrollmentListItem[]).map(
+          (e) => ({
+            ...e,
+            gradeId: null,
+            grades: undefined,
+          }),
+        );
+        expect(result).toEqual(expected);
         expect(
           mockPermissionService.validateInstructorAccess,
         ).toHaveBeenCalledWith(
@@ -314,6 +333,46 @@ describe('EnrollmentsService - @unit #critical', () => {
           UserType.ASSISTANT,
           mockAssistants.basic.id,
         );
+      });
+
+      it('ENR-04-1: examId 전달 시 해당 시험 성적 ID 포함 확인', async () => {
+        const examId = 'exam-123';
+        const gradeId = 'grade-456';
+        mockLecturesRepo.findById.mockResolvedValue(mockLectures.basic);
+
+        // 성적이 있는 1번 학생과 성적이 없는 2번 학생 시뮬레이션
+        const mockEnrollmentsWithGrades = [
+          {
+            ...mockEnrollmentsList[0],
+            grades: [{ id: gradeId }],
+            appStudent: mockStudents.basic,
+          },
+          {
+            ...mockEnrollmentsList[1],
+            grades: [],
+            appStudent: mockStudents.withParentLink,
+          },
+        ];
+
+        mockEnrollmentsRepo.findManyByLectureId.mockResolvedValue(
+          mockEnrollmentsWithGrades as EnrollmentListItem[],
+        );
+
+        const result = await enrollmentsService.getEnrollmentsByLectureId(
+          lectureId,
+          UserType.INSTRUCTOR,
+          instructorId,
+          { examId },
+        );
+
+        expect(mockEnrollmentsRepo.findManyByLectureId).toHaveBeenCalledWith(
+          lectureId,
+          { examId },
+        );
+        expect(result[0].gradeId).toBe(gradeId);
+        expect(result[0].grades).toBeUndefined();
+        expect(result[1].gradeId).toBeNull();
+        expect(result[1].grades).toBeUndefined();
       });
     });
 

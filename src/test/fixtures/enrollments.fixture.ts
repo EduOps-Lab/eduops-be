@@ -271,7 +271,7 @@ export const mockEnrollmentWithRelations = {
     },
   },
   grades: [],
-  clinicTargets: [],
+  clinic: [],
   attendances: [],
 };
 

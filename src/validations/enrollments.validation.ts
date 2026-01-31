@@ -57,6 +57,15 @@ export const updateEnrollmentSchema = z.object({
 
 export type UpdateEnrollmentDto = z.infer<typeof updateEnrollmentSchema>;
 
+/** 강의별 수강생 목록 조회 쿼리 스키마 (시험 성적 포함) */
+export const getEnrollmentsByLectureQuerySchema = z.object({
+  examId: z.string().trim().optional(),
+});
+
+export type GetEnrollmentsByLectureQueryDto = z.infer<
+  typeof getEnrollmentsByLectureQuerySchema
+>;
+
 /** 수강생 목록 조회 쿼리 스키마 */
 import { paginationQuerySchema } from './common.validation.js';
 
