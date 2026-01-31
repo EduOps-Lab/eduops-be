@@ -77,6 +77,9 @@ resource "aws_instance" "app_server" {
 
   user_data = <<-EOF
                 #!/bin/bash
+                # 에러 발생 시 즉시 중단, 미선언 변수 사용 시 중단, 파이프라인 에러 감지
+                set -euo pipefail
+                
                 # Swap 메모리 설정 (2GB)
                 fallocate -l 2G /swapfile
                 chmod 600 /swapfile
