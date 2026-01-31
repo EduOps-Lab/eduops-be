@@ -116,7 +116,7 @@ export class StatisticsService {
         results.push(statistic);
       }
 
-      return results;
+      return await this.getStatistics(examId, userType, profileId);
     });
   }
 
