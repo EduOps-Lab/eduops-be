@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { container } from '../../../config/container.config.js';
 import { validate } from '../../../middlewares/validate.middleware.js';
-import { getClinicsQuerySchema } from '../../../validations/clinics.validation.js';
+import {
+  getClinicsQuerySchema,
+  updateClinicsSchema,
+} from '../../../validations/clinics.validation.js';
 
 export const mgmtClinicsRouter = Router();
 
@@ -20,4 +23,14 @@ mgmtClinicsRouter.get(
   '/',
   validate(getClinicsQuerySchema, 'query'),
   clinicsController.getClinics,
+);
+
+/**
+ * 다중 클리닉 수정
+ * PATCH /api/mgmt/v1/clinics
+ */
+mgmtClinicsRouter.patch(
+  '/',
+  validate(updateClinicsSchema, 'body'),
+  clinicsController.updateClinics,
 );

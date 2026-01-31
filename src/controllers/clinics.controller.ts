@@ -59,4 +59,28 @@ export class ClinicsController {
       next(error);
     }
   };
+
+  /** 다중 클리닉 수정 핸들러 */
+  updateClinics = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const profileId = getProfileIdOrThrow(req);
+      const user = getAuthUser(req);
+      const userType = user.userType as UserType;
+      const updateData = req.body;
+
+      const result = await this.clinicsService.updateClinics(
+        updateData,
+        userType,
+        profileId,
+      );
+
+      return successResponse(res, {
+        statusCode: 200,
+        data: result,
+        message: '클리닉 수정 완료',
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 }

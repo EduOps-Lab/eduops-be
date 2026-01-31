@@ -147,4 +147,45 @@ export class ClinicsRepository {
       },
     });
   }
+
+  /**
+   * 다중 클리닉 조회
+   */
+  async findByIds(clinicIds: string[], tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+    return await client.clinic.findMany({
+      where: {
+        id: {
+          in: clinicIds,
+        },
+      },
+    });
+  }
+
+  /**
+   * 다중 클리닉 수정
+   */
+  async updateMany(
+    clinicIds: string[],
+    data: {
+      status?: string;
+      deadline?: Date | null;
+      memo?: string | null;
+    },
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.clinic.updateMany({
+      where: {
+        id: {
+          in: clinicIds,
+        },
+      },
+      data: {
+        ...(data.status && { status: data.status }),
+        ...(data.deadline !== undefined && { deadline: data.deadline }),
+        ...(data.memo !== undefined && { memo: data.memo }),
+      },
+    });
+  }
 }

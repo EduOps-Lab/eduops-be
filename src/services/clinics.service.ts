@@ -9,7 +9,10 @@ import { ClinicsRepository } from '../repos/clinics.repo.js';
 import { ExamsRepository } from '../repos/exams.repo.js';
 import { LecturesRepository } from '../repos/lectures.repo.js';
 import { PermissionService } from './permission.service.js';
-import type { CreateClinicsDto } from '../validations/clinics.validation.js';
+import type {
+  CreateClinicsDto,
+  UpdateClinicsDto,
+} from '../validations/clinics.validation.js';
 
 export class ClinicsService {
   constructor(
@@ -204,5 +207,70 @@ export class ClinicsService {
         },
       };
     });
+  }
+
+  /** 클리닉 다중 수정 */
+  async updateClinics(
+    data: UpdateClinicsDto,
+    userType: UserType,
+    profileId: string,
+  ) {
+    const { clinicIds, updates } = data;
+
+    // 1. 수정 대상 클리닉 조회
+    const clinics = await this.clinicsRepo.findByIds(clinicIds);
+
+    // 2. 존재 여부 확인
+    if (clinics.length !== clinicIds.length) {
+      const foundIds = new Set(clinics.map((c) => c.id));
+      const missingIds = clinicIds.filter((id) => !foundIds.has(id));
+      throw new NotFoundException(
+        `다음 클리닉 ID를 찾을 수 없습니다: ${missingIds.join(', ')}`,
+      );
+    }
+
+    // 3. 권한 검증
+    // 수동 DI 컨벤션에 따라 PermissionService 사용
+    // 모든 클리닉이 해당 강사의 강의에 속하거나 강사가 담당자인지 확인
+    for (const clinic of clinics) {
+      if (clinic.instructorId === profileId) continue; // 직접 담당자면 통과
+
+      const lecture = await this.lecturesRepo.findById(clinic.lectureId);
+      if (!lecture) {
+        throw new NotFoundException('강의를 찾을 수 없습니다.');
+      }
+
+      await this.permissionService.validateInstructorAccess(
+        lecture.instructorId,
+        userType,
+        profileId,
+      );
+    }
+
+    // 4. 수정 처리 (Transaction)
+    const deadlineDate =
+      updates.deadline === undefined
+        ? undefined
+        : updates.deadline === null
+          ? null
+          : new Date(updates.deadline);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const updateResult = await this.clinicsRepo.updateMany(
+        clinicIds,
+        {
+          status: updates.status,
+          deadline: deadlineDate,
+          memo: updates.memo,
+        },
+        tx,
+      );
+      return updateResult;
+    });
+
+    return {
+      count: result.count,
+      message: `${result.count}개의 클리닉이 수정되었습니다.`,
+    };
   }
 }
