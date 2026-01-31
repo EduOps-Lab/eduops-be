@@ -17,6 +17,31 @@ import type { Lecture, Enrollment } from '../generated/prisma/client.js';
 
 export type LectureWithEnrollments = Lecture & { enrollments?: Enrollment[] };
 
+export type GetLecturesResponse = {
+  lectures: {
+    id: string;
+    title: string;
+    subject: string | null;
+    status: string;
+    startAt: Date | null;
+    instructorName: string;
+    enrollmentsCount: number;
+    lectureTimes: {
+      day: string;
+      startTime: string;
+      endTime: string;
+    }[];
+  }[];
+  pagination: {
+    totalCount: number;
+    totalPage: number;
+    currentPage: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+};
+
 export class LecturesService {
   constructor(
     private readonly lecturesRepository: LecturesRepository,
@@ -63,7 +88,10 @@ export class LecturesService {
   }
 
   /** 강의 리스트 조회 */
-  async getLectures(instructorId: string, query: GetLecturesQueryDto) {
+  async getLectures(
+    instructorId: string,
+    query: GetLecturesQueryDto,
+  ): Promise<GetLecturesResponse> {
     const { page = 1, limit = 4, search } = query;
 
     const { lectures, totalCount } = await this.lecturesRepository.findMany({
@@ -73,8 +101,23 @@ export class LecturesService {
       search,
     });
 
+    const mappedLectures = lectures.map((lecture) => ({
+      id: lecture.id,
+      title: lecture.title,
+      subject: lecture.subject,
+      status: lecture.status,
+      startAt: lecture.startAt,
+      instructorName: lecture.instructor.user.name,
+      enrollmentsCount: lecture._count.enrollments,
+      lectureTimes: lecture.lectureTimes.map((lt) => ({
+        day: lt.day,
+        startTime: lt.startTime,
+        endTime: lt.endTime,
+      })),
+    }));
+
     return {
-      lectures,
+      lectures: mappedLectures,
       pagination: {
         totalCount,
         totalPage: Math.ceil(totalCount / limit),

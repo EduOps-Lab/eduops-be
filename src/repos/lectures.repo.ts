@@ -9,6 +9,18 @@ import { CreateLectureWithInstructorIdDto } from '../validations/lectures.valida
 
 type LectureWithTimes = Lecture & { lectureTimes: LectureTime[] };
 
+type LectureWithRelations = Lecture & {
+  instructor: {
+    user: {
+      name: string;
+    };
+  };
+  lectureTimes: LectureTime[];
+  _count: {
+    enrollments: number;
+  };
+};
+
 export class LecturesRepository {
   constructor(private readonly prisma: PrismaClient) {}
   /** 강의 생성 */
@@ -56,10 +68,11 @@ export class LecturesRepository {
   async findById(
     id: string,
     tx?: Prisma.TransactionClient,
-  ): Promise<Lecture | null> {
+  ): Promise<LectureWithTimes | null> {
     const client = tx ?? this.prisma;
     return await client.lecture.findUnique({
       where: { id, deletedAt: null },
+      include: { lectureTimes: true },
     });
   }
 
@@ -72,7 +85,7 @@ export class LecturesRepository {
       search?: string;
     },
     tx?: Prisma.TransactionClient,
-  ): Promise<{ lectures: Lecture[]; totalCount: number }> {
+  ): Promise<{ lectures: LectureWithRelations[]; totalCount: number }> {
     const client = tx ?? this.prisma;
     const { page, limit, instructorId, search } = options;
 
@@ -90,6 +103,23 @@ export class LecturesRepository {
     const [lectures, totalCount] = await Promise.all([
       client.lecture.findMany({
         where,
+        include: {
+          instructor: {
+            select: {
+              user: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+          },
+          lectureTimes: true,
+          _count: {
+            select: {
+              enrollments: true,
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
@@ -97,7 +127,10 @@ export class LecturesRepository {
       client.lecture.count({ where }),
     ]);
 
-    return { lectures, totalCount };
+    return {
+      lectures: lectures as unknown as LectureWithRelations[],
+      totalCount,
+    };
   }
 
   /** 강의 수정 */
