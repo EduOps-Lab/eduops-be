@@ -80,20 +80,25 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           port: 22
+          envs: NODE_ENV,PORT,DATABASE_URL,FRONT_URL,BETTER_AUTH_SECRET,BETTER_AUTH_URL
           script: |
             # 작업 디렉토리로 이동
             cd /home/ec2-user/app
 
             # 0. 환경 변수 파일 생성
-            echo "${{ secrets.ENV_CONTENTS }}" > .env
+            echo "NODE_ENV=$NODE_ENV" > .env
+            echo "PORT=$PORT" >> .env
+            echo "DATABASE_URL=$DATABASE_URL" >> .env
+            echo "FRONT_URL=$FRONT_URL" >> .env
+            echo "BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET" >> .env
+            echo "BETTER_AUTH_URL=$BETTER_AUTH_URL" >> .env
 
             # 1. 디스크 공간 확보 (중요: t3.micro 용량 부족 방지)
-
-            echo "디스크 공간 정리 중..."
             docker system prune -af --volumes || true
 
             # 2. 리포지토리 이름을 소문자로 변환
             IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+            echo "GITHUB_REPOSITORY=$IMAGE_NAME" >> .env
 
             # 3. GitHub Container Registry 로그인
             echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
@@ -102,12 +107,21 @@ jobs:
             docker pull ghcr.io/$IMAGE_NAME:latest
 
             # 5. 무중단 배포 스크립트 실행
+            export $(grep -v '^#' .env | xargs)
             export GITHUB_REPOSITORY="$IMAGE_NAME"
+            chmod 600 .env
             chmod +x deploy.sh
             ./deploy.sh
 
             # 사용하지 않는 이미지 정리
             docker image prune -af
+    env:
+      NODE_ENV: ${{ secrets.NODE_ENV }}
+      PORT: ${{ secrets.PORT }}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      FRONT_URL: ${{ secrets.FRONT_URL }}
+      BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+      BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
 
   notify:
     name: Notify Deployment Status
