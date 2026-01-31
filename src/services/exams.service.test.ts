@@ -12,12 +12,14 @@ import type {
   ExamsRepository,
   ExamWithQuestions,
 } from '../repos/exams.repo.js';
-import type { LecturesRepository } from '../repos/lectures.repo.js';
+import type {
+  LecturesRepository,
+  LectureWithTimes,
+} from '../repos/lectures.repo.js';
 import type { PermissionService } from './permission.service.js';
 import type {
   PrismaClient,
   Prisma,
-  Lecture,
   Question,
   Exam,
 } from '../generated/prisma/client.js';
@@ -65,7 +67,8 @@ describe('ExamsService', () => {
       const mockLecture = {
         id: mockLectureId,
         instructorId: mockProfileId,
-      } as Lecture;
+        lectureTimes: [],
+      } as unknown as LectureWithTimes;
       const createDto: CreateExamDto = {
         title: 'Midterm Exam',
         cutoffScore: 0,
@@ -131,7 +134,8 @@ describe('ExamsService', () => {
       const mockLecture = {
         id: mockLectureId,
         instructorId: mockProfileId,
-      } as Lecture;
+        lectureTimes: [],
+      } as unknown as LectureWithTimes;
       const updateDto: UpdateExamDto = {
         title: 'Updated Title',
         cutoffScore: 0,
