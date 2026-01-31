@@ -41,6 +41,10 @@ import { GradesController } from '../controllers/grades.controller.js';
 import { GradesRepository } from '../repos/grades.repo.js';
 import { GradesService } from '../services/grades.service.js';
 
+import { StatisticsRepository } from '../repos/statistics.repo.js';
+import { StatisticsService } from '../services/statistics.service.js';
+import { StatisticsController } from '../controllers/statistics.controller.js';
+
 // 1. Instantiate Repositories
 const instructorRepo = new InstructorRepository(prisma);
 const studentRepo = new StudentRepository(prisma);
@@ -50,6 +54,7 @@ const assistantCodeRepo = new AssistantCodeRepository(prisma);
 const parentChildLinkRepo = new ParentChildLinkRepository(prisma);
 const examsRepo = new ExamsRepository(prisma);
 const gradesRepo = new GradesRepository(prisma);
+const statisticsRepo = new StatisticsRepository(prisma);
 
 const lecturesRepo = new LecturesRepository(prisma);
 const enrollmentsRepo = new EnrollmentsRepository(prisma);
@@ -81,6 +86,14 @@ const examsService = new ExamsService(
 
 const gradesService = new GradesService(
   gradesRepo,
+  examsRepo,
+  lecturesRepo,
+  permissionService,
+  prisma,
+);
+
+const statisticsService = new StatisticsService(
+  statisticsRepo,
   examsRepo,
   lecturesRepo,
   permissionService,
@@ -130,6 +143,7 @@ const attendancesController = new AttendancesController(attendancesService);
 const childrenController = new ChildrenController(parentsService);
 const examsController = new ExamsController(examsService);
 const gradesController = new GradesController(gradesService);
+const statisticsController = new StatisticsController(statisticsService);
 
 // 4. Create Middlewares (Inject Services)
 const requireAuth = createRequireAuth(authService);
@@ -149,6 +163,7 @@ export const container = {
   enrollmentsService,
   attendancesService,
   parentsService,
+  statisticsService,
   // Controllers
   authController,
   lecturesController,
@@ -157,6 +172,7 @@ export const container = {
   childrenController,
   examsController,
   gradesController,
+  statisticsController,
   // Middlewares
   requireAuth,
   optionalAuth,

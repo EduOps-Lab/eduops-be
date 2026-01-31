@@ -46,3 +46,19 @@ mgmtExamsRouter.get(
   (req, res, next) =>
     container.gradesController.getGradesByExam(req, res, next),
 );
+
+/** 통계 산출 및 저장 */
+mgmtExamsRouter.post(
+  '/:examId/statistics',
+  validate(examIdParamSchema, 'params'),
+  (req, res, next) =>
+    container.statisticsController.calculateStatistics(req, res, next),
+);
+
+/** 캐싱된 통계 조회 */
+mgmtExamsRouter.get(
+  '/:examId/statistics',
+  validate(examIdParamSchema, 'params'),
+  (req, res, next) =>
+    container.statisticsController.getStatistics(req, res, next),
+);
