@@ -64,26 +64,25 @@ resource "aws_subnet" "private_subnet" {
 }
 
 resource "aws_subnet" "private_subnet_2" {
-    vpc_id                    = aws_vpc.lms_vpc.id
-    cidr_block              = "10.0.4.0/24"
-    availability_zone   = "ap-northeast-2c"
-    tags                        =  { Name = "lms-private-sn-2"}
+  vpc_id            = aws_vpc.lms_vpc.id
+  cidr_block        = "10.0.4.0/24"
+  availability_zone = "ap-northeast-2c"
+  tags              = { Name = "lms-private-sn-2" }
 }
 
 #  DB 서브넷 그룹 (인스턴스가 위치할 수 있는 후보지 목록)
 resource "aws_db_subnet_group" "lms_db_sn_group" {
-    name            = "lms-db-subnet-group"
-    subnet_ids   = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_2.id]
-    tags              =  { Name = "lms-db-sn-group"}
+  name       = "lms-db-subnet-group"
+  subnet_ids = [aws_subnet.private_subnet.id, aws_subnet.private_subnet_2.id]
+  tags       = { Name = "lms-db-sn-group" }
 }
 
-# Security Group - 0.0.0.0/0 금지
-# EC2 Security Group (ALB에서만 오는 요청만 가능)
+# Security Group
 resource "aws_security_group" "app_sg" {
   name   = "app-sg"
   vpc_id = aws_vpc.lms_vpc.id
 
-  # 웹 서비스용 (누구나 접속 가능)
+  # 웹 서비스용 (누구나 접속 가능 - Direct Access)
   ingress {
     from_port   = 80
     to_port     = 80
@@ -91,7 +90,7 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # HTTPS: 나중에 인증서를 붙인다면 443도 필요함
+  # HTTPS
   ingress {
     from_port   = 443 #  백엔드 포트
     to_port     = 443
@@ -99,10 +98,9 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  ## 배포용 (SSH 22번 포트)
-  ## 연습으로 0.0.0.0/0으로 열지만, 실제론 본인 IP만 여는 것이 좋다
-  ## 그래서 자기의 IP만 허용하게 한다 (아래 데이터 소스 체크)
+  ## SSH 접속 (내 IP만 허용)
   ingress {
+    description = "Allow SSH from My IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -133,10 +131,10 @@ resource "aws_instance" "app_server" {
 
   # 루트 볼륨 크기 지정 (기본 8GB -> 30GB)
   root_block_device {
-    volume_size = 30
-    volume_type = "gp3"
-    delete_on_termination = true 
-    tags = { Name = "lms-root-volumn"}
+    volume_size           = 30
+    volume_type           = "gp3"
+    delete_on_termination = true
+    tags                  = { Name = "lms-root-volumn" }
   }
 
   ## Bastion Host (중간 다리 컴퓨터 jump-server) 아니면 AWS SSM(시스템 매니저) 사용 지금은 public으로 개발자가 접속 가능하게
@@ -157,25 +155,30 @@ resource "aws_instance" "app_server" {
   # EC2  생성 시 자동으로 실행될 스크립트
   user_data = <<-EOF
                 #!/bin/bash
-                # 1. Swap 메모리 설정 (2GB)
+                # Swap 메모리 설정 (2GB)
                 fallocate -l 2G /swapfile
                 chmod 600 /swapfile
                 mkswap /swapfile
                 swapon /swapfile
                 echo '/swapfile none swap sw 0 0' >> /etc/fstab
 
-                # 2. 기초 패키지 설치 (Docker 등)
+                # 기초 패키지 설치
                 dnf update -y
                 dnf install -y docker
                 systemctl start docker
                 systemctl enable docker
-                
-                # 유저를 docker 그룹에 추가 (sudo 없이 사용 위함)
                 usermod -aG docker ec2-user
-                # 현재 구성에서 docker-compose.yml 를 쓰시므로 필수
+
+                # Docker Compose 설치
                 mkdir -p /usr/local/lib/docker/cli-plugins/
-                curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+
+                COMPOSE_VERSION="v5.0.1"
+                curl -SL "https://github.com/docker/compose/releases/download/$${COMPOSE_VERSION}/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose
+
                 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+                # 설치 확인
+                docker compose version
                 EOF
 
   tags = { Name = "lms-app-server" }
@@ -185,10 +188,6 @@ resource "aws_instance" "app_server" {
 data "http" "myip" {
   url = "https://ipv4.icanhazip.com"
 }
-
-# ============================================
-# RDS 관련 리소스 추가 (단일 AZ)
-# ============================================
 
 # RDS Security Group (EC2에서만 접근 가능)
 resource "aws_security_group" "rds_sg" {
@@ -222,10 +221,10 @@ resource "aws_db_instance" "postgres" {
   instance_class = "db.t3.micro" # 프리티어
 
   # 단일 AZ 설정
-  multi_az                            = false                          # 대기  인스턴스 생성 안 함
-  availability_zone              = "ap-northeast-2a"    # 특정 AZ에고정
-  db_subnet_group_name = aws_db_subnet_group.lms_db_sn_group.name
-  vpc_security_group_ids  = [aws_security_group.rds_sg.id]
+  multi_az               = false             # 대기  인스턴스 생성 안 함
+  availability_zone      = "ap-northeast-2a" # 특정 AZ에고정
+  db_subnet_group_name   = aws_db_subnet_group.lms_db_sn_group.name
+  vpc_security_group_ids = [aws_security_group.rds_sg.id]
 
   # 스토리지 설정
   allocated_storage     = 20
@@ -239,9 +238,9 @@ resource "aws_db_instance" "postgres" {
   password = var.db_password # variables.tf에서 정의
 
   # 삭제 방지 설정
-  publicly_accessible  = false
-  deletion_protection = false # 개발 환경에서는 false, 프로덕션은 true
-  skip_final_snapshot = true  # 개발 환경에서는 true, 프로덕션은 false
+  publicly_accessible = false
+  deletion_protection = var.rds_deletion_protection
+  skip_final_snapshot = var.rds_skip_final_snapshot
 
   tags = { Name = "lms-postgres" }
 }
