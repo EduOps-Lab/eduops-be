@@ -7,7 +7,7 @@ import type {
 import { QueryMode } from '../generated/prisma/internal/prismaNamespace.js';
 import { CreateLectureWithInstructorIdDto } from '../validations/lectures.validation.js';
 
-type LectureWithTimes = Lecture & { lectureTimes: LectureTime[] };
+export type LectureWithTimes = Lecture & { lectureTimes: LectureTime[] };
 
 type LectureWithRelations = Lecture & {
   instructor: {

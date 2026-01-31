@@ -1,15 +1,24 @@
 import { fakerKO as faker } from '@faker-js/faker';
-import type { Lecture, Instructor } from '../../generated/prisma/client.js';
+import type { Instructor } from '../../generated/prisma/client.js';
 import { LectureStatus } from '../../constants/lectures.constant.js';
 import { mockProfiles } from './profile.fixture.js';
+import { mockUsers } from './user.fixture.js';
+import type { LectureWithTimes } from '../../repos/lectures.repo.js';
 
 /** Mock Instructor 데이터 */
 export const mockInstructor: Instructor = {
   ...mockProfiles.instructor,
 } as Instructor;
 
+/** Mock Instructor with User 데이터 (Repo findMany 응답용) */
+export const mockInstructorWithUser = {
+  user: {
+    name: mockUsers.instructor.name,
+  },
+};
+
 /** Mock Lecture 데이터 */
-export const mockLectures = {
+export const mockLectures: Record<string, LectureWithTimes> = {
   /** 기본 강의 */
   basic: {
     id: faker.string.uuid(),
@@ -23,7 +32,8 @@ export const mockLectures = {
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     deletedAt: null,
-  } as Lecture,
+    lectureTimes: [],
+  },
 
   /** Enrollments와 함께 생성될 강의 */
   withEnrollments: {
@@ -38,7 +48,8 @@ export const mockLectures = {
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     deletedAt: null,
-  } as Lecture,
+    lectureTimes: [],
+  },
 
   /** 다른 강사의 강의 (권한 테스트용) */
   otherInstructor: {
@@ -53,7 +64,8 @@ export const mockLectures = {
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     deletedAt: null,
-  } as Lecture,
+    lectureTimes: [],
+  },
 
   /** 종강된 강의 */
   completed: {
@@ -68,8 +80,9 @@ export const mockLectures = {
     createdAt: new Date('2023-08-01'),
     updatedAt: new Date('2023-08-01'),
     deletedAt: null,
-  } as Lecture,
-} as const;
+    lectureTimes: [],
+  },
+};
 
 /** 강의 생성 요청 DTO */
 export const createLectureRequests = {
@@ -155,6 +168,19 @@ export const updateLectureRequests = {
 
 /** 강의 목록 조회 응답 Mock */
 export const mockLecturesListResponse = {
-  lectures: [mockLectures.basic, mockLectures.withEnrollments],
+  lectures: [
+    {
+      ...mockLectures.basic,
+      instructor: mockInstructorWithUser,
+      lectureTimes: [],
+      _count: { enrollments: 10 },
+    },
+    {
+      ...mockLectures.withEnrollments,
+      instructor: mockInstructorWithUser,
+      lectureTimes: [],
+      _count: { enrollments: 5 },
+    },
+  ],
   totalCount: 2,
 };
