@@ -136,10 +136,7 @@ if [ "$CONTAINER_READY" = true ]; then
         echo -e "${GREEN}[$TARGET] 환경 Prisma 마이그레이션 성공!${NC}"
     else
         echo -e "${RED}[$TARGET] 환경 Prisma 마이그레이션 실패!${NC}"
-        docker exec $NEW_CONTAINER ls -la .env || echo ".env 파일이 컨테이너 내부에 없습니다."
-        docker exec $NEW_CONTAINER printenv || grep DATABASE_URL || echo "변수 없음"
         echo -e "${RED}새 컨테이너를 중지합니다.${NC}"
-        echo "CLEAN_DATABASE_URL: ${CLEAN_DATABASE_URL}"
         $COMPOSE stop $NEW_SERVICE
         exit 1
     fi
@@ -177,15 +174,15 @@ if [ "$HEALTH_CHECK_FAILED" = true ]; then
     
     # 새 컨테이너 로그 확인
     echo -e "${YELLOW}[$TARGET] 컨테이너 로그:${NC}"
-    $COMPOSE logs $NEW_CONTAINER
+    $COMPOSE logs $NEW_SERVICE
     
     # 새 컨테이너 중지
     echo -e "${YELLOW}[$TARGET] 컨테이너 중지 중...${NC}"
-    $COMPOSE stop $NEW_CONTAINER
+    $COMPOSE stop $NEW_SERVICE
     
     # 컨테이너 삭제 (리소스 확보)
     echo -e "${YELLOW}[$TARGET] 컨테이너 삭제 중...${NC}"
-    $COMPOSE rm -f $NEW_CONTAINER
+    $COMPOSE rm -f $NEW_SERVICE
     
     # Nginx 설정 원복 (이전 환경이 있었을 경우에만)
     if [ "$CURRENT" != "none" ]; then
