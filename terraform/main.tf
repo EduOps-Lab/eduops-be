@@ -183,7 +183,7 @@ resource "aws_instance" "app_server" {
 
 # 내 현재 IP를 자동으로 가져오는 데이터 소스
 data "http" "myip" {
-  url = "http://ipv4.icanhazip.com"
+  url = "https://ipv4.icanhazip.com"
 }
 
 # ============================================
