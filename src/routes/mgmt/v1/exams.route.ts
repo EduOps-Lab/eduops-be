@@ -5,6 +5,7 @@ import {
   examIdParamSchema,
   updateExamSchema,
 } from '../../../validations/exams.validation.js';
+import { submitGradingSchema } from '../../../validations/grades.validation.js';
 
 export const mgmtExamsRouter = Router();
 
@@ -28,4 +29,20 @@ mgmtExamsRouter.patch(
   validate(examIdParamSchema, 'params'),
   validate(updateExamSchema, 'body'),
   examsController.updateExam,
+);
+
+/** 채점 제출 (학생 답안 채점 및 Upsert) */
+mgmtExamsRouter.post(
+  '/:examId/grades',
+  validate(examIdParamSchema, 'params'),
+  validate(submitGradingSchema, 'body'),
+  (req, res, next) => container.gradesController.submitGrading(req, res, next),
+);
+
+/** 성적 조회 */
+mgmtExamsRouter.get(
+  '/:examId/grades',
+  validate(examIdParamSchema, 'params'),
+  (req, res, next) =>
+    container.gradesController.getGradesByExam(req, res, next),
 );

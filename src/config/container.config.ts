@@ -36,6 +36,10 @@ import { ExamsService } from '../services/exams.service.js';
 
 import { ChildrenController } from '../controllers/children.controller.js';
 import { ExamsController } from '../controllers/exams.controller.js';
+import { GradesController } from '../controllers/grades.controller.js';
+
+import { GradesRepository } from '../repos/grades.repo.js';
+import { GradesService } from '../services/grades.service.js';
 
 // 1. Instantiate Repositories
 const instructorRepo = new InstructorRepository(prisma);
@@ -45,6 +49,7 @@ const parentRepo = new ParentRepository(prisma);
 const assistantCodeRepo = new AssistantCodeRepository(prisma);
 const parentChildLinkRepo = new ParentChildLinkRepository(prisma);
 const examsRepo = new ExamsRepository(prisma);
+const gradesRepo = new GradesRepository(prisma);
 
 const lecturesRepo = new LecturesRepository(prisma);
 const enrollmentsRepo = new EnrollmentsRepository(prisma);
@@ -68,6 +73,14 @@ const permissionService = new PermissionService(
 );
 
 const examsService = new ExamsService(
+  examsRepo,
+  lecturesRepo,
+  permissionService,
+  prisma,
+);
+
+const gradesService = new GradesService(
+  gradesRepo,
   examsRepo,
   lecturesRepo,
   permissionService,
@@ -116,6 +129,7 @@ const enrollmentsController = new EnrollmentsController(enrollmentsService);
 const attendancesController = new AttendancesController(attendancesService);
 const childrenController = new ChildrenController(parentsService);
 const examsController = new ExamsController(examsService);
+const gradesController = new GradesController(gradesService);
 
 // 4. Create Middlewares (Inject Services)
 const requireAuth = createRequireAuth(authService);
@@ -142,6 +156,7 @@ export const container = {
   attendancesController,
   childrenController,
   examsController,
+  gradesController,
   // Middlewares
   requireAuth,
   optionalAuth,
