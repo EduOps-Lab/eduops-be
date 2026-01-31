@@ -105,3 +105,9 @@ resource "aws_instance" "app_server" {
 
   tags = { Name = "${var.env}-app-server" }
 }
+
+resource "aws_eip" "app_eip" {
+  instance = aws_instance.app_server.id
+  domain   = "vpc"
+  tags     = { Name = "${var.env}-app-eip" }
+}
