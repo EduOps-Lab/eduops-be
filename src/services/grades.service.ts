@@ -56,8 +56,16 @@ export class GradesService {
 
     let calculatedTotalScore = 0;
     let calculatedCorrectCount = 0;
+    const seenQuestionIds = new Set<string>();
 
     for (const answer of answers) {
+      if (seenQuestionIds.has(answer.questionId)) {
+        throw new BadRequestException(
+          `중복된 문항 ID가 제출되었습니다: ${answer.questionId}`,
+        );
+      }
+      seenQuestionIds.add(answer.questionId);
+
       const question = questionMap.get(answer.questionId);
       if (!question) {
         throw new BadRequestException(

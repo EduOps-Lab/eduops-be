@@ -46,7 +46,7 @@ export class StatisticsService {
       await this.statisticsRepo.countGradesByExamId(examId);
 
     // 4. 문항별 통계 계산 및 저장 (Transaction)
-    return await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       const results = [];
 
       for (const question of questions) {
@@ -77,21 +77,6 @@ export class StatisticsService {
             choiceCounts[choice] = (choiceCounts[choice] || 0) + 1;
           });
 
-          // 등록된 보기(question.choices)가 있다면 그 키를 기준으로 0%라도 채워줄 수 있음
-          // 요구사항에 '각 문항의 선지별 선택률 jsonb 형태로 기록'이라 되어있으므로,
-          // 답안에 등장한 선지 외에도 원본 보기에 있는 선지들도 포함하는 게 좋음.
-          // 다만 question.choices 구조가 JSON이라 파싱 필요.
-          // 여기서는 간단히 제출된 답안 기준으로만 집계하거나, 혹은 1~5번 등 일반적인 선지를 가정할 수 없으므로
-          // "제출된 답안"에 등장한 키들 + (가능하다면) 원본 choices 키들을 합집합으로 처리.
-
-          // 일단 제출된 답안 기준으로 비율 계산
-          // 선택된 보기에 대해서만 비율 계산 (선택되지 않은 보기는 포함 안 될 수도 있음 -> 개선 포인트)
-          // 하지만 전체 비율 합이 100% 근처가 되려면 분모는 totalSubmissions여야 함.
-          // (무응답/건너뛰기 한 경우 합이 100% 미만일 수 있음)
-
-          // Prisma JSON 타입 이슈 방지를 위해 any 혹은 타입 단언 필요할 수 있음
-          // 여기서는 동적으로 수집된 키들에 대해 비율 계산
-
           Object.keys(choiceCounts).forEach((choiceKey) => {
             const count = choiceCounts[choiceKey];
             const rate =
@@ -115,9 +100,8 @@ export class StatisticsService {
         );
         results.push(statistic);
       }
-
-      return await this.getStatistics(examId, userType, profileId);
     });
+    return await this.getStatistics(examId, userType, profileId);
   }
 
   /** 통계 조회 (확장: 전체 평균, 등수 등 포함) */

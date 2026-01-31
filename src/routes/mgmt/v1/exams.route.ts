@@ -6,6 +6,7 @@ import {
   updateExamSchema,
 } from '../../../validations/exams.validation.js';
 import { submitGradingSchema } from '../../../validations/grades.validation.js';
+import { createClinicsSchema } from '../../../validations/clinics.validation.js';
 
 export const mgmtExamsRouter = Router();
 
@@ -62,8 +63,6 @@ mgmtExamsRouter.get(
   (req, res, next) =>
     container.statisticsController.getStatistics(req, res, next),
 );
-
-import { createClinicsSchema } from '../../../validations/clinics.validation.js';
 
 /** 채점 완료 처리 및 클리닉 생성 */
 mgmtExamsRouter.post(

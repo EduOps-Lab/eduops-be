@@ -124,11 +124,9 @@ export class StatisticsRepository {
     const grouped = await client.studentAnswer.groupBy({
       by: ['enrollmentId'],
       where: {
-        // 시험 ID로 직접 필터링이 불가능하므로 (studentAnswer에는 examId가 없음),
-        // lectureId와 questionId 조합으로 해야 함.
-        // 하지만 편의상 Service에서 questionId 목록을 받아오는 게 정확할 수 있음.
-        // 또는 여기서는 question.examId로 필터링하기 위해 where 조건에 question relation 필터 사용
-        question: { examId },
+        question: {
+          is: { examId },
+        },
         isCorrect: true,
       },
       _count: {
