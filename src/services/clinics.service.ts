@@ -181,22 +181,6 @@ export class ClinicsService {
       const score =
         gradeMap.get(`${clinic.examId}:${clinic.enrollmentId}`) ?? 0;
 
-      // 상태 통보 전(READY) -> "통보 전"
-      // 상태 통보 완료(NOTIFIED) -> "통보 완료" (TODO: Notification 로직 구현 시 반영)
-      // 완료(COMPLETED) -> "진행 완료"
-
-      // 여기서는 notificationStatus와 status를 조합하여 UI용 status를 결정할 수 있습니다.
-      // 하지만 API 응답은 raw 데이터를 주고 프론트엔드에서 처리하거나,
-      // 요구사항에 맞춰 조합된 status 필드를 내려줄 수도 있습니다.
-      // 우선 요구사항의 3단계를 표현하기 위해 computed status를 제공합니다.
-
-      let displayStatus = '통보 전';
-      if (clinic.status === 'COMPLETED') {
-        displayStatus = '진행 완료';
-      } else if (clinic.notificationStatus !== 'READY') {
-        displayStatus = '통보 완료';
-      }
-
       return {
         id: clinic.id,
         student: {
@@ -216,9 +200,7 @@ export class ClinicsService {
         clinic: {
           createdAt: clinic.createdAt, // 클리닉 생성일
           deadline: clinic.deadline,
-          status: clinic.status, // 원본 상태
-          notificationStatus: clinic.notificationStatus, // 원본 알림 상태
-          displayStatus, // 계산된 상태 (통보 전/통보 완료/진행 완료)
+          status: clinic.status, // 통합된 상태 (PENDING, SENT, COMPLETED)
         },
       };
     });

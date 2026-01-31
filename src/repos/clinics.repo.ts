@@ -80,7 +80,6 @@ export class ClinicsRepository {
         memo: item.memo,
         instructorId: item.instructorId,
         status: 'PENDING',
-        notificationStatus: 'READY',
       })),
       skipDuplicates: true, // 중복 키 에러 방지 (@@unique([enrollmentId, examId]))
     });
