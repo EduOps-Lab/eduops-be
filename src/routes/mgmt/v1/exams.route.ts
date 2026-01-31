@@ -62,3 +62,13 @@ mgmtExamsRouter.get(
   (req, res, next) =>
     container.statisticsController.getStatistics(req, res, next),
 );
+
+import { createClinicsSchema } from '../../../validations/clinics.validation.js';
+
+/** 클리닉 일괄 생성 (불합격자 대상) */
+mgmtExamsRouter.post(
+  '/:examId/clinics',
+  validate(examIdParamSchema, 'params'),
+  validate(createClinicsSchema, 'body'),
+  (req, res, next) => container.clinicsController.createClinics(req, res, next),
+);

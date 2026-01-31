@@ -45,6 +45,10 @@ import { StatisticsRepository } from '../repos/statistics.repo.js';
 import { StatisticsService } from '../services/statistics.service.js';
 import { StatisticsController } from '../controllers/statistics.controller.js';
 
+import { ClinicsRepository } from '../repos/clinics.repo.js';
+import { ClinicsService } from '../services/clinics.service.js';
+import { ClinicsController } from '../controllers/clinics.controller.js';
+
 // 1. Instantiate Repositories
 const instructorRepo = new InstructorRepository(prisma);
 const studentRepo = new StudentRepository(prisma);
@@ -55,6 +59,7 @@ const parentChildLinkRepo = new ParentChildLinkRepository(prisma);
 const examsRepo = new ExamsRepository(prisma);
 const gradesRepo = new GradesRepository(prisma);
 const statisticsRepo = new StatisticsRepository(prisma);
+const clinicsRepo = new ClinicsRepository(prisma);
 
 const lecturesRepo = new LecturesRepository(prisma);
 const enrollmentsRepo = new EnrollmentsRepository(prisma);
@@ -94,6 +99,14 @@ const gradesService = new GradesService(
 
 const statisticsService = new StatisticsService(
   statisticsRepo,
+  examsRepo,
+  lecturesRepo,
+  permissionService,
+  prisma,
+);
+
+const clinicsService = new ClinicsService(
+  clinicsRepo,
   examsRepo,
   lecturesRepo,
   permissionService,
@@ -144,6 +157,7 @@ const childrenController = new ChildrenController(parentsService);
 const examsController = new ExamsController(examsService);
 const gradesController = new GradesController(gradesService);
 const statisticsController = new StatisticsController(statisticsService);
+const clinicsController = new ClinicsController(clinicsService);
 
 // 4. Create Middlewares (Inject Services)
 const requireAuth = createRequireAuth(authService);
@@ -164,6 +178,7 @@ export const container = {
   attendancesService,
   parentsService,
   statisticsService,
+  clinicsService,
   // Controllers
   authController,
   lecturesController,
@@ -173,6 +188,7 @@ export const container = {
   examsController,
   gradesController,
   statisticsController,
+  clinicsController,
   // Middlewares
   requireAuth,
   optionalAuth,
