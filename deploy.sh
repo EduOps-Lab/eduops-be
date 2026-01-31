@@ -5,7 +5,7 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-BLUE='\033[0;34m]'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # 포트 정의
@@ -39,7 +39,11 @@ fi
 if [ -z "$DATABASE_URL" ]; then
     echo -e "${RED}경고: DATABASE_URL이 로드되지 않았습니다! .env 파일을 확인하세요.${NC}"
     # DATABASE_URL이 로드되지 않은 경우, 파일 내용은 있는데 변수명이 틀렸는지 확인하기 위해 출력
-    grep "DATABASE_URL" "$ENV_PATH" || echo "DATABASE_URL 키가 파일에 없습니다."
+    if grep -q "^DATABASE_URL=" "$ENV_PATH"; then
+        echo -e "${RED}DATABASE_URL 키가 파일에 존재하지만 로드 실패${NC}"
+    else
+        echo -e "${RED}DATABASE_URL 키가 파일에 없습니다.${NC}"
+    fi
     exit 1
 fi
 
@@ -72,9 +76,10 @@ else
     NEW_SERVICE="backend-blue"
 fi
 
-# 0. 디스크 공간 확보 (중요: t3.micro 용량 부족 방지)
+# 디스크 공간 확보 (중요: t3.micro 용량 부족 방지)
 echo -e "${YELLOW}사용하지 않는 이미지 및 컨테이너 정리 중...${NC}"
-docker system prune -af --volumes || true
+# 이미지는 건드리지 않고 멈춘 컨테이너만 삭제 (데이터 볼륨은 보호됨)
+docker system prune -f
 
 # Docker Compose 명령어 확인 및 설치 (Amazon Linux 2023 대응)
 if docker compose version > /dev/null 2>&1; then
@@ -94,9 +99,9 @@ fi
 echo -e "${YELLOW}[$TARGET] 컨테이너 시작 중...${NC}"
 
 if [ "$TARGET" = "green" ]; then
-    $COMPOSE --profile green up -d backend-green
+    $COMPOSE --profile green up -d backend-green nginx
 else
-    $COMPOSE up -d backend-blue
+    $COMPOSE --profile blue up -d backend-blue nginx
 fi
 
 # 컨테이너 실행 대기
@@ -222,6 +227,13 @@ fi
 
 # Nginx 설정 검증 및 리로드
 echo -e "${YELLOW}Nginx 설정 검증 중...${NC}"
+
+if ! $COMPOSE ps nginx | grep -q "Up"; then
+    echo -e "${YELLOW}Nginx 컨테이너가 실행 중이지 않습니다. 강제 시작합니다...${NC}"
+    $COMPOSE up -d nginx
+    sleep 3
+fi
+
 if $COMPOSE exec -T nginx nginx -t; then
     echo -e "${GREEN}Nginx 설정 검증 성공!${NC}"
     $COMPOSE exec -T nginx nginx -s reload
