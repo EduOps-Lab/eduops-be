@@ -1,5 +1,6 @@
 import { PrismaClient } from '../generated/prisma/client.js';
 import { UserType } from '../constants/auth.constant.js';
+import { GradingStatus } from '../constants/exams.constant.js';
 import {
   NotFoundException,
   BadRequestException,
@@ -32,6 +33,10 @@ export class GradesService {
     const exam = await this.examsRepo.findById(examId);
     if (!exam) {
       throw new NotFoundException('시험을 찾을 수 없습니다.');
+    }
+
+    if (exam.gradingStatus === GradingStatus.COMPLETED) {
+      throw new BadRequestException('이미 채점이 완료된 시험입니다.');
     }
 
     // 2. 권한 검증 (강사/조교)
@@ -100,7 +105,17 @@ export class GradesService {
     const isPass = calculatedTotalScore >= exam.cutoffScore;
 
     // 5. DB Upsert (Transaction)
+    // 5. DB Upsert (Transaction)
     return await this.prisma.$transaction(async (tx) => {
+      // 5-0. 시험 상태 변경 (채점 전 -> 채점 중)
+      if (exam.gradingStatus === GradingStatus.PENDING) {
+        await this.examsRepo.updateGradingStatus(
+          examId,
+          GradingStatus.IN_PROGRESS,
+          tx,
+        );
+      }
+
       // 5-1. 답안 Upsert
       await this.gradesRepo.upsertStudentAnswers(
         exam.lectureId,

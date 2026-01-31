@@ -302,6 +302,9 @@ model Exam {
   clinics   Clinic[]
   schedule  Schedule?
 
+  // [New] 채점 상태: PENDING(채점 전), IN_PROGRESS(채점 중), COMPLETED(완료)
+  gradingStatus String @default("PENDING") @map("grading_status")
+
   @@unique([lectureId, id])
   // [Performance] 강의 내 시험 목록 조회
   @@index([lectureId])

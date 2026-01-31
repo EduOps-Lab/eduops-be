@@ -65,10 +65,11 @@ mgmtExamsRouter.get(
 
 import { createClinicsSchema } from '../../../validations/clinics.validation.js';
 
-/** 클리닉 일괄 생성 (불합격자 대상) */
+/** 채점 완료 처리 및 클리닉 생성 */
 mgmtExamsRouter.post(
-  '/:examId/clinics',
+  '/:examId/grades/complete',
   validate(examIdParamSchema, 'params'),
   validate(createClinicsSchema, 'body'),
-  (req, res, next) => container.clinicsController.createClinics(req, res, next),
+  (req, res, next) =>
+    container.clinicsController.completeGrading(req, res, next),
 );

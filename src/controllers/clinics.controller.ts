@@ -7,8 +7,8 @@ import { UserType } from '../constants/auth.constant.js';
 export class ClinicsController {
   constructor(private readonly clinicsService: ClinicsService) {}
 
-  /** 클리닉 일괄 생성 핸들러 */
-  createClinics = async (req: Request, res: Response, next: NextFunction) => {
+  /** 채점 완료 및 클리닉 생성 핸들러 */
+  completeGrading = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { examId } = req.params;
       const profileId = getProfileIdOrThrow(req);
@@ -16,7 +16,7 @@ export class ClinicsController {
       const userType = user.userType as UserType;
       const clinicData = req.body;
 
-      const result = await this.clinicsService.createClinicsForFailedStudents(
+      const result = await this.clinicsService.completeGrading(
         examId,
         clinicData,
         userType,
@@ -24,9 +24,9 @@ export class ClinicsController {
       );
 
       return successResponse(res, {
-        statusCode: 201,
+        statusCode: 200,
         data: result,
-        message: '클리닉 생성 요청이 처리되었습니다.',
+        message: '채점이 완료 처리되었습니다.',
       });
     } catch (error) {
       next(error);
