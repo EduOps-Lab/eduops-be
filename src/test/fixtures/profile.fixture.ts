@@ -18,6 +18,7 @@ export const mockProfiles = {
     ]),
     academy: `${faker.company.name()} 학원`,
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   },
   assistant: {
@@ -28,6 +29,7 @@ export const mockProfiles = {
     signupCode: faker.string.alphanumeric(10).toUpperCase(),
     contract: null,
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
   },
   student: {
     id: faker.string.uuid(),
@@ -36,11 +38,13 @@ export const mockProfiles = {
     school: `${faker.person.lastName()}고등학교`,
     schoolYear: faker.helpers.arrayElement(['1', '2', '3']),
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
   },
   parent: {
     id: faker.string.uuid(),
     userId: mockUsers.parent.id,
     phoneNumber: faker.phone.number({ style: 'national' }),
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
   },
 } as const;
