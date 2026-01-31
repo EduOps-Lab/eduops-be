@@ -1,3 +1,15 @@
+variable "env" {
+  description = "배포 환경 (dev, prod 등)"
+  type        = string
+  default     = "dev"
+}
+
+variable "region" {
+  description = "AWS 리전"
+  type        = string
+  default     = "ap-northeast-2"
+}
+
 variable "db_password" {
   description = "RDS PostgreSQL 마스터 비밀번호"
   type        = string
