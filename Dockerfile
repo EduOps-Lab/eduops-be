@@ -20,18 +20,23 @@ RUN pnpm run build
 FROM node:24-alpine
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # 빌드 결과물과 필요한 파일만 복사
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 
+# Prisma v7 setting file
+COPY --from=builder /app/prisma.config.* ./
 # Prisma 스키마 복사 (런타임에 필요)
 COPY --from=builder /app/prisma ./prisma
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 # Husky 등 라이프사이클 스크립트 실행 방지
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
+
+# Prisma CLI 실행 할 수 있도록 별도 설치
+RUN pnpm  add prisma -D
 
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/src/generated ./src/generated
