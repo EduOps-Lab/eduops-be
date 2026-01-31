@@ -120,7 +120,7 @@ export class StatisticsService {
     });
   }
 
-  /** 통계 조회 */
+  /** 통계 조회 (확장: 전체 평균, 등수 등 포함) */
   async getStatistics(examId: string, userType: UserType, profileId: string) {
     // 1. Exam 확인 & 권한 검증
     const exam = await this.examsRepo.findById(examId);
@@ -134,7 +134,57 @@ export class StatisticsService {
       profileId,
     );
 
-    // 2. 통계 조회
-    return await this.statisticsRepo.findStatisticsByExamId(examId);
+    // 2. 데이터 병렬 조회 (성능 최적화)
+    const [summary, questionStats, studentGrades, correctCounts, questions] =
+      await Promise.all([
+        this.statisticsRepo.getExamSummary(examId),
+        this.statisticsRepo.findStatisticsByExamId(examId),
+        this.statisticsRepo.getStudentGradesWithInfo(examId),
+        this.statisticsRepo.getStudentCorrectCounts(examId),
+        this.examsRepo.findQuestionsByExamId(examId),
+      ]);
+
+    // 3. 문항 정보 매핑 (번호 추가)
+    // Statistic에는 questionNumber가 없으므로 Question 엔티티와 조인하거나 매핑 필요
+    const questionMap = new Map(questions.map((q) => [q.id, q.questionNumber]));
+    const mappedQuestionStats = questionStats.map((stat) => ({
+      questionId: stat.questionId,
+      questionNumber: questionMap.get(stat.questionId),
+      totalSubmissions: stat.totalSubmissions,
+      correctRate: stat.correctRate,
+      choiceRates: stat.choiceRates as Record<string, number> | null,
+    }));
+
+    // 4. 학생 성적 매핑 및 석차 계산
+    const totalExaminees = summary.totalExaminees;
+    let currentRank = 1;
+    const studentStats = [];
+
+    // studentGrades는 이미 score desc 정렬되어 있음
+    for (let i = 0; i < studentGrades.length; i++) {
+      const grade = studentGrades[i];
+      const prevGrade = i > 0 ? studentGrades[i - 1] : null;
+
+      // 동점자 처리: 이전 점수와 다르면 현재 인덱스+1이 새로운 등수
+      if (prevGrade && prevGrade.score !== grade.score) {
+        currentRank = i + 1;
+      }
+
+      studentStats.push({
+        enrollmentId: grade.enrollmentId,
+        studentName: grade.enrollment.studentName,
+        school: grade.enrollment.school,
+        correctCount: correctCounts[grade.enrollmentId] ?? 0,
+        score: grade.score,
+        rank: currentRank,
+        totalRank: totalExaminees, // 분모 (예: 5/20등)
+      });
+    }
+
+    return {
+      examStats: summary,
+      questionStats: mappedQuestionStats,
+      studentStats,
+    };
   }
 }

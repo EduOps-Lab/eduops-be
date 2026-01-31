@@ -80,6 +80,92 @@ export class StatisticsRepository {
     });
   }
 
+  /** [Extended] 시험 요약 정보 조회 (평균, 최고, 최저) */
+  async getExamSummary(examId: string, tx?: Prisma.TransactionClient) {
+    const client = tx ?? this.prisma;
+
+    // 1. 성적 집계
+    const aggregations = await client.grade.aggregate({
+      where: { examId },
+      _avg: { score: true },
+      _max: { score: true },
+      _min: { score: true },
+      _count: { _all: true },
+    });
+
+    // 2. 시험 날짜 조회 (Schedule 연동)
+    const exam = await client.exam.findUnique({
+      where: { id: examId },
+      select: {
+        schedule: {
+          select: { startTime: true },
+        },
+      },
+    });
+
+    return {
+      averageScore: aggregations._avg.score ?? 0,
+      highestScore: aggregations._max.score ?? 0,
+      lowestScore: aggregations._min.score ?? 0,
+      totalExaminees: aggregations._count._all,
+      examDate: exam?.schedule?.startTime ?? null,
+    };
+  }
+
+  /** [Extended] 수강생별 정답 개수 조회 */
+  async getStudentCorrectCounts(
+    examId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Record<string, number>> {
+    const client = tx ?? this.prisma;
+
+    // 해당 시험의 모든 문항에 대한 정답(isCorrect=true) 개수를 학생별(enrollmentId)로 집계
+    // Prisma의 groupBy 사용
+    const grouped = await client.studentAnswer.groupBy({
+      by: ['enrollmentId'],
+      where: {
+        // 시험 ID로 직접 필터링이 불가능하므로 (studentAnswer에는 examId가 없음),
+        // lectureId와 questionId 조합으로 해야 함.
+        // 하지만 편의상 Service에서 questionId 목록을 받아오는 게 정확할 수 있음.
+        // 또는 여기서는 question.examId로 필터링하기 위해 where 조건에 question relation 필터 사용
+        question: { examId },
+        isCorrect: true,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    // Map 형태로 변환 { enrollmentId: count }
+    const result: Record<string, number> = {};
+    grouped.forEach((g) => {
+      result[g.enrollmentId] = g._count._all;
+    });
+
+    return result;
+  }
+
+  /** [Extended] 수강생 성적 및 정보 목록 조회 (점수 내림차순) */
+  async getStudentGradesWithInfo(
+    examId: string,
+    tx?: Prisma.TransactionClient,
+  ) {
+    const client = tx ?? this.prisma;
+    return await client.grade.findMany({
+      where: { examId },
+      include: {
+        enrollment: {
+          select: {
+            id: true,
+            studentName: true,
+            school: true,
+          },
+        },
+      },
+      orderBy: { score: 'desc' }, // 석차 계산을 위해 정렬
+    });
+  }
+
   // 통계 계산을 위한 Raw Data 조회 메서드는 Service에서 GradesRepo 등을 조합해서 처리하는 것이
   // 책임 분리상 적절할 수 있으나, 편의를 위해 여기에 배치할 수도 있습니다.
   // 일단 Core 기능인 Statistic 테이블 조작에 집중합니다.
