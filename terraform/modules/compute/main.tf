@@ -94,9 +94,10 @@ resource "aws_instance" "app_server" {
                 # Docker Compose 설치
                 mkdir -p /usr/local/lib/docker/cli-plugins/
 
-                COMPOSE_VERSION="v5.0.1"
-                curl -SL "https://github.com/docker/compose/releases/download/$${COMPOSE_VERSION}/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose
-
+                COMPOSE_VERSION="v2.40.3"
+                COMPOSE_SHA256=dba9d98e1ba5bfe11d88c99b9bd32fc4a0624a30fafe68eea34d61a3e42fd372
+                curl -fSL "https://github.com/docker/compose/releases/download/$${COMPOSE_VERSION}/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose
+                echo "$${COMPOSE_SHA256} /usr/local/lib/docker/cli-plugins/docker-compose" | sha256sum -c -
                 chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
                 # 설치 확인

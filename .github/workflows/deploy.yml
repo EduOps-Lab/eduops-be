@@ -94,7 +94,7 @@ jobs:
             echo "BETTER_AUTH_URL=$BETTER_AUTH_URL" >> .env
 
             # 1. 디스크 공간 확보 (중요: t3.micro 용량 부족 방지)
-            docker system prune -af --volumes || true
+            docker system prune -f
 
             # 2. 리포지토리 이름을 소문자로 변환
             IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
