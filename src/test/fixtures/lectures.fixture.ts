@@ -21,6 +21,7 @@ export const mockLectures = {
     endAt: new Date('2024-06-30'),
     status: LectureStatus.IN_PROGRESS,
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as Lecture,
 
@@ -35,6 +36,7 @@ export const mockLectures = {
     endAt: new Date('2024-12-31'),
     status: LectureStatus.SCHEDULED,
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as Lecture,
 
@@ -49,6 +51,7 @@ export const mockLectures = {
     endAt: new Date('2024-06-30'),
     status: LectureStatus.IN_PROGRESS,
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as Lecture,
 
@@ -63,6 +66,7 @@ export const mockLectures = {
     endAt: new Date('2023-12-31'),
     status: LectureStatus.COMPLETED,
     createdAt: new Date('2023-08-01'),
+    updatedAt: new Date('2023-08-01'),
     deletedAt: null,
   } as Lecture,
 } as const;

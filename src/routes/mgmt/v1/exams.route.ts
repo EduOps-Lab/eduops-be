@@ -5,6 +5,8 @@ import {
   examIdParamSchema,
   updateExamSchema,
 } from '../../../validations/exams.validation.js';
+import { submitGradingSchema } from '../../../validations/grades.validation.js';
+import { createClinicsSchema } from '../../../validations/clinics.validation.js';
 
 export const mgmtExamsRouter = Router();
 
@@ -28,4 +30,45 @@ mgmtExamsRouter.patch(
   validate(examIdParamSchema, 'params'),
   validate(updateExamSchema, 'body'),
   examsController.updateExam,
+);
+
+/** 채점 제출 (학생 답안 채점 및 Upsert) */
+mgmtExamsRouter.post(
+  '/:examId/grades',
+  validate(examIdParamSchema, 'params'),
+  validate(submitGradingSchema, 'body'),
+  (req, res, next) => container.gradesController.submitGrading(req, res, next),
+);
+
+/** 성적 조회 */
+mgmtExamsRouter.get(
+  '/:examId/grades',
+  validate(examIdParamSchema, 'params'),
+  (req, res, next) =>
+    container.gradesController.getGradesByExam(req, res, next),
+);
+
+/** 통계 산출 및 저장 */
+mgmtExamsRouter.post(
+  '/:examId/statistics',
+  validate(examIdParamSchema, 'params'),
+  (req, res, next) =>
+    container.statisticsController.calculateStatistics(req, res, next),
+);
+
+/** 캐싱된 통계 조회 */
+mgmtExamsRouter.get(
+  '/:examId/statistics',
+  validate(examIdParamSchema, 'params'),
+  (req, res, next) =>
+    container.statisticsController.getStatistics(req, res, next),
+);
+
+/** 채점 완료 처리 및 클리닉 생성 */
+mgmtExamsRouter.post(
+  '/:examId/grades/complete',
+  validate(examIdParamSchema, 'params'),
+  validate(createClinicsSchema, 'body'),
+  (req, res, next) =>
+    container.clinicsController.completeGrading(req, res, next),
 );

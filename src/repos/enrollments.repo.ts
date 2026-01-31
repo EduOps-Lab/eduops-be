@@ -139,11 +139,7 @@ export class EnrollmentsRepository {
             exam: true,
           },
         },
-        clinicTargets: {
-          include: {
-            clinic: true,
-          },
-        },
+        clinic: true,
         attendances: true,
       },
     });
@@ -157,8 +153,12 @@ export class EnrollmentsRepository {
     });
   }
 
-  /** 강의별 수강생 목록 조회 */
-  async findManyByLectureId(lectureId: string, tx?: Prisma.TransactionClient) {
+  /** 강의별 수강생 목록 조회 (시험 성적 포함 옵션) */
+  async findManyByLectureId(
+    lectureId: string,
+    options?: { examId?: string },
+    tx?: Prisma.TransactionClient,
+  ) {
     const client = tx ?? this.prisma;
     return await client.enrollment.findMany({
       where: {
@@ -167,6 +167,14 @@ export class EnrollmentsRepository {
       },
       include: {
         appStudent: true, // 학생 정보 포함
+        // examId가 있을 때만 grades를 조인하여 해당 시험의 성적만 가져옴
+        ...(options?.examId && {
+          grades: {
+            where: { examId: options.examId },
+            select: { id: true },
+            take: 1, // 최대 1개만 (유니크 조건이 있으나 안전하게 처리)
+          },
+        }),
       },
       orderBy: {
         studentName: 'asc', // 이름순 정렬

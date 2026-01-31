@@ -103,6 +103,19 @@ export class ExamsRepository {
     });
   }
 
+  /** 채점 상태 변경 */
+  async updateGradingStatus(
+    id: string,
+    gradingStatus: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Exam> {
+    const client = tx ?? this.prisma;
+    return await client.exam.update({
+      where: { id },
+      data: { gradingStatus },
+    });
+  }
+
   // --- Question CRUD methods ---
 
   /** 문항 생성 */

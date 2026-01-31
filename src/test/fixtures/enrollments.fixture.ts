@@ -22,6 +22,7 @@ export const mockStudents = {
     ]),
     schoolYear: '고1',
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as AppStudent,
 
@@ -32,6 +33,7 @@ export const mockStudents = {
     school: '서울고등학교',
     schoolYear: '고2',
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as AppStudent,
 
@@ -42,6 +44,7 @@ export const mockStudents = {
     school: '강남고등학교',
     schoolYear: '고1',
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as AppStudent,
 };
@@ -53,6 +56,7 @@ export const mockParents = {
     userId: mockUsers.parent.id,
     phoneNumber: faker.phone.number({ style: 'national' }),
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as AppParent,
 
@@ -61,6 +65,7 @@ export const mockParents = {
     userId: faker.string.uuid(),
     phoneNumber: faker.phone.number({ style: 'national' }),
     createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
     deletedAt: null,
   } as AppParent,
 };
@@ -78,7 +83,9 @@ export const mockParentLinks = {
       userId: 'user-parent-id-001',
       phoneNumber: '010-3333-4444',
       createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
     },
+    updatedAt: new Date('2024-01-01'),
   },
 
   another: {
@@ -93,7 +100,9 @@ export const mockParentLinks = {
       userId: 'user-parent-id-002',
       phoneNumber: '010-7777-8888',
       createdAt: new Date('2024-01-01'),
+      updatedAt: new Date('2024-01-01'),
     },
+    updatedAt: new Date('2024-01-01'),
   },
 };
 
@@ -271,7 +280,7 @@ export const mockEnrollmentWithRelations = {
     },
   },
   grades: [],
-  clinicTargets: [],
+  clinic: [],
   attendances: [],
 };
 

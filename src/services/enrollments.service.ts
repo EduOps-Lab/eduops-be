@@ -82,6 +82,7 @@ export class EnrollmentsService {
     lectureId: string,
     userType: UserType,
     profileId: string,
+    options?: { examId?: string },
   ) {
     // 1. 강의 존재 및 권한 확인
     const lecture = await this.lecturesRepository.findById(lectureId);
@@ -95,7 +96,22 @@ export class EnrollmentsService {
       profileId,
     );
 
-    return await this.enrollmentsRepository.findManyByLectureId(lectureId);
+    // 2. Repository 호출
+    const enrollments = await this.enrollmentsRepository.findManyByLectureId(
+      lectureId,
+      options,
+    );
+
+    // 3. 응답 평탄화: grades[0]?.id -> gradeId
+    return enrollments.map((enrollment) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const grades = (enrollment as any).grades;
+      return {
+        ...enrollment,
+        gradeId: grades?.[0]?.id ?? null,
+        grades: undefined, // 원본 grades 배열 제거
+      };
+    });
   }
 
   /** 강사(조교 포함)별 전체 수강생 목록 조회 */

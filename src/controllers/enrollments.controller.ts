@@ -140,6 +140,7 @@ export class EnrollmentsController {
   ) => {
     try {
       const { lectureId } = req.params;
+      const { examId } = req.query; // 시험 ID 쿼리 파라미터
       const user = getAuthUser(req);
       const profileId = getProfileIdOrThrow(req);
       const userType = user.userType as UserType;
@@ -149,6 +150,7 @@ export class EnrollmentsController {
           lectureId,
           userType,
           profileId,
+          { examId: examId as string | undefined },
         );
 
       return successResponse(res, {
