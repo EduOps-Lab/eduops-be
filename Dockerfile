@@ -35,6 +35,9 @@ COPY --from=builder /app/prisma ./prisma
 # Husky 등 라이프사이클 스크립트 실행 방지
 RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
+# Prisma CLI 실행 할 수 있도록 별도 설치
+RUN pnpm add prisma -D
+
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/src/generated ./src/generated
 
