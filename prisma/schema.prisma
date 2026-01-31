@@ -27,6 +27,7 @@ model AppStudent {
   schoolYear  String? @map("school_year")
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   enrollments Enrollment[]
@@ -40,6 +41,7 @@ model AppParent {
 
   phoneNumber String   @unique @map("phone_number")
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
 
   user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   childLinks ParentChildLink[]
@@ -54,6 +56,7 @@ model ParentChildLink {
   phoneNumber String @map("phone_number")
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   parent     AppParent    @relation(fields: [appParentId], references: [id], onDelete: Cascade)
   enrollment Enrollment[]
@@ -73,6 +76,7 @@ model VerificationCode {
   isVerified Boolean  @default(false) @map("is_verified")
   expiresAt  DateTime @map("expires_at")
   createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("verification_codes")
 }
@@ -90,6 +94,7 @@ model Instructor {
   academy     String?
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   // [Safety] 계정 삭제 시 실수 방지를 위한 Soft Delete
   deletedAt DateTime? @map("deleted_at")
@@ -125,6 +130,7 @@ model Assistant {
   contract   String?
 
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   instructor        Instructor       @relation(fields: [instructorId], references: [id], onDelete: Cascade)
@@ -168,6 +174,7 @@ model Lecture {
 
   status    String    @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED
   createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at")
   startAt   DateTime? @map("start_at")
   endAt     DateTime? @map("end_at")
 
@@ -199,6 +206,9 @@ model LectureTime {
   startTime String @map("start_time") // 14:00
   endTime   String @map("end_time") // 16:00
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
   lecture    Lecture    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
   instructor Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
 
@@ -226,6 +236,8 @@ model Enrollment {
   appParentLinkId String? @map("app_parent_link_id")
 
   registeredAt DateTime @default(now()) @map("registered_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   // [State] 수강 상태 (ACTIVE: 수강중, DROPPED: 퇴원, PAUSED: 휴원)
   status String @default("ACTIVE")
@@ -297,6 +309,9 @@ model Exam {
   lecture Lecture @relation(fields: [lectureId], references: [id], onDelete: Cascade)
   instructor   Instructor? @relation(fields: [instructorId], references: [id])
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
   questions Question[]
   grades    Grade[]
   clinics   Clinic[]
@@ -326,6 +341,9 @@ model Question {
 
   correctAnswer String @map("correct_answer")
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
   exam Exam @relation(fields: [lectureId, examId], references: [lectureId, id], onDelete: Cascade)
 
   studentAnswers StudentAnswer[]
@@ -351,6 +369,9 @@ model QuestionStatistic {
   // 보기별 선택 비율: { "1": 15.5, "2": 70.0, ... }
   choiceRates      Json? @map("choice_rates") 
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
   question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@index([examId])
@@ -365,6 +386,9 @@ model StudentAnswer {
 
   submittedAnswer String  @map("submitted_answer")
   isCorrect       Boolean @default(false) @map("is_correct")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   enrollment Enrollment @relation(fields: [lectureId, enrollmentId], references: [lectureId, id], onDelete: Cascade)
   question   Question   @relation(fields: [lectureId, questionId], references: [lectureId, id], onDelete: Cascade)
@@ -385,6 +409,7 @@ model Grade {
   score  Int
   isPass Boolean @default(true) @map("is_pass")
 
+  createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   exam       Exam       @relation(fields: [lectureId, examId], references: [lectureId, id], onDelete: Cascade)
@@ -440,6 +465,9 @@ model Clinic {
   notificationStatus String @default("READY") @map("notification_status")
   memo               String? @db.Text
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
   // 관계 설정
   lecture    Lecture    @relation(fields: [lectureId], references: [id], onDelete: Cascade)
   exam       Exam       @relation(fields: [lectureId, examId], references: [lectureId, id], onDelete: Cascade)
@@ -474,6 +502,9 @@ model Schedule {
   linkedExamId   String? @unique @map("linked_exam_id")
   linkedClinicId String? @unique @map("linked_clinic_id")
 
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")  
+
   instructor   Instructor @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   linkedExam   Exam?      @relation(fields: [linkedExamId], references: [id])
   linkedClinic Clinic?    @relation(fields: [linkedClinicId], references: [id])
@@ -493,7 +524,8 @@ model Material {
   fileUrl String @map("file_url")
   type    String @default("ETC")
 
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at"  )
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")  
 
   lecture    Lecture     @relation(fields: [lectureId], references: [id], onDelete: Cascade)
   instructor Instructor? @relation("InstructorUploads", fields: [uploaderInstructorId], references: [id], onDelete: SetNull)
@@ -519,6 +551,7 @@ model InstructorPost {
   title       String
   content     String   @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")  
 
   instructorId      String  @map("instructor_id")
   lectureId         String? @map("lecture_id")
@@ -568,6 +601,7 @@ model StudentPost {
   title     String
   content   String   @db.Text
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")  
 
   enrollmentId String @map("enrollment_id")
   authorRole   String @default("STUDENT") @map("author_role")
@@ -591,6 +625,7 @@ model Comment {
   id        String   @id @default(cuid(2))
   content   String   @db.Text
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")  
 
   instructorPostId String? @map("instructor_post_id")
   studentPostId    String? @map("student_post_id")
